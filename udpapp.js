@@ -32,6 +32,15 @@ const SESSION_AUTH_FAILED = 3;
 
 // Constructor
 var UDPApp = function(config) {
+	"use strict";
+
+	if (!("dbfilename" in config)) {
+		throw Error("Missing dbfilename in UDPApp configuration.");
+	}
+	if (!("port" in config)) {
+		throw Error("Missing port in UDPApp configuration.");
+	}
+
 	// Create database connection
 	this.dbconn = new DBConn({
 		filename: config.dbfilename

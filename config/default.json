@@ -1,0 +1,5 @@
+{
+	"dbfilename": "charonauth.db",
+	"port": 16666,
+	"workers": 1
+}

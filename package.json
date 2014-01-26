@@ -1,0 +1,17 @@
+{
+	"name": "charonauth",
+	"version": "0.0.1",
+	"author": "Alex Mayfield <alexmax2742@gmail.com>",
+	"description": "An authentication server for games",
+	"dependencies": {
+		"config": "0.4.35",
+		"sqlite3": "2.2.0",
+		"srp": "AlexMax/node-srp"
+	},
+	"devDependencies": {
+		"mocha": "*"
+	},
+	"scripts": {
+		"test": "mocha test"
+	}
+}

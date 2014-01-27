@@ -4,6 +4,7 @@
 	"author": "Alex Mayfield <alexmax2742@gmail.com>",
 	"description": "An authentication server for games",
 	"dependencies": {
+		"buffertools": "2.0.1",
 		"config": "0.4.35",
 		"sqlite3": "2.2.0",
 		"srp": "AlexMax/node-srp"

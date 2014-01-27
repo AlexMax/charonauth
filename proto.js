@@ -1,0 +1,20 @@
+// Protocol Constants
+exports.SERVER_NEGOTIATE = 0xD003CA01;
+exports.AUTH_NEGOTIATE = 0xD003CA10;
+exports.SRP_A = 0xD003CA02;
+exports.SRP_S_AND_B = 0xD003CA20;
+exports.SRP_M = 0xD003CA03;
+exports.SRP_HAMK = 0xD003CA30;
+
+exports.ERROR_USER = 0xD003CAFF;
+exports.ERROR_SESSION = 0xD003CAEE;
+
+exports.USER_TRY_LATER = 0;
+exports.USER_NO_EXIST = 1;
+exports.USER_OUTDATED_PROTOCOL = 2;
+exports.USER_WILL_NOT_AUTH = 3;
+
+exports.SESSION_TRY_LATER = 0;
+exports.SESSION_NO_EXIST = 1;
+exports.SESSION_VERIFIER_UNSAFE = 2;
+exports.SESSION_AUTH_FAILED = 3;

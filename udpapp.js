@@ -1,4 +1,3 @@
-var buffertools = require('buffertools');
 var crypto = require('crypto');
 var dgram = require('dgram');
 var srp = require('srp');
@@ -11,15 +10,6 @@ var proto = require('./proto');
 //
 // This object encompasses all functionality dealing with the UDP endpoint of
 // charon.  More specifically, the socket server lives here.
-
-function readString(msg, start, encoding) {
-	var index = buffertools.indexOf(msg, "\0", start);
-	if (index === -1) {
-		return null;
-	} else {
-		return msg.toString(encoding, start, index);
-	}
-}
 
 // Constructor
 var UDPApp = function(config) {
@@ -61,22 +51,9 @@ UDPApp.prototype = {
 
 	// Routes
 	serverNegotiate: function(msg, rinfo) {
-		if (msg.length < 5) {
-			util.log("SERVER_NEGOTIATE is too small for version, discarding.");
-			return;
-		}
-
-		var version = msg.readUInt8(4);
-		if (version !== 1) {
-			util.log("SERVER_NEGOTIATE version is not valid, discarding.");
-			return;
-		}
-
-		var username = readString(msg, 5);
-		if (username === null) {
-			util.log("SERVER_NEGOTIATE username is not valid, discarding.");
-			return;
-		}
+		// Unmarshall the server negotiation packet
+		var packet = new ServerNegotiate(msg);
+		var username = packet.get('username');
 
 		// Create a new session ID
 		var sessionBuffer = crypto.randomBytes(4);

@@ -73,12 +73,11 @@ describe('UDPApp', function() {
 				done();
 			});
 
-			var buf = new Buffer(14);
-			buf.writeUInt32LE(proto.SERVER_NEGOTIATE, 0);
-			buf.writeUInt8(1, 4);
-			buf.write('username', 5, 'ascii');
-			buf.writeUInt8(0, 13);
+			var packet = new ServerNegotiate();
+			packet.set('version', 1);
+			packet.set('username', 'username');
 
+			var buf = packet.marshall();
 			socket.send(buf, 0, buf.length, 16666, '127.0.0.1');
 		});
 	});

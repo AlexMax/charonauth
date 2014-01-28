@@ -1,22 +1,7 @@
-var buffertools = require('buffertools');
+var bufferpack = require("bufferpack");
 
 // Protocol Constants
 const SERVER_NEGOTIATE = 0xD003CA01;
-
-// Utility functions
-function readString(msg, start, encoding) {
-	var index = buffertools.indexOf(msg, "\0", start);
-	if (index === -1) {
-		return null;
-	} else {
-		return msg.toString(encoding, start, index);
-	}
-}
-
-function writeString(buf, msg, start, encoding) {
-	buf.write(msg, start, encoding);
-	buf.writeUInt8(0, start + msg.length);
-}
 
 // Server negotiation packet
 ServerNegotiate = function(data) {
@@ -26,6 +11,7 @@ ServerNegotiate = function(data) {
 	}
 }
 ServerNegotiate.prototype = {
+	format: '<I(id)B(version)S(username)',
 	set: function(key, value) {
 		if (!(key in this.data)) {
 			throw Error(key + " does not exist in ServerNegotiate.");
@@ -46,36 +32,29 @@ ServerNegotiate.prototype = {
 	},
 	marshall: function() {
 		if (this.data.username === undefined) {
-			throw TypeError('username is undefined in ServerNegotiate.');
+			throw TypeError('Cannot marshall incomplete packet');
 		} else if (this.data.version === undefined) {
-			throw TypeError('version is undefined in ServerNegotiate.');
+			throw TypeError('Cannot marshall incomplete packet');
 		}
 
-		var buf = new Buffer(6 + this.data.username.length);
-		buf.writeUInt32LE(SERVER_NEGOTIATE, 0);
-		buf.writeUInt8(this.data.version, 4);
-		writeString(buf, this.data.username, 5, 'ascii');
+		var buf = bufferpack.pack(this.format, [
+			SERVER_NEGOTIATE,
+			this.data.version,
+			this.data.username
+		]);
 
 		return buf;
 	},
-	unmarshall: function(data) {
-		if (data.length < 5) {
-			throw TypeError("ServerNegotiate is missing version.");
-		}
+	unmarshall: function(buf) {
+		var data = bufferpack.unpack(this.format, buf, 0);
 
-		var version = data.readUInt8(4);
-		if (version !== 1) {
-			throw TypeError("ServerNegotiate has incorrect version.");
-		}
-
-		var username = readString(data, 5);
-		if (username === null) {
-			throw TypeError("ServerNegotiate is missing username.");
+		if (typeof data === 'undefined') {
+			throw TypeError('Cannot unmarshall malformed buffer');
 		}
 
 		this.data = {
-			version: version,
-			username: username
+			version: data.version,
+			username: data.username
 		};
 	}
 };

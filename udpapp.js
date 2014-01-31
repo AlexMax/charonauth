@@ -52,8 +52,8 @@ UDPApp.prototype = {
 	// Routes
 	serverNegotiate: function(msg, rinfo) {
 		// Unmarshall the server negotiation packet
-		var packet = new ServerNegotiate(msg);
-		var username = packet.get('username');
+		var packet = proto.clientNegotiate.unmarshall(msg);
+		var username = packet.username;
 
 		// Create a new session ID
 		var sessionBuffer = crypto.randomBytes(4);

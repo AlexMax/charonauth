@@ -3,63 +3,35 @@ var bufferpack = require("bufferpack");
 // Protocol Constants
 const SERVER_NEGOTIATE = 0xD003CA01;
 
-// Server negotiation packet
-ServerNegotiate = function(data) {
-	this.clear();
-	if (data) {
-		this.unmarshall(data);
-	}
-};
-ServerNegotiate.prototype = {
+// Client Negotiation
+var clientNegotiate = {
 	format: '<I(id)B(version)S(username)',
-	set: function(key, value) {
-		if (!(key in this.data)) {
-			throw Error(key + " does not exist in ServerNegotiate.");
-		}
-		this.data[key] = value;
-	},
-	get: function(key) {
-		if (!(key in this.data)) {
-			throw Error(key + " does not exist in ServerNegotiate.");
-		}
-		return this.data[key];
-	},
-	clear: function() {
-		this.data = {
-			username: undefined,
-			version: undefined
-		};
-	},
-	marshall: function() {
-		if (this.data.username === undefined) {
-			throw TypeError('Cannot marshall incomplete packet');
-		} else if (this.data.version === undefined) {
-			throw TypeError('Cannot marshall incomplete packet');
-		}
-
-		var buf = bufferpack.pack(this.format, [
+	marshall: function(data) {
+		var buf = bufferpack.pack(clientNegotiate.format, [
 			SERVER_NEGOTIATE,
-			this.data.version,
-			this.data.username
+			data.version,
+			data.username
 		]);
+
+		if (buf === undefined) {
+			throw new TypeError('Cannot marshall data of incompatible type');
+		}
 
 		return buf;
 	},
 	unmarshall: function(buf) {
-		var data = bufferpack.unpack(this.format, buf, 0);
+		var data = bufferpack.unpack(clientNegotiate.format, buf, 0);
 
-		if (typeof data === 'undefined') {
-			throw TypeError('Cannot unmarshall malformed buffer');
+		if (data === undefined) {
+			throw new TypeError('Cannot unmarshall malformed buffer');
 		}
 
-		this.data = {
-			version: data.version,
-			username: data.username
-		};
+		return data;
 	}
 };
 
-// Protocol Constants
+exports.clientNegotiate = clientNegotiate;
+
 exports.SERVER_NEGOTIATE = SERVER_NEGOTIATE;
 exports.AUTH_NEGOTIATE = 0xD003CA10;
 exports.SRP_A = 0xD003CA02;

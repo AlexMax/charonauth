@@ -73,12 +73,12 @@ describe('UDPApp', function() {
 				done();
 			});
 
-			var packet = new ServerNegotiate();
-			packet.set('version', 1);
-			packet.set('username', 'username');
+			var packet = proto.clientNegotiate.marshall({
+				version: 1,
+				username: 'username'
+			});
 
-			var buf = packet.marshall();
-			socket.send(buf, 0, buf.length, 16666, '127.0.0.1');
+			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
 	});
 });

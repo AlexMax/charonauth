@@ -9,7 +9,7 @@ ServerNegotiate = function(data) {
 	if (data) {
 		this.unmarshall(data);
 	}
-}
+};
 ServerNegotiate.prototype = {
 	format: '<I(id)B(version)S(username)',
 	set: function(key, value) {

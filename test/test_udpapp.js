@@ -62,6 +62,8 @@ describe('UDPApp', function() {
 	});
 	describe('UDPApp.router()', function() {
 		it("should be capable of creating new authentication sessions.", function(done) {
+			var username = 'username';
+
 			new UDPApp({
 				dbfilename: ":memory:",
 				port: 16666
@@ -70,12 +72,16 @@ describe('UDPApp', function() {
 			var socket = dgram.createSocket('udp4');
 
 			socket.on('message', function(msg, rinfo) {
-				done();
+				var response = proto.authServerNegotiate.unmarshall(msg);
+				if (response.username === username) {
+					done();
+				} else {
+					throw new Error('Response contains unexpected data');
+				}
 			});
 
 			var packet = proto.clientNegotiate.marshall({
-				version: 1,
-				username: 'username'
+				username: username
 			});
 
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');

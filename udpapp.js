@@ -55,6 +55,9 @@ UDPApp.prototype = {
 		var packet = proto.clientNegotiate.unmarshall(msg);
 		var username = packet.username;
 
+		// TODO: Find the salt of the username
+		var salt = crypto.randomBytes(4);
+
 		// Create a new session ID
 		var sessionBuffer = crypto.randomBytes(4);
 		var session = sessionBuffer.readUInt32LE(0);
@@ -62,12 +65,11 @@ UDPApp.prototype = {
 		// TODO: Save the session in the database
 
 		// Write the response packet
-		var response = new Buffer(10 + username.length);
-		response.writeUInt32LE(proto.AUTH_NEGOTIATE, 0);
-		response.writeUInt8(1, 4);
-		sessionBuffer.copy(response, 5, 0, 4);
-		response.write(username, 9, username.length, 'ascii');
-		response.writeUInt8(0, response.length - 1);
+		var response = proto.authServerNegotiate.marshall({
+			session: session,
+			salt: salt,
+			username: username
+		});
 
 		// Send the response packet to the sender
 		this.socket.send(response, 0, response.length, rinfo.port, rinfo.address);

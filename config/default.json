@@ -1,5 +1,5 @@
 {
-	"dbfilename": "charonauth.db",
+	"dbconn": "sqlite://charonauth.db",
 	"port": 16666,
 	"workers": 1
 }

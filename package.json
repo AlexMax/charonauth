@@ -6,11 +6,12 @@
 	"dependencies": {
 		"buffertools": "2.0.1",
 		"config": "0.4.35",
-		"sqlite3": "2.2.0",
+		"sequelize": "1.7.0-rc4",
 		"srp": "AlexMax/node-srp"
 	},
 	"devDependencies": {
-		"mocha": "*"
+		"mocha": "*",
+		"sqlite3": "2.2.0"
 	},
 	"scripts": {
 		"test": "mocha test -R spec"

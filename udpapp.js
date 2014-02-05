@@ -1,3 +1,5 @@
+"use strict";
+
 var crypto = require('crypto');
 var dgram = require('dgram');
 var srp = require('srp');
@@ -12,25 +14,35 @@ var proto = require('./proto');
 // charon.  More specifically, the socket server lives here.
 
 // Constructor
-var UDPApp = function(config) {
-	"use strict";
-
-	if (!("dbfilename" in config)) {
-		throw new Error("Missing dbfilename in UDPApp configuration.");
+var UDPApp = function(config, callback) {
+	if (!(this instanceof UDPApp)) {
+		callback.call(self, new Error("Constructor called as function"));
+		return;
+	}
+	if (!("dbconn" in config)) {
+		callback.call(self, new Error("Missing dbconn in UDPApp configuration."));
+		return;
 	}
 	if (!("port" in config)) {
-		throw new Error("Missing port in UDPApp configuration.");
+		callback.call(self, new Error("Missing port in UDPApp configuration."));
+		return;
+	}
+	if (typeof callback !== 'function') {
+		throw new Error("Missing callback function");
 	}
 
 	// Create database connection
+	var self = this;
 	this.dbconn = new DBConn({
-		filename: config.dbfilename
-	});
+		connection: config.dbconn
+	}, function() {
+		// Create socket server only if database connection is OK
+		self.socket = dgram.createSocket('udp4');
+		self.socket.on('message', self.router.bind(self));
+		self.socket.bind(config.port);
 
-	// Create socket server
-	this.socket = dgram.createSocket('udp4');
-	this.socket.on('message', this.router.bind(this));
-	this.socket.bind(config.port);
+		callback.call(self);
+	});
 };
 
 // Object methods

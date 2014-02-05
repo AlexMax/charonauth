@@ -6,58 +6,59 @@ var UDPApp = require('../udpapp');
 
 describe('UDPApp', function() {
 	describe('new UDPApp()', function() {
-		it("should construct correctly.", function() {
-			assert.doesNotThrow(
-				function() {
-					new UDPApp({
-						dbfilename: ":memory:",
-						port: 16666
-					});
+		it("should construct correctly.", function(done) {
+			new UDPApp({
+				dbconn: "sqlite://:memory:",
+				port: 16666
+			}, function(error) {
+				if (error) {
+					done(error);
+				} else {
+					done();
 				}
-			);
+			});
 		});
-		it("should throw a worthwhile exception without new.", function() {
-			assert.throws(
-				function() {
-					UDPApp({
-						dbfilename: ":memory:",
-						port: 16666
-					});
-				},
-				function(err) {
-					if (err instanceof TypeError) {
-						return true;
-					}
+		it("should send an error to the callback without new.", function(done) {
+			UDPApp({
+				dbconn: "sqlite://:memory:",
+				port: 16666
+			}, function(error) {
+				if (error) {
+					done();
+				} else {
+					done(new Error("Did not error"));
 				}
-			);
+			});
 		});
-		it("should throw on missing dbfilename.", function() {
-			assert.throws(
-				function() {
-					UDPApp({
-						port: 16666
-					});
-				},
-				function(err) {
-					if (err instanceof Error) {
-						return true;
-					}
+		it("should send an error to the callback on missing dbconn.", function(done) {
+			UDPApp({
+				port: 16666
+			}, function(error) {
+				if (error) {
+					done();
+				} else {
+					done(new Error("Did not error"));
 				}
-			);
+			});
 		});
-		it("should throw on missing port.", function() {
-			assert.throws(
-				function() {
-					UDPApp({
-						dbfilename: ":memory:"
-					});
-				},
-				function(err) {
-					if (err instanceof Error) {
-						return true;
-					}
+		it("should send an error to the callback on missing port.", function(done) {
+			UDPApp({
+				dbconn: "sqlite://:memory:",
+			}, function(error) {
+				if (error) {
+					done();
+				} else {
+					done(new Error("Did not error"));
 				}
-			);
+			});
+		});
+		it("should throw an exception if we forget the callback function.", function() {
+			assert.throws(function() {
+				UDPApp({
+					dbconn: "sqlite://:memory:",
+					port: 16666
+				});
+			});
 		});
 	});
 	describe('UDPApp.router()', function() {
@@ -65,26 +66,26 @@ describe('UDPApp', function() {
 			var username = 'username';
 
 			new UDPApp({
-				dbfilename: ":memory:",
+				dbconn: "sqlite://:memory:",
 				port: 16666
+			}, function() {
+				var socket = dgram.createSocket('udp4');
+
+				socket.on('message', function(msg, rinfo) {
+					var response = proto.authServerNegotiate.unmarshall(msg);
+					if (response.username === username) {
+						done();
+					} else {
+						throw new Error('Response contains unexpected data');
+					}
+				});
+
+				var packet = proto.clientNegotiate.marshall({
+					username: username
+				});
+
+				socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 			});
-
-			var socket = dgram.createSocket('udp4');
-
-			socket.on('message', function(msg, rinfo) {
-				var response = proto.authServerNegotiate.unmarshall(msg);
-				if (response.username === username) {
-					done();
-				} else {
-					throw new Error('Response contains unexpected data');
-				}
-			});
-
-			var packet = proto.clientNegotiate.marshall({
-				username: username
-			});
-
-			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
 	});
 });

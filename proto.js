@@ -1,10 +1,13 @@
+/* jshint node: true */
+"use strict";
+
 var buffer = require("buffer");
 var buffertools = require("buffertools");
 var util = require("util");
 
 // Protocol Constants
-const SERVER_NEGOTIATE = 0xD003CA01;
-const AUTH_NEGOTIATE = 0xD003CA10;
+var SERVER_NEGOTIATE = 0xD003CA01;
+var AUTH_NEGOTIATE = 0xD003CA10;
 
 function readString(buf, offset, encoding) {
 	if (offset === undefined) {
@@ -57,7 +60,7 @@ var clientNegotiate = {
 		}
 
 		// Username
-		data = {
+		var data = {
 			username: readString(buf, 5, 'ascii')
 		};
 

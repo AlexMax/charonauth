@@ -1,3 +1,6 @@
+/* jshint node: true */
+"use strict";
+
 var Sequelize = require('sequelize');
 
 // DBConn

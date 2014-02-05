@@ -1,3 +1,6 @@
+/* jshint node: true */
+"use strict";
+
 var cluster = require('cluster');
 var config = require('config');
 var util = require('util');

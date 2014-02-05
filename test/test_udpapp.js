@@ -1,3 +1,7 @@
+/* jshint node: true, newcap: false */
+/* global describe, it */
+"use strict";
+
 var assert = require('assert');
 var dgram = require('dgram');
 
@@ -31,7 +35,7 @@ describe('UDPApp', function() {
 			});
 		});
 		it("should send an error to the callback on missing dbconn.", function(done) {
-			UDPApp({
+			new UDPApp({
 				port: 16666
 			}, function(error) {
 				if (error) {
@@ -42,7 +46,7 @@ describe('UDPApp', function() {
 			});
 		});
 		it("should send an error to the callback on missing port.", function(done) {
-			UDPApp({
+			new UDPApp({
 				dbconn: "sqlite://:memory:",
 			}, function(error) {
 				if (error) {
@@ -54,7 +58,7 @@ describe('UDPApp', function() {
 		});
 		it("should throw an exception if we forget the callback function.", function() {
 			assert.throws(function() {
-				UDPApp({
+				new UDPApp({
 					dbconn: "sqlite://:memory:",
 					port: 16666
 				});

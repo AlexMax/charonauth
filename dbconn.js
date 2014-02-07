@@ -10,19 +10,27 @@ var Sequelize = require('sequelize');
 // Constructor
 var DBConn = function(config, callback) {
 	var self = this;
-	this._db = new Sequelize(config.connection);
-	this._db.authenticate().complete(function(error) {
+	this.db = new Sequelize(config.connection);
+	this.db.authenticate().complete(function(error) {
 		if (error) {
-			throw error;
+			callback.call(self, error);
 		} else {
-			callback.call(self);
+			self.Session = self.db.define('Session', {
+				session: Sequelize.INTEGER,
+				username: Sequelize.STRING
+			});
+			self.User = self.db.define('User', {
+				username: Sequelize.STRING,
+				verifier: Sequelize.BLOB,
+				salt: Sequelize.BLOB
+			});
+			self.db.sync().success(function() {
+				callback.call(self);
+			}).error(function(error) {
+				callback.call(self, error);
+			});
 		}
 	});
-};
-
-// Object methods
-DBConn.prototype = {
-	
 };
 
 module.exports = DBConn;

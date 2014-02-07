@@ -21,8 +21,10 @@ if (!cluster.isMaster || workers <= 1) {
 
 	// Start the UDP endpoint
 	var udpapp = new UDPApp({
-		dbfilename: config.dbfilename,
+		dbconn: config.dbconn,
 		port: config.port
+	}, function() {
+		// TODO: Do something here...
 	});
 } else {
 	util.log("Charon is starting.");

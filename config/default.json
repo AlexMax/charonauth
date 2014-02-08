@@ -1,5 +1,6 @@
 {
-	"dbconn": "sqlite://charonauth.db/",
+	"dbConnection": "",
+	"dbOptions": {},
 	"port": 16666,
 	"workers": 1
 }

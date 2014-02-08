@@ -20,8 +20,12 @@ var UDPApp = function(config, callback) {
 		callback.call(self, new Error("Constructor called as function"));
 		return;
 	}
-	if (!("dbconn" in config)) {
-		callback.call(self, new Error("Missing dbconn in UDPApp configuration."));
+	if (!("dbConnection" in config)) {
+		callback.call(self, new Error("Missing dbConnection in UDPApp configuration."));
+		return;
+	}
+	if (!("dbOptions" in config)) {
+		callback.call(self, new Error("Missing dbOptions in UDPApp configuration."));
 		return;
 	}
 	if (!("port" in config)) {
@@ -35,7 +39,8 @@ var UDPApp = function(config, callback) {
 	// Create database connection
 	var self = this;
 	this.dbconn = new DBConn({
-		connection: config.dbconn
+		dbConnection: config.dbConnection,
+		dbOptions: config.dbOptions
 	}, function() {
 		// Create socket server only if database connection is OK
 		self.socket = dgram.createSocket('udp4');

@@ -12,7 +12,8 @@ describe('UDPApp', function() {
 	describe('new UDPApp()', function() {
 		it("should construct correctly.", function(done) {
 			new UDPApp({
-				dbconn: "sqlite://:memory:",
+				dbConnection: "sqlite://charonauth/",
+				dbOptions: { "storage": ":memory:" },
 				port: 16666
 			}, function(error) {
 				if (error) {
@@ -24,7 +25,8 @@ describe('UDPApp', function() {
 		});
 		it("should send an error to the callback without new.", function(done) {
 			UDPApp({
-				dbconn: "sqlite://:memory:",
+				dbConnection: "sqlite://charonauth/",
+				dbOptions: { "storage": ":memory:" },
 				port: 16666
 			}, function(error) {
 				if (error) {
@@ -34,8 +36,21 @@ describe('UDPApp', function() {
 				}
 			});
 		});
-		it("should send an error to the callback on missing dbconn.", function(done) {
+		it("should send an error to the callback on missing dbConnection.", function(done) {
 			new UDPApp({
+				dbOptions: { "storage": ":memory:" },
+				port: 16666
+			}, function(error) {
+				if (error) {
+					done();
+				} else {
+					done(new Error("Did not error"));
+				}
+			});
+		});
+		it("should send an error to the callback on missing dbOptions.", function(done) {
+			new UDPApp({
+				dbConnection: "sqlite://charonauth/",
 				port: 16666
 			}, function(error) {
 				if (error) {
@@ -47,7 +62,8 @@ describe('UDPApp', function() {
 		});
 		it("should send an error to the callback on missing port.", function(done) {
 			new UDPApp({
-				dbconn: "sqlite://:memory:",
+				dbConnection: "sqlite://charonauth/",
+				dbOptions: { "storage": ":memory:" },
 			}, function(error) {
 				if (error) {
 					done();
@@ -59,7 +75,8 @@ describe('UDPApp', function() {
 		it("should throw an exception if we forget the callback function.", function() {
 			assert.throws(function() {
 				new UDPApp({
-					dbconn: "sqlite://:memory:",
+					dbConnection: "sqlite://charonauth/",
+					dbOptions: { "storage": "charonauth.db" },
 					port: 16666
 				});
 			});
@@ -70,7 +87,8 @@ describe('UDPApp', function() {
 			var username = 'username';
 
 			new UDPApp({
-				dbconn: "sqlite://:memory:",
+				dbConnection: "sqlite://charonauth/",
+				dbOptions: { "storage": ":memory:" },
 				port: 16666
 			}, function() {
 				var socket = dgram.createSocket('udp4');

@@ -21,7 +21,8 @@ if (!cluster.isMaster || workers <= 1) {
 
 	// Start the UDP endpoint
 	var udpapp = new UDPApp({
-		dbconn: config.dbconn,
+		dbConnection: config.dbConnection,
+		dbOptions: config.dbOptions,
 		port: config.port
 	}, function() {
 		// TODO: Do something here...

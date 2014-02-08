@@ -10,7 +10,7 @@ var Sequelize = require('sequelize');
 // Constructor
 var DBConn = function(config, callback) {
 	var self = this;
-	this.db = new Sequelize(config.connection);
+	this.db = new Sequelize(config.dbConnection, config.dbOptions);
 	this.db.authenticate().complete(function(error) {
 		if (error) {
 			callback.call(self, error);

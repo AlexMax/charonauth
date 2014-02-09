@@ -1,7 +1,9 @@
 /* jshint node: true */
 "use strict";
 
+var crypto = require('crypto');
 var Sequelize = require('sequelize');
+var srp = require('srp');
 
 // DBConn
 //
@@ -31,6 +33,30 @@ var DBConn = function(config, callback) {
 			});
 		}
 	});
+};
+DBConn.prototype = {
+	addUser: function(username, password, callback) {
+		var usernameBuffer = new Buffer(username, 'ascii');
+		var passwordBuffer = new Buffer(password, 'ascii');
+
+		var params = srp.params["2048"];
+		var salt = crypto.randomBytes(4);
+		var verifier = srp.computeVerifier(params, salt, usernameBuffer, passwordBuffer);
+
+		console.log(salt);
+		console.log(verifier);
+	},
+	findUser: function(username, callback) {
+		this.User.find({ where: { username: username }}, function(err, data) {
+			if (err) {
+				callback(err);
+			} else if (!data) {
+				callback(new Error("User not found"));
+			} else {
+				callback(null, data);
+			}
+		});
+	}
 };
 
 module.exports = DBConn;

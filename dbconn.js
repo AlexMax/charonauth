@@ -39,15 +39,21 @@ DBConn.prototype = {
 		var usernameBuffer = new Buffer(username, 'ascii');
 		var passwordBuffer = new Buffer(password, 'ascii');
 
-		var params = srp.params["2048"];
+		var params = srp.params['2048'];
 		var salt = crypto.randomBytes(4);
 		var verifier = srp.computeVerifier(params, salt, usernameBuffer, passwordBuffer);
 
-		console.log(salt);
-		console.log(verifier);
+		this.User.create({
+			username: username, verifier: verifier, salt: salt
+		}).success(function() {
+			callback(null);
+		}).error(function(err) {
+			callback(err);
+		});
 	},
 	findUser: function(username, callback) {
-		this.User.find({ where: { username: username }}, function(err, data) {
+		this.User.find({ where: { username: username }})
+		.complete(function(err, data) {
 			if (err) {
 				callback(err);
 			} else if (!data) {

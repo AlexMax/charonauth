@@ -39,4 +39,24 @@ describe('DBConn', function() {
 			});
 		});
 	});
+	describe('DBConn.findUser()', function() {
+		it("should correctly find a user.", function(done) {
+			var dbconn = new DBConn({
+				dbConnection: "sqlite://charonauth/",
+				dbOptions: { "storage": "test/testdb/single_user.db" },
+			}, function(error) {
+				if (error) {
+					done(error);
+				} else {
+					this.findUser('username', function(error, data) {
+						if (error) {
+							done(error);
+						} else {
+							done();
+						}
+					});
+				}
+			});
+		});
+	});
 });

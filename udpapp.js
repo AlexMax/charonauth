@@ -69,28 +69,32 @@ UDPApp.prototype = {
 
 	// Routes
 	serverNegotiate: function(msg, rinfo) {
+		var self = this;
+
 		// Unmarshall the server negotiation packet
 		var packet = proto.clientNegotiate.unmarshall(msg);
 		var username = packet.username;
 
-		// TODO: Find the salt of the username
-		var salt = crypto.randomBytes(4);
+		// Find the user contained therein
+		this.dbconn.findUser(username, function(err, user) {
+			if (err) {
+				throw err;
+				return;
+			}
 
-		// Create a new session ID
-		var sessionBuffer = crypto.randomBytes(4);
-		var session = sessionBuffer.readUInt32LE(0);
+			// Create a new session
+			self.dbconn.newSession(username, function(err, session) {
+				// Write the response packet
+				var response = proto.authServerNegotiate.marshall({
+					session: session.session,
+					salt: user.salt,
+					username: user.username
+				});
 
-		// TODO: Save the session in the database
-
-		// Write the response packet
-		var response = proto.authServerNegotiate.marshall({
-			session: session,
-			salt: salt,
-			username: username
+				// Send the response packet to the sender
+				self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+			});
 		});
-
-		// Send the response packet to the sender
-		this.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
 	},
 	srpA: function(msg, rinfo) {
 		util.log("SRP_A not implemented.");

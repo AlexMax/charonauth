@@ -12,6 +12,7 @@ var srp = require('srp');
 // Constructor
 var DBConn = function(config, callback) {
 	var self = this;
+	config.dbOptions.logging = config.dbOptions.logging || false;
 	this.db = new Sequelize(config.dbConnection, config.dbOptions);
 	this.db.authenticate().complete(function(error) {
 		if (error) {
@@ -19,13 +20,16 @@ var DBConn = function(config, callback) {
 		} else {
 			self.Session = self.db.define('Session', {
 				session: Sequelize.INTEGER,
-				username: Sequelize.STRING
 			});
 			self.User = self.db.define('User', {
 				username: Sequelize.STRING,
 				verifier: Sequelize.BLOB,
 				salt: Sequelize.BLOB
 			});
+
+			self.User.hasMany(self.Session);
+			self.Session.belongsTo(self.User);
+
 			self.db.sync().success(function() {
 				callback.call(self);
 			}).error(function(error) {
@@ -61,6 +65,24 @@ DBConn.prototype = {
 			} else {
 				callback(null, data);
 			}
+		});
+	},
+	newSession: function(user, callback) {
+		var sessionBuffer = crypto.randomBytes(4);
+		var session = sessionBuffer.readUInt32LE(0);
+
+		this.Session.create({ session: session })
+		.error(function(err) {
+			callback(new Error('Session could not be created'));
+		})
+		.complete(function(err, sess) {
+			sess.setUser(user).complete(function(err) {
+				if (err) {
+					callback(new Error('Could not link session to User'));
+				} else {
+					callback(null, sess);
+				}
+			});
 		});
 	}
 };

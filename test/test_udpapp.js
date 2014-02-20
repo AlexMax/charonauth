@@ -4,6 +4,7 @@
 
 var assert = require('assert');
 var dgram = require('dgram');
+var fs = require('fs');
 
 var proto = require('../proto');
 var UDPApp = require('../udpapp');
@@ -76,7 +77,7 @@ describe('UDPApp', function() {
 			assert.throws(function() {
 				new UDPApp({
 					dbConnection: "sqlite://charonauth/",
-					dbOptions: { "storage": "charonauth.db" },
+					dbOptions: { "storage": ":memory:" },
 					port: 16666
 				});
 			});
@@ -91,22 +92,35 @@ describe('UDPApp', function() {
 				dbOptions: { "storage": ":memory:" },
 				port: 16666
 			}, function() {
-				var socket = dgram.createSocket('udp4');
-
-				socket.on('message', function(msg, rinfo) {
-					var response = proto.authServerNegotiate.unmarshall(msg);
-					if (response.username === username) {
-						done();
-					} else {
-						done("Response contains unexpected data");
+				var self = this;
+				fs.readFile('test/db/single_user.sql', function(error, data) {
+					if (error) {
+						done(error);
+						return;
 					}
-				});
+					self.dbconn.db.query(data.toString('ascii'))
+					.error(function(error) {
+						done(error);
+					})
+					.success(function(data) {
+						var socket = dgram.createSocket('udp4');
 
-				var packet = proto.clientNegotiate.marshall({
-					username: username
-				});
+						socket.on('message', function(msg, rinfo) {
+							var response = proto.authServerNegotiate.unmarshall(msg);
+							if (response.username === username) {
+								done();
+							} else {
+								done("Response contains unexpected data");
+							}
+						});
 
-				socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
+						var packet = proto.clientNegotiate.marshall({
+							username: username
+						});
+
+						socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
+					});
+				});
 			});
 		});
 	});

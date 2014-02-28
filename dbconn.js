@@ -67,22 +67,48 @@ DBConn.prototype = {
 			}
 		});
 	},
-	newSession: function(user, callback) {
-		var sessionBuffer = crypto.randomBytes(4);
-		var session = sessionBuffer.readUInt32LE(0);
+	newSession: function(username, callback) {
+		var self = this;
 
-		this.Session.create({ session: session })
+		// Find user by username first...
+		this.User.find({ where: { username: username }})
 		.error(function(err) {
-			callback(new Error('Session could not be created'));
+			callback(new Error("User does not exist"));
 		})
-		.complete(function(err, sess) {
-			sess.setUser(user).complete(function(err) {
-				if (err) {
-					callback(new Error('Could not link session to User'));
-				} else {
-					callback(null, sess);
-				}
+		.success(function(user) {
+			// Now that we know we have a valid user, create a session
+			var sessionBuffer = crypto.randomBytes(4);
+			var sessionID = sessionBuffer.readUInt32LE(0);
+
+			self.Session.create({ session: sessionID })
+			.error(function(err) {
+				callback(new Error('Session could not be created'));
+			})
+			.success(function(session) {
+				// With a created session, link the user to the session
+				session.setUser(user).complete(function(err) {
+					if (err) {
+						callback(new Error('Could not link Session to User'));
+					} else {
+						callback(null, {
+							session: session,
+							user: user
+						});
+					}
+				});
 			});
+		});
+	},
+	findSession: function(session, callback) {
+		this.Session.find({ where: { session: session }})
+		.complete(function(err, data) {
+			if (err) {
+				callback(err);
+			} else if (!data) {
+				callback(new Error("User not found"));
+			} else {
+				callback(null, data);
+			}
 		});
 	}
 };

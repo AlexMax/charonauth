@@ -1,10 +1,13 @@
 /* jshint node: true */
 "use strict";
 
+var async = require('async');
 var crypto = require('crypto');
 var dgram = require('dgram');
 var srp = require('srp');
 var util = require('util');
+
+require('date-utils');
 
 var DBConn = require('./dbconn');
 var proto = require('./proto');
@@ -34,6 +37,7 @@ var UDPApp = function(config, callback) {
 	}
 	if (typeof callback !== 'function') {
 		throw new Error("Missing callback function");
+		return;
 	}
 
 	// Create database connection
@@ -72,32 +76,93 @@ UDPApp.prototype = {
 		var self = this;
 
 		// Unmarshall the server negotiation packet
-		var packet = proto.clientNegotiate.unmarshall(msg);
+		var packet = proto.serverNegotiate.unmarshall(msg);
 		var username = packet.username;
 
-		// Find the user contained therein
-		this.dbconn.findUser(username, function(err, user) {
+		// Create a new session for given user.
+		this.dbconn.newSession(username, function(err, sess) {
+			// Write the response packet
+			var response = proto.authNegotiate.marshall({
+				session: sess.session.session,
+				salt: sess.user.salt,
+				username: sess.user.username
+			});
+
+			// Send the response packet to the sender
+			self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+		});
+	},
+	serverEphemeral: function(msg, rinfo) {
+		var self = this;
+
+		// Unmarshall the server negotiation packet
+		var packet = proto.serverEphemeral.unmarshall(msg);
+
+		// Valid session?
+		this.dbconn.findSession(packet.session, function(err, session) {
 			if (err) {
 				throw err;
 				return;
 			}
 
-			// Create a new session
-			self.dbconn.newSession(username, function(err, session) {
+			var timeout = session.createdAt.clone().addMinutes(1);
+			var diff = timeout.getSecondsBetween(new Date());
+
+			if (diff > self.sessionTimeout) {
+				throw new Error('Session has expired');
+				return;
+			}
+
+			async.parallel({
+				// Fetch the associated user with the session.
+				user: function(callback) {
+					session.getUser()
+					.error(function(err) {
+						callback(err);
+					})
+					.success(function(user) {
+						callback(null, user);
+					});
+				},
+				// Generate a secret to be used in the creation of the ephemeral value
+				secret: function(callback) {
+					srp.genKey(32, function(err, key) {
+						if (err) {
+							callback(err);
+						} else {
+							callback(null, key);
+						}
+					});
+				}
+			}, function(err, results) {
+				if (err) {
+					throw err;
+					return;
+				}
+
+				// Do the first half of the serverside SRP dance.
+				var srpServer = new srp.Server(srp.params['2048'], results.user.verifier, results.secret);
+				try {
+					srpServer.setA(packet.ephemeral);
+				} catch (e) {
+					// Auth server doesn't like "client" ephemeral A.
+					throw err;
+					return;
+				}
+
+				// Generate the "server" ephemeral (B).
+				var ephemeral = srpServer.computeB();
+
 				// Write the response packet
-				var response = proto.authServerNegotiate.marshall({
-					session: session.session,
-					salt: user.salt,
-					username: user.username
+				var response = proto.authEphemeral.marshall({
+					session: packet.session,
+					ephemeral: ephemeral
 				});
 
 				// Send the response packet to the sender
 				self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
 			});
 		});
-	},
-	srpA: function(msg, rinfo) {
-		util.log("SRP_A not implemented.");
 	},
 	srpM: function(msg, rinfo) {
 		util.log("SRP_M not implemented.");
@@ -107,7 +172,7 @@ UDPApp.prototype = {
 
 // Attach functions to routes
 UDPApp.prototype.routes[proto.SERVER_NEGOTIATE] = UDPApp.prototype.serverNegotiate;
-UDPApp.prototype.routes[proto.SRP_A] = UDPApp.prototype.srpA;
+UDPApp.prototype.routes[proto.SERVER_EPHEMERAL] = UDPApp.prototype.serverEphemeral;
 UDPApp.prototype.routes[proto.SRP_M] = UDPApp.prototype.srpM;
 
 module.exports = UDPApp;

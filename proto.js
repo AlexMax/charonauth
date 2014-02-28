@@ -8,6 +8,8 @@ var util = require("util");
 // Protocol Constants
 var SERVER_NEGOTIATE = 0xD003CA01;
 var AUTH_NEGOTIATE = 0xD003CA10;
+var SERVER_EPHEMERAL = 0xD003CA02;
+var AUTH_EPHEMERAL = 0xD003CA20;
 
 function readString(buf, offset, encoding) {
 	if (offset === undefined) {
@@ -40,8 +42,8 @@ function writeString(buf, str, offset, encoding) {
 	buf.writeUInt8(0, offset + string.length);
 }
 
-// Client Negotiation
-var clientNegotiate = {
+// Server Negotiation
+var serverNegotiate = {
 	marshall: function(data) {
 		var buf = new Buffer(5 + Buffer.byteLength(data.username, 'ascii') + 1);
 
@@ -70,7 +72,7 @@ var clientNegotiate = {
 
 // Auth server negotiation
 // UInt32, UInt8, UInt32, UInt8, Buffer, String
-var authServerNegotiate = {
+var authNegotiate = {
 	marshall: function(data) {
 		var buf = new Buffer(10 + data.salt.length + Buffer.byteLength(data.username, 'ascii') + 1);
 
@@ -106,13 +108,74 @@ var authServerNegotiate = {
 	}
 };
 
-exports.clientNegotiate = clientNegotiate;
-exports.authServerNegotiate = authServerNegotiate;
+// Server ephemeral
+// UInt32, Int32, Buffer
+var serverEphemeral = {
+	marshall: function(data) {
+		var buf = new Buffer(12 + data.ephemeral.length);
+
+		buf.writeUInt32LE(SERVER_EPHEMERAL, 0);
+		buf.writeUInt32LE(data.session, 4);
+		buf.writeInt32LE(data.ephemeral.length, 8);
+		data.ephemeral.copy(buf, 12);
+
+		return buf;
+	},
+	unmarshall: function(buf) {
+		if (buf.readUInt32LE(0) !== SERVER_EPHEMERAL) {
+			throw new TypeError("Buffer is not a SERVER_EPHEMERAL packet");
+		}
+
+		var ephemeralLength = buf.readInt32LE(8);
+		var ephemeral = new Buffer(ephemeralLength);
+		buf.copy(ephemeral, 0, 12, 12 + ephemeralLength);
+
+		return {
+			session: buf.readUInt32LE(4),
+			ephemeral: ephemeral
+		};
+	}
+};
+
+// Auth server ephemeral
+// UInt32, Int32, Buffer
+var authEphemeral = {
+	marshall: function(data) {
+		var buf = new Buffer(12 + data.ephemeral.length);
+
+		buf.writeUInt32LE(AUTH_EPHEMERAL, 0);
+		buf.writeUInt32LE(data.session, 4);
+		buf.writeInt32LE(data.ephemeral.length, 8);
+		data.ephemeral.copy(buf, 12);
+
+		return buf;
+	},
+	unmarshall: function(buf) {
+		if (buf.readUInt32LE(0) !== AUTH_EPHEMERAL) {
+			throw new TypeError("Buffer is not an AUTH_EPHEMERAL packet");
+		}
+
+		var ephemeralLength = buf.readInt32LE(8);
+		var ephemeral = new Buffer(ephemeralLength);
+		buf.copy(ephemeral, 0, 12, 12 + ephemeralLength);
+
+		return {
+			session: buf.readUInt32LE(4),
+			ephemeral: ephemeral
+		};
+	}
+};
+
+exports.serverNegotiate = serverNegotiate;
+exports.authNegotiate = authNegotiate;
+exports.serverEphemeral = serverEphemeral;
+exports.authEphemeral = authEphemeral;
 
 exports.SERVER_NEGOTIATE = SERVER_NEGOTIATE;
 exports.AUTH_NEGOTIATE = AUTH_NEGOTIATE;
-exports.SRP_A = 0xD003CA02;
-exports.SRP_S_AND_B = 0xD003CA20;
+exports.SERVER_EPHEMERAL = SERVER_EPHEMERAL;
+exports.AUTH_EPHEMERAL = AUTH_EPHEMERAL;
+
 exports.SRP_M = 0xD003CA03;
 exports.SRP_HAMK = 0xD003CA30;
 

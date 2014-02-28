@@ -3,8 +3,10 @@
 "use strict";
 
 var assert = require('assert');
+var async = require('async');
 var dgram = require('dgram');
 var fs = require('fs');
+var srp = require('srp');
 
 var proto = require('../proto');
 var UDPApp = require('../udpapp');
@@ -106,7 +108,7 @@ describe('UDPApp', function() {
 						var socket = dgram.createSocket('udp4');
 
 						socket.on('message', function(msg, rinfo) {
-							var response = proto.authServerNegotiate.unmarshall(msg);
+							var response = proto.authNegotiate.unmarshall(msg);
 							if (response.username === username) {
 								done();
 							} else {
@@ -114,13 +116,99 @@ describe('UDPApp', function() {
 							}
 						});
 
-						var packet = proto.clientNegotiate.marshall({
+						var packet = proto.serverNegotiate.marshall({
 							username: username
 						});
 
 						socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 					});
 				});
+			});
+		});
+		it("should be capable of sending an ephemeral value B.", function(done) {
+			// What the client knows.
+			var username = 'username';
+			var password = 'password123';
+			
+			// What the client got from a hypothetical session establishment.
+			var session = 220667729;
+			var salt = new Buffer('615A9E29', 'hex');
+
+			async.parallel([
+				// Generate an ephemeral key A to send to the server.
+				function(callback) {
+					srp.genKey(32, function(err, key) {
+						if (err) {
+							callback(err);
+							return;
+						}
+
+						var srpClient = new srp.Client(srp.params['2048'], salt, new Buffer(username, 'ascii'), new Buffer(password, 'ascii'), key);
+						var ephemeral = srpClient.computeA();
+
+						callback(null, ephemeral);
+					});
+				},
+				// Set up the database.
+				function(callback) {
+					new UDPApp({
+						dbConnection: "sqlite://charonauth/",
+						dbOptions: { "storage": ":memory:" },
+						port: 16666
+					}, function() {
+						var self = this;
+						fs.readFile('test/db/single_user.sql', function(err, data) {
+							if (err) {
+								callback(err);
+								return;
+							}
+							self.dbconn.db.query(data.toString('ascii'))
+							.error(function(err) {
+								callback(err);
+							})
+							.success(function(data) {
+								// Create a session for the user.
+								self.dbconn.newSession(username, function(err, session) {
+									if (err) {
+										callback(err);
+										return;
+									}
+									callback(null, session);
+								});
+							});
+						});
+					});
+				}
+			], function(err, results) {
+				if (err) {
+					done(err);
+					return;
+				}
+
+				var ephemeral = results[0];
+				var session = results[1].session.session;
+
+				var socket = dgram.createSocket('udp4');
+
+				socket.on('message', function(msg, rinfo) {
+					var response = proto.authEphemeral.unmarshall(msg);
+					if (response.session !== session) {
+						done("Response contains incorrect session");
+						return;
+					}
+					if (response.ephemeral.length !== 256) {
+						done("Ephemeral B from server is not 256 bytes long");
+						return;
+					}
+					done();
+				});
+
+				var packet = proto.serverEphemeral.marshall({
+					session: session,
+					ephemeral: ephemeral
+				});
+
+				socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 			});
 		});
 	});

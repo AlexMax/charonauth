@@ -4,8 +4,10 @@
 	"author": "Alex Mayfield <alexmax2742@gmail.com>",
 	"description": "An authentication server for games",
 	"dependencies": {
+		"async": "0.2.10",
 		"buffertools": "2.0.1",
 		"config": "0.4.35",
+		"date-utils": "1.2.15",
 		"sequelize": "1.7.0-rc6",
 		"srp": "AlexMax/node-srp"
 	},

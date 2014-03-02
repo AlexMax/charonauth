@@ -20,6 +20,7 @@ var DBConn = function(config, callback) {
 		} else {
 			self.Session = self.db.define('Session', {
 				session: Sequelize.INTEGER,
+				ephemeral: Sequelize.BLOB
 			});
 			self.User = self.db.define('User', {
 				username: Sequelize.STRING,
@@ -105,9 +106,28 @@ DBConn.prototype = {
 			if (err) {
 				callback(err);
 			} else if (!data) {
-				callback(new Error("User not found"));
+				callback(new Error("Session not found"));
 			} else {
 				callback(null, data);
+			}
+		});
+	},
+	setEphemeral: function(session, ephemeral, callback) {
+		this.Session.find({ where: ['session = ? AND ephemeral IS NULL', session] })
+		.complete(function(err, data) {
+			if (err) {
+				callback(err);
+			} else if (!data) {
+				callback(new Error("Session not found"));
+			} else {
+				data.updateAttributes({ ephemeral: ephemeral })
+				.complete(function(err) {
+					if (err) {
+						callback(err);
+					} else {
+						callback(null, true);
+					}
+				});
 			}
 		});
 	}

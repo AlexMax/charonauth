@@ -153,14 +153,23 @@ UDPApp.prototype = {
 				// Generate the "server" ephemeral (B).
 				var ephemeral = srpServer.computeB();
 
-				// Write the response packet
-				var response = proto.authEphemeral.marshall({
-					session: packet.session,
-					ephemeral: ephemeral
-				});
+				// Now that the ephemeral values have been generated successfully,
+				// save the ephemeral value to the database.
+				self.dbconn.setEphemeral(packet.session, packet.ephemeral, function(err) {
+					if (err) {
+						throw err;
+						return;
+					}
 
-				// Send the response packet to the sender
-				self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+					// Write the response packet
+					var response = proto.authEphemeral.marshall({
+						session: packet.session,
+						ephemeral: ephemeral
+					});
+
+					// Send the response packet to the sender
+					self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+				});
 			});
 		});
 	},

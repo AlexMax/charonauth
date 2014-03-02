@@ -100,16 +100,35 @@ DBConn.prototype = {
 			});
 		});
 	},
-	findSession: function(session, callback) {
+	findSession: function(session, timeout, callback) {
 		this.Session.find({ where: { session: session }})
-		.complete(function(err, data) {
-			if (err) {
-				callback(err);
-			} else if (!data) {
+		.success(function(sess) {
+			if (!sess) {
 				callback(new Error("Session not found"));
-			} else {
-				callback(null, data);
+				return;
 			}
+
+			// A session that is expired is not a valid session.
+			var diff = sess.createdAt.getSecondsBetween(new Date());
+			if (diff > timeout) {
+				callback(new Error('Session has expired'));
+				return;
+			}
+
+			// Get user data associated with session.
+			sess.getUser()
+			.success(function(user) {
+				callback(null, {
+					session: sess.session,
+					verifier: user.verifier
+				});
+			})
+			.error(function(err) {
+				callback(err);
+			});
+		})
+		.error(function(error) {
+			callback(err);
 		});
 	},
 	setEphemeral: function(session, ephemeral, callback) {

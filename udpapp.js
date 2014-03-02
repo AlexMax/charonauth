@@ -98,79 +98,48 @@ UDPApp.prototype = {
 		// Unmarshall the server negotiation packet
 		var packet = proto.serverEphemeral.unmarshall(msg);
 
-		// Valid session?
-		this.dbconn.findSession(packet.session, function(err, session) {
-			if (err) {
-				throw err;
-				return;
-			}
-
-			var timeout = session.createdAt.clone().addMinutes(1);
-			var diff = timeout.getSecondsBetween(new Date());
-
-			if (diff > self.sessionTimeout) {
-				throw new Error('Session has expired');
-				return;
-			}
-
-			async.parallel({
-				// Fetch the associated user with the session.
-				user: function(callback) {
-					session.getUser()
-					.error(function(err) {
-						callback(err);
-					})
-					.success(function(user) {
-						callback(null, user);
-					});
-				},
-				// Generate a secret to be used in the creation of the ephemeral value
-				secret: function(callback) {
-					srp.genKey(32, function(err, key) {
-						if (err) {
-							callback(err);
-						} else {
-							callback(null, key);
-						}
-					});
-				}
-			}, function(err, results) {
-				if (err) {
-					throw err;
-					return;
-				}
-
-				// Do the first half of the serverside SRP dance.
-				var srpServer = new srp.Server(srp.params['2048'], results.user.verifier, results.secret);
+		async.waterfall([
+			function(next) {
+				// Is the session we were passed an active and valid session?
+				self.dbconn.findSession(packet.session, self.sessionTimeout, next);
+			},
+			function(session, next) {
+				// Generate a secret key for use in the ephemeral value.
+				srp.genKey(32, function(err, secret) {
+					next(err, session, secret);
+				});
+			},
+			function(session, secret, next) {
+				// Try to generate the server's ephemeral value.
+				var srpServer = new srp.Server(
+					srp.params['2048'],
+					session.verifier,
+					secret
+				);
 				try {
 					srpServer.setA(packet.ephemeral);
-				} catch (e) {
-					// Auth server doesn't like "client" ephemeral A.
-					throw err;
-					return;
+				} catch(e) {
+					next(e);
 				}
-
-				// Generate the "server" ephemeral (B).
-				var ephemeral = srpServer.computeB();
-
-				// Now that the ephemeral values have been generated successfully,
-				// save the ephemeral value to the database.
+				var serverEphemeral = srpServer.computeB();
 				self.dbconn.setEphemeral(packet.session, packet.ephemeral, function(err) {
-					if (err) {
-						throw err;
-						return;
-					}
-
-					// Write the response packet
-					var response = proto.authEphemeral.marshall({
-						session: packet.session,
-						ephemeral: ephemeral
-					});
-
-					// Send the response packet to the sender
-					self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+					next(err, serverEphemeral);
 				});
-			});
+			},
+			function(serverEphemeral, next) {
+				// Write the response packet
+				var response = proto.authEphemeral.marshall({
+					session: packet.session,
+					ephemeral: serverEphemeral
+				});
+
+				// Send the response packet to the sender
+				self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+			}
+		], function(error) {
+			if (error) {
+				// Error handling here
+			}
 		});
 	},
 	srpM: function(msg, rinfo) {

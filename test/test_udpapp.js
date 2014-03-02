@@ -119,7 +119,7 @@ describe('UDPApp', function() {
 				if (response.username === username) {
 					done();
 				} else {
-					done("Response contains unexpected data");
+					done(new Error("Response contains unexpected data"));
 				}
 			});
 

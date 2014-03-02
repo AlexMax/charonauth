@@ -1,5 +1,5 @@
 /* jshint node: true, newcap: false */
-/* global describe, it */
+/* global describe, it, beforeEach */
 "use strict";
 
 var assert = require('assert');

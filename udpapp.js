@@ -83,17 +83,16 @@ UDPApp.prototype = {
 		this.dbconn.newSession(username, function(err, data) {
 			if (err) {
 				if (err) {
-					var response = proto.userError.marshall({
+					var error = proto.userError.marshall({
 						username: username,
 						error: proto.USER_NO_EXIST
 					});
 
-					self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+					self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 					return;
 				}
 
 				throw err;
-				return;
 			}
 
 			// Write the response packet

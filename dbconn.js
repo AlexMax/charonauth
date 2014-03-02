@@ -133,7 +133,7 @@ DBConn.prototype = {
 				callback(err);
 			});
 		})
-		.error(function(error) {
+		.error(function(err) {
 			callback(err);
 		});
 	},

@@ -75,56 +75,82 @@ describe('UDPApp', function() {
 				}
 			});
 		});
-		it("should throw an exception if we forget the callback function.", function() {
-			assert.throws(function() {
-				new UDPApp({
-					dbConnection: "sqlite://charonauth/",
-					dbOptions: { "storage": ":memory:" },
-					port: 16666
-				});
+	});
+	describe('UDPApp.serverNegotiate()', function() {
+		beforeEach(function(done) {
+			// Load the test data into an in-memory database.
+			async.waterfall([
+				function(next) {
+					new UDPApp({
+						dbConnection: "sqlite://charonauth/",
+						dbOptions: { "storage": ":memory:" },
+						port: 16666
+					}, next);
+				},
+				function(udpapp, next) {
+					fs.readFile('test/db/single_user.sql', function(err, sql) {
+						next(err, udpapp, sql);
+					});
+				},
+				function(udpapp, sql, next) {
+					udpapp.dbconn.db.query(sql.toString('ascii'))
+					.error(function(err) {
+						next(err);
+					})
+					.success(function() {
+						next();
+					});
+				}
+			], function(err) {
+				if (err) {
+					done(err);
+				} else {
+					done();
+				}
 			});
 		});
-	});
-	describe('UDPApp.router()', function() {
 		it("should be capable of creating new authentication sessions.", function(done) {
 			var username = 'username';
 
-			new UDPApp({
-				dbConnection: "sqlite://charonauth/",
-				dbOptions: { "storage": ":memory:" },
-				port: 16666
-			}, function() {
-				var self = this;
-				fs.readFile('test/db/single_user.sql', function(error, data) {
-					if (error) {
-						done(error);
-						return;
-					}
-					self.dbconn.db.query(data.toString('ascii'))
-					.error(function(error) {
-						done(error);
-					})
-					.success(function(data) {
-						var socket = dgram.createSocket('udp4');
+			var socket = dgram.createSocket('udp4');
 
-						socket.on('message', function(msg, rinfo) {
-							var response = proto.authNegotiate.unmarshall(msg);
-							if (response.username === username) {
-								done();
-							} else {
-								done("Response contains unexpected data");
-							}
-						});
-
-						var packet = proto.serverNegotiate.marshall({
-							username: username
-						});
-
-						socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
-					});
-				});
+			socket.on('message', function(msg, rinfo) {
+				var response = proto.authNegotiate.unmarshall(msg);
+				if (response.username === username) {
+					done();
+				} else {
+					done("Response contains unexpected data");
+				}
 			});
+
+			var packet = proto.serverNegotiate.marshall({
+				username: username
+			});
+
+			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
+		it("should return an error if the user does not exist.", function(done) {
+			var username = 'alice';
+
+			var socket = dgram.createSocket('udp4');
+
+			socket.on('message', function(msg, rinfo) {
+				var response = proto.userError.unmarshall(msg);
+				if (response.error === proto.USER_NO_EXIST && response.username === username) {
+					done();
+				} else {
+					done(new Error("Response contains unexpected data"));
+				}
+			});
+
+			var packet = proto.serverNegotiate.marshall({
+				username: username
+			});
+
+			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
+		});
+	});
+	describe('UDPApp.serverEphemeral()', function() {
 		it("should be capable of sending an ephemeral value B.", function(done) {
 			// What the client knows.
 			var username = 'username';
@@ -155,8 +181,7 @@ describe('UDPApp', function() {
 						dbConnection: "sqlite://charonauth/",
 						dbOptions: { "storage": ":memory:" },
 						port: 16666
-					}, function() {
-						var self = this;
+					}, function(err, self) {
 						fs.readFile('test/db/single_user.sql', function(err, data) {
 							if (err) {
 								callback(err);
@@ -166,14 +191,14 @@ describe('UDPApp', function() {
 							.error(function(err) {
 								callback(err);
 							})
-							.success(function(data) {
+							.success(function() {
 								// Create a session for the user.
-								self.dbconn.newSession(username, function(err, session) {
+								self.dbconn.newSession(username, function(err, data) {
 									if (err) {
 										callback(err);
 										return;
 									}
-									callback(null, session);
+									callback(null, data);
 								});
 							});
 						});
@@ -186,7 +211,7 @@ describe('UDPApp', function() {
 				}
 
 				var ephemeral = results[0];
-				var session = results[1].session.session;
+				var session = results[1].session;
 
 				var socket = dgram.createSocket('udp4');
 

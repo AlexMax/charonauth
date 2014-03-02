@@ -10,6 +10,10 @@ var SERVER_NEGOTIATE = 0xD003CA01;
 var AUTH_NEGOTIATE = 0xD003CA10;
 var SERVER_EPHEMERAL = 0xD003CA02;
 var AUTH_EPHEMERAL = 0xD003CA20;
+var ERROR_USER = 0xD003CAFF;
+
+// Error constants
+var USER_NO_EXIST = 1;
 
 function readString(buf, offset, encoding) {
 	if (offset === undefined) {
@@ -56,9 +60,11 @@ var serverNegotiate = {
 	unmarshall: function(buf) {
 		if (buf.readUInt32LE(0) !== SERVER_NEGOTIATE) {
 			throw new TypeError("Buffer is not a SERVER_NEGOTIATE packet");
+			return false;
 		}
 		if (buf.readUInt8(4) !== 1) {
 			throw new TypeError("Buffer is incorrect version of protocol");
+			return false;
 		}
 
 		// Username
@@ -88,9 +94,11 @@ var authNegotiate = {
 	unmarshall: function(buf) {
 		if (buf.readUInt32LE(0) !== AUTH_NEGOTIATE) {
 			throw new TypeError("Buffer is not a AUTH_NEGOTIATE packet");
+			return false;
 		}
 		if (buf.readUInt8(4) !== 1) {
 			throw new TypeError("Buffer is incorrect version of protocol");
+			return false;
 		}
 
 		// Salt
@@ -124,6 +132,7 @@ var serverEphemeral = {
 	unmarshall: function(buf) {
 		if (buf.readUInt32LE(0) !== SERVER_EPHEMERAL) {
 			throw new TypeError("Buffer is not a SERVER_EPHEMERAL packet");
+			return false;
 		}
 
 		var ephemeralLength = buf.readInt32LE(8);
@@ -153,6 +162,7 @@ var authEphemeral = {
 	unmarshall: function(buf) {
 		if (buf.readUInt32LE(0) !== AUTH_EPHEMERAL) {
 			throw new TypeError("Buffer is not an AUTH_EPHEMERAL packet");
+			return false;
 		}
 
 		var ephemeralLength = buf.readInt32LE(8);
@@ -166,10 +176,36 @@ var authEphemeral = {
 	}
 };
 
+// Errors
+var userError = {
+	marshall: function(data) {
+		var buf = new Buffer(5 + Buffer.byteLength(data.username, 'ascii') + 1);
+
+		buf.writeUInt32LE(ERROR_USER, 0);
+		buf.writeUInt8(data.error, 4);
+		writeString(buf, data.username, 5, 'ascii');
+
+		return buf;
+	},
+	unmarshall: function(buf) {
+		if (buf.readUInt32LE(0) !== ERROR_USER) {
+			throw new TypeError("Buffer is not an ERROR_USER packet");
+			return false;
+		}
+
+		return {
+			error: buf.readUInt8(4),
+			username: readString(buf, 5, 'ascii')
+		};
+	}
+};
+
 exports.serverNegotiate = serverNegotiate;
 exports.authNegotiate = authNegotiate;
 exports.serverEphemeral = serverEphemeral;
 exports.authEphemeral = authEphemeral;
+
+exports.userError = userError;
 
 exports.SERVER_NEGOTIATE = SERVER_NEGOTIATE;
 exports.AUTH_NEGOTIATE = AUTH_NEGOTIATE;
@@ -179,11 +215,11 @@ exports.AUTH_EPHEMERAL = AUTH_EPHEMERAL;
 exports.SRP_M = 0xD003CA03;
 exports.SRP_HAMK = 0xD003CA30;
 
-exports.ERROR_USER = 0xD003CAFF;
+exports.ERROR_USER = ERROR_USER;
 exports.ERROR_SESSION = 0xD003CAEE;
 
 exports.USER_TRY_LATER = 0;
-exports.USER_NO_EXIST = 1;
+exports.USER_NO_EXIST = USER_NO_EXIST;
 exports.USER_OUTDATED_PROTOCOL = 2;
 exports.USER_WILL_NOT_AUTH = 3;
 

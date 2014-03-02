@@ -74,9 +74,14 @@ DBConn.prototype = {
 		// Find user by username first...
 		this.User.find({ where: { username: username }})
 		.error(function(err) {
-			callback(new Error("User does not exist"));
+			callback(err);
 		})
 		.success(function(user) {
+			if (!user) {
+				callback(new Error("User does not exist"));
+				return;
+			}
+
 			// Now that we know we have a valid user, create a session
 			var sessionBuffer = crypto.randomBytes(4);
 			var sessionID = sessionBuffer.readUInt32LE(0);
@@ -85,17 +90,18 @@ DBConn.prototype = {
 			.error(function(err) {
 				callback(new Error('Session could not be created'));
 			})
-			.success(function(session) {
+			.success(function(sess) {
 				// With a created session, link the user to the session
-				session.setUser(user).complete(function(err) {
-					if (err) {
-						callback(new Error('Could not link Session to User'));
-					} else {
-						callback(null, {
-							session: session,
-							user: user
-						});
-					}
+				sess.setUser(user)
+				.error(function(err) {
+					callback(err);
+				})
+				.success(function() {
+					callback(null, {
+						session: sess.session,
+						username: user.username,
+						salt: user.salt
+					});
 				});
 			});
 		});

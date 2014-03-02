@@ -19,24 +19,24 @@ var proto = require('./proto');
 
 // Constructor
 var UDPApp = function(config, callback) {
+	if (typeof callback !== 'function') {
+		callback = function() { };
+	}
+
 	if (!(this instanceof UDPApp)) {
-		callback.call(self, new Error("Constructor called as function"));
+		callback(new Error("Constructor called as function"));
 		return;
 	}
 	if (!("dbConnection" in config)) {
-		callback.call(self, new Error("Missing dbConnection in UDPApp configuration."));
+		callback(new Error("Missing dbConnection in UDPApp configuration."));
 		return;
 	}
 	if (!("dbOptions" in config)) {
-		callback.call(self, new Error("Missing dbOptions in UDPApp configuration."));
+		callback(new Error("Missing dbOptions in UDPApp configuration."));
 		return;
 	}
 	if (!("port" in config)) {
-		callback.call(self, new Error("Missing port in UDPApp configuration."));
-		return;
-	}
-	if (typeof callback !== 'function') {
-		throw new Error("Missing callback function");
+		callback(new Error("Missing port in UDPApp configuration."));
 		return;
 	}
 
@@ -51,7 +51,7 @@ var UDPApp = function(config, callback) {
 		self.socket.on('message', self.router.bind(self));
 		self.socket.bind(config.port);
 
-		callback.call(self);
+		callback(null, self);
 	});
 };
 
@@ -80,12 +80,27 @@ UDPApp.prototype = {
 		var username = packet.username;
 
 		// Create a new session for given user.
-		this.dbconn.newSession(username, function(err, sess) {
+		this.dbconn.newSession(username, function(err, data) {
+			if (err) {
+				if (err) {
+					var response = proto.userError.marshall({
+						username: username,
+						error: proto.USER_NO_EXIST
+					});
+
+					self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+					return;
+				}
+
+				throw err;
+				return;
+			}
+
 			// Write the response packet
 			var response = proto.authNegotiate.marshall({
-				session: sess.session.session,
-				salt: sess.user.salt,
-				username: sess.user.username
+				session: data.session,
+				salt: data.salt,
+				username: data.username
 			});
 
 			// Send the response packet to the sender

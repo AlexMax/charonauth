@@ -82,6 +82,7 @@ UDPApp.prototype = {
 		// Create a new session for given user.
 		this.dbconn.newSession(username, function(err, data) {
 			if (err) {
+				// Specifically check for a "User does not exist" error.
 				if (err) {
 					var error = proto.userError.marshall({
 						username: username,
@@ -150,9 +151,9 @@ UDPApp.prototype = {
 				// Send the response packet to the sender
 				self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
 			}
-		], function(error) {
-			if (error) {
-				// Error handling here
+		], function(err) {
+			if (err) {
+				throw err;
 			}
 		});
 	},

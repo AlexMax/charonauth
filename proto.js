@@ -60,11 +60,9 @@ var serverNegotiate = {
 	unmarshall: function(buf) {
 		if (buf.readUInt32LE(0) !== SERVER_NEGOTIATE) {
 			throw new TypeError("Buffer is not a SERVER_NEGOTIATE packet");
-			return false;
 		}
 		if (buf.readUInt8(4) !== 1) {
 			throw new TypeError("Buffer is incorrect version of protocol");
-			return false;
 		}
 
 		// Username
@@ -94,11 +92,9 @@ var authNegotiate = {
 	unmarshall: function(buf) {
 		if (buf.readUInt32LE(0) !== AUTH_NEGOTIATE) {
 			throw new TypeError("Buffer is not a AUTH_NEGOTIATE packet");
-			return false;
 		}
 		if (buf.readUInt8(4) !== 1) {
 			throw new TypeError("Buffer is incorrect version of protocol");
-			return false;
 		}
 
 		// Salt
@@ -132,7 +128,6 @@ var serverEphemeral = {
 	unmarshall: function(buf) {
 		if (buf.readUInt32LE(0) !== SERVER_EPHEMERAL) {
 			throw new TypeError("Buffer is not a SERVER_EPHEMERAL packet");
-			return false;
 		}
 
 		var ephemeralLength = buf.readInt32LE(8);
@@ -162,7 +157,6 @@ var authEphemeral = {
 	unmarshall: function(buf) {
 		if (buf.readUInt32LE(0) !== AUTH_EPHEMERAL) {
 			throw new TypeError("Buffer is not an AUTH_EPHEMERAL packet");
-			return false;
 		}
 
 		var ephemeralLength = buf.readInt32LE(8);
@@ -190,7 +184,6 @@ var userError = {
 	unmarshall: function(buf) {
 		if (buf.readUInt32LE(0) !== ERROR_USER) {
 			throw new TypeError("Buffer is not an ERROR_USER packet");
-			return false;
 		}
 
 		return {

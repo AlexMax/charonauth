@@ -82,7 +82,7 @@ UDPApp.prototype = {
 		// Create a new session for given user.
 		this.dbconn.newSession(username, function(err, data) {
 			if (err) {
-				// Specifically check for a "User does not exist" error.
+				// FIXME: Specifically check for a "User does not exist" error.
 				if (err) {
 					var error = proto.userError.marshall({
 						username: username,

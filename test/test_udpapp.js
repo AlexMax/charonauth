@@ -170,7 +170,7 @@ describe('UDPApp', function() {
 					udpapp.dbconn.db.query(sql.toString('ascii'))
 					.complete(function(err) {
 						next(err, udpapp);
-					})
+					});
 				},
 				function(udpapp, next) {
 					udpapp.dbconn.newSession('username', next);

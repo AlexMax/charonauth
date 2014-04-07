@@ -63,7 +63,7 @@ var UDPApp = function(config, callback) {
 UDPApp.prototype = {
 	router: function(msg, rinfo) {
 		if (msg.length < 4) {
-			util.log("Message from " + rinfo.address + " is too small, discarding.");
+			this.emit('error', new Error('Message is too small'));
 			return;
 		}
 
@@ -71,7 +71,7 @@ UDPApp.prototype = {
 		if (packetType in UDPApp.prototype.routes) {
 			UDPApp.prototype.routes[packetType].call(this, msg, rinfo);
 		} else {
-			util.log("Message from " + rinfo.address + " has an invalid packet type, discarding.");
+			this.emit('error', new Error('Message has invalid packet type'));
 		}
 	},
 

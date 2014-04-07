@@ -77,6 +77,47 @@ describe('UDPApp', function() {
 			});
 		});
 	});
+	describe('UDPApp.router()', function() {
+		var udp_app = undefined;
+
+		beforeEach(function(done) {
+			function finished() {
+				done();
+			}
+
+			udp_app = new UDPApp({
+				dbConnection: "sqlite://charonauth/",
+				dbOptions: { "storage": ":memory:" },
+				port: 16666
+			}, finished);
+		});
+		afterEach(function() {
+			// Prevent memory leaks...
+			udp_app.removeAllListeners();
+			
+			udp_app = undefined;
+		});
+		it('should emit an error if the packet is too short.', function(done) {
+			udp_app.on('error', function(err) {
+				assert.ok(util.isError(err));
+				done();
+			});
+
+			var socket = dgram.createSocket('udp4');
+			var packet = new Buffer('00', 'hex');
+			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
+		});
+		it('should emit an error if the packet doesn\'t route anywhere.', function(done) {
+			udp_app.on('error', function(err) {
+				assert.ok(util.isError(err));
+				done();
+			});
+
+			var socket = dgram.createSocket('udp4');
+			var packet = new Buffer('00010203', 'hex');
+			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
+		});
+	});
 	describe('UDPApp.serverNegotiate()', function() {
 		beforeEach(function(done) {
 			// Load the test data into an in-memory database.
@@ -127,7 +168,7 @@ describe('UDPApp', function() {
 
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
-		it("should return an error if the user does not exist.", function(done) {
+		it("should send an error packet if the user does not exist.", function(done) {
 			var username = 'alice';
 
 			var socket = dgram.createSocket('udp4');

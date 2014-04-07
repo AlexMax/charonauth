@@ -4,6 +4,7 @@
 var async = require('async');
 var crypto = require('crypto');
 var dgram = require('dgram');
+var events = require('events');
 var srp = require('srp');
 var util = require('util');
 
@@ -19,6 +20,9 @@ var proto = require('./proto');
 
 // Constructor
 var UDPApp = function(config, callback) {
+	// UDPApp is an EventEmitter
+	events.EventEmitter.call(this);
+
 	if (typeof callback !== 'function') {
 		callback = function() { };
 	}
@@ -93,7 +97,8 @@ UDPApp.prototype = {
 					return;
 				}
 
-				throw err;
+				self.emit('error', err);
+				return;
 			}
 
 			// Write the response packet
@@ -153,7 +158,7 @@ UDPApp.prototype = {
 			}
 		], function(err) {
 			if (err) {
-				throw err;
+				self.emit('error', err);
 			}
 		});
 	},
@@ -167,5 +172,8 @@ UDPApp.prototype = {
 UDPApp.prototype.routes[proto.SERVER_NEGOTIATE] = UDPApp.prototype.serverNegotiate;
 UDPApp.prototype.routes[proto.SERVER_EPHEMERAL] = UDPApp.prototype.serverEphemeral;
 UDPApp.prototype.routes[proto.SRP_M] = UDPApp.prototype.srpM;
+
+// UDPApp is an EventEmitter
+UDPApp.prototype.__proto__ = events.EventEmitter.prototype;
 
 module.exports = UDPApp;

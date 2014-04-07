@@ -7,6 +7,7 @@ var async = require('async');
 var dgram = require('dgram');
 var fs = require('fs');
 var srp = require('srp');
+var util = require('util');
 
 var proto = require('../proto');
 var UDPApp = require('../udpapp');
@@ -149,13 +150,14 @@ describe('UDPApp', function() {
 	});
 	describe('UDPApp.serverEphemeral()', function() {
 		var session = null;
+		var udp_app = undefined;
 
 		beforeEach(function(done) {
 			// Load the test data into an in-memory database, plus start a new
 			// session with it.
 			async.waterfall([
 				function(next) {
-					new UDPApp({
+					udp_app = new UDPApp({
 						dbConnection: "sqlite://charonauth/",
 						dbOptions: { "storage": ":memory:" },
 						port: 16666
@@ -187,7 +189,18 @@ describe('UDPApp', function() {
 				}
 			});
 		});
+		afterEach(function() {
+			// Prevent memory leaks...
+			udp_app.removeAllListeners();
+			
+			udp_app = undefined;
+		});
 		it("should be capable of sending a valid ephemeral value B.", function(done) {
+			// Any errors get bubbled up to the unit testing framework.
+			udp_app.on('error', function(err) {
+				done(err);
+			});
+
 			// What the client knows.
 			var username = 'username';
 			var password = 'password123';
@@ -242,7 +255,12 @@ describe('UDPApp', function() {
 				}
 			});
 		});
-		it("should return an error if session does not exist.", function(done) {
+		it("should emit an error if session does not exist.", function(done) {
+			udp_app.on('error', function(err) {
+				assert.ok(util.isError(err));
+				done();
+			});
+
 			var socket = dgram.createSocket('udp4');
 
 			var packet = proto.serverEphemeral.marshall({
@@ -252,7 +270,12 @@ describe('UDPApp', function() {
 
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
-		it("should return an error if ephemeral length is too short.", function(done) {
+		it("should emit an error if ephemeral length is too short.", function(done) {
+			udp_app.on('error', function(err) {
+				assert.ok(util.isError(err));
+				done();
+			});
+
 			var socket = dgram.createSocket('udp4');
 
 			var packet = proto.serverEphemeral.marshall({
@@ -262,7 +285,12 @@ describe('UDPApp', function() {
 
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
-		it("should return an error if ephemeral is bad.", function(done) {
+		it("should emit an error if ephemeral is bad.", function(done) {
+			udp_app.on('error', function(err) {
+				assert.ok(util.isError(err));
+				done();
+			});
+
 			var socket = dgram.createSocket('udp4');
 
 			var ephemeral = new Buffer(256);

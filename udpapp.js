@@ -5,6 +5,7 @@ var async = require('async');
 var crypto = require('crypto');
 var dgram = require('dgram');
 var events = require('events');
+var fs = require('fs');
 var srp = require('srp');
 var util = require('util');
 
@@ -49,13 +50,72 @@ var UDPApp = function(config, callback) {
 	this.dbconn = new DBConn({
 		dbConnection: config.dbConnection,
 		dbOptions: config.dbOptions
-	}, function() {
-		// Create socket server only if database connection is OK
-		self.socket = dgram.createSocket('udp4');
-		self.socket.on('message', self.router.bind(self));
-		self.socket.bind(config.port);
+	}, function(err, dbconn) {
+		if (err) {
+			callback(err);
+			return;
+		}
 
-		callback(null, self);
+		// If we have an array of SQL files to import, import them.
+		if ("dbImport" in config) {
+			if (!util.isArray(config.dbImport)) {
+				callback(new Error("dbImport is not an Array."));
+				return;
+			}
+
+			// Load each of the provided SQL files
+			async.map(
+				config.dbImport,
+				function(filename, call) {
+					fs.readFile(filename, { encoding: 'utf8' }, function(err, data) {
+						// Split multiple SQL statements into separate strings.
+						// [AM] This is nowhere near foolproof, but its good enough for
+						//      loading my SQL dumps for unit tests.
+						var statements = data.split(';\n');
+						
+						// Remove empty strings from list
+						for (var i = statements.length - 1;i >= 0;i--) {
+							if (statements[i].length === 0) {
+								statements.splice(i, 1);
+							}
+						}
+
+						call(err, statements);
+					});
+				}, function(err, statements) {
+					if (err) {
+						callback(err);
+						return;
+					}
+
+					// Run each statement in sequence.
+					var statements = [].concat.apply([], statements);
+					async.mapSeries(
+						statements,
+						function(statement, call) {
+							dbconn.db.query(statement)
+							.done(function(err, result) {
+								call(err, result);
+							})
+						}, function(err, results) {
+							listen();
+						}
+					);
+				}
+			);
+		} else {
+			listen();
+		}
+
+		// Start listening for UDP packets
+		function listen() {
+			self.socket = dgram.createSocket('udp4');
+			self.socket.on('message', self.router.bind(self));
+			self.socket.bind(config.port, function() {
+				// We're finally done constructing at this point.
+				callback(null, self);
+			});
+		}
 	});
 };
 
@@ -142,7 +202,7 @@ UDPApp.prototype = {
 					next(e);
 				}
 				var serverEphemeral = srpServer.computeB();
-				self.dbconn.setEphemeral(packet.session, packet.ephemeral, function(err) {
+				self.dbconn.setEphemeral(packet.session, packet.ephemeral, secret, function(err) {
 					next(err, serverEphemeral);
 				});
 			},
@@ -162,8 +222,50 @@ UDPApp.prototype = {
 			}
 		});
 	},
-	srpM: function(msg, rinfo) {
-		util.log("SRP_M not implemented.");
+	serverProof: function(msg, rinfo) {
+		var self = this;
+
+		// Unmarshall the server negotiation packet
+		var packet = proto.serverProof.unmarshall(msg);
+
+		async.waterfall([
+			function(next) {
+				// Is the session we were passed an active and valid session?
+				self.dbconn.findSession(packet.session, self.sessionTimeout, next);
+			},
+			function(session, next) {
+				// Recreate the necessary SRP state to check the client's proof.
+				var srpServer = new srp.Server(
+					srp.params['2048'],
+					session.verifier,
+					session.secret
+				);
+
+				var proof = undefined;
+				try {
+					// Reset A so we can check the message.
+					srpServer.setA(session.ephemeral);
+
+					// Check the client's proof.  This will throw if it fails.
+					proof = srpServer.checkM1(packet.proof);
+				} catch(e) {
+					next(e);
+				}
+
+				// Write the response packet
+				var response = proto.authProof.marshall({
+					session: packet.session,
+					proof: proof
+				});
+
+				// Send the response packet to the sender
+				self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+			}
+		], function(err) {
+			if (err) {
+				throw err;
+			}
+		});
 	},
 	routes: {}
 };
@@ -171,7 +273,7 @@ UDPApp.prototype = {
 // Attach functions to routes
 UDPApp.prototype.routes[proto.SERVER_NEGOTIATE] = UDPApp.prototype.serverNegotiate;
 UDPApp.prototype.routes[proto.SERVER_EPHEMERAL] = UDPApp.prototype.serverEphemeral;
-UDPApp.prototype.routes[proto.SRP_M] = UDPApp.prototype.srpM;
+UDPApp.prototype.routes[proto.SERVER_PROOF] = UDPApp.prototype.serverProof;
 
 // UDPApp is an EventEmitter
 UDPApp.prototype.__proto__ = events.EventEmitter.prototype;

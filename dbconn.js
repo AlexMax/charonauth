@@ -16,11 +16,12 @@ var DBConn = function(config, callback) {
 	this.db = new Sequelize(config.dbConnection, config.dbOptions);
 	this.db.authenticate().complete(function(error) {
 		if (error) {
-			callback.call(self, error);
+			callback.call(null, error);
 		} else {
 			self.Session = self.db.define('Session', {
 				session: Sequelize.INTEGER,
-				ephemeral: Sequelize.BLOB
+				ephemeral: Sequelize.BLOB,
+				secret: Sequelize.BLOB
 			});
 			self.User = self.db.define('User', {
 				username: Sequelize.STRING,
@@ -32,9 +33,9 @@ var DBConn = function(config, callback) {
 			self.Session.belongsTo(self.User);
 
 			self.db.sync().success(function() {
-				callback.call(self);
+				callback.call(null, null, self);
 			}).error(function(error) {
-				callback.call(self, error);
+				callback.call(null, error);
 			});
 		}
 	});
@@ -121,10 +122,12 @@ DBConn.prototype = {
 				return;
 			}
 
-			// Get user data associated with session.
+			// Get data associated with session.
 			sess.getUser()
 			.success(function(user) {
 				callback(null, {
+					ephemeral: sess.ephemeral,
+					secret: sess.secret,
 					session: sess.session,
 					verifier: user.verifier
 				});
@@ -137,15 +140,15 @@ DBConn.prototype = {
 			callback(err);
 		});
 	},
-	setEphemeral: function(session, ephemeral, callback) {
-		this.Session.find({ where: ['session = ? AND ephemeral IS NULL', session] })
+	setEphemeral: function(session, ephemeral, secret, callback) {
+		this.Session.find({ where: ['session = ? AND ephemeral IS NULL AND secret IS NULL', session] })
 		.complete(function(err, data) {
 			if (err) {
 				callback(err);
 			} else if (!data) {
 				callback(new Error("Session not found"));
 			} else {
-				data.updateAttributes({ ephemeral: ephemeral })
+				data.updateAttributes({ ephemeral: ephemeral, secret: secret })
 				.complete(function(err) {
 					if (err) {
 						callback(err);

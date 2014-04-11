@@ -10,6 +10,8 @@ var SERVER_NEGOTIATE = 0xD003CA01;
 var AUTH_NEGOTIATE = 0xD003CA10;
 var SERVER_EPHEMERAL = 0xD003CA02;
 var AUTH_EPHEMERAL = 0xD003CA20;
+var SERVER_PROOF = 0xD003CA03;
+var AUTH_PROOF = 0xD003CA30;
 var ERROR_USER = 0xD003CAFF;
 
 // Error constants
@@ -170,6 +172,64 @@ var authEphemeral = {
 	}
 };
 
+// Server Proof
+// UInt32, Int32, Buffer
+var serverProof = {
+	marshall: function(data) {
+		var buf = new Buffer(12 + data.proof.length);
+
+		buf.writeUInt32LE(SERVER_PROOF, 0);
+		buf.writeUInt32LE(data.session, 4);
+		buf.writeInt32LE(data.proof.length, 8);
+		data.proof.copy(buf, 12);
+
+		return buf;
+	},
+	unmarshall: function(buf) {
+		if (buf.readUInt32LE(0) !== SERVER_PROOF) {
+			throw new TypeError("Buffer is not an SERVER_PROOF packet");
+		}
+
+		var proofLength = buf.readInt32LE(8);
+		var proof = new Buffer(proofLength);
+		buf.copy(proof, 0, 12, 12 + proofLength);
+
+		return {
+			session: buf.readUInt32LE(4),
+			proof: proof
+		};
+	}
+}
+
+// Auth server Proof
+// UInt32, Int32, Buffer
+var authProof = {
+	marshall: function(data) {
+		var buf = new Buffer(12 + data.proof.length);
+
+		buf.writeUInt32LE(AUTH_PROOF, 0);
+		buf.writeUInt32LE(data.session, 4);
+		buf.writeInt32LE(data.proof.length, 8);
+		data.proof.copy(buf, 12);
+
+		return buf;
+	},
+	unmarshall: function(buf) {
+		if (buf.readUInt32LE(0) !== AUTH_PROOF) {
+			throw new TypeError("Buffer is not an AUTH_PROOF packet");
+		}
+
+		var proofLength = buf.readInt32LE(8);
+		var proof = new Buffer(proofLength);
+		buf.copy(proof, 0, 12, 12 + proofLength);
+
+		return {
+			session: buf.readUInt32LE(4),
+			proof: proof
+		};
+	}
+}
+
 // Errors
 var userError = {
 	marshall: function(data) {
@@ -197,6 +257,8 @@ exports.serverNegotiate = serverNegotiate;
 exports.authNegotiate = authNegotiate;
 exports.serverEphemeral = serverEphemeral;
 exports.authEphemeral = authEphemeral;
+exports.serverProof = serverProof;
+exports.authProof = authProof;
 
 exports.userError = userError;
 
@@ -204,9 +266,8 @@ exports.SERVER_NEGOTIATE = SERVER_NEGOTIATE;
 exports.AUTH_NEGOTIATE = AUTH_NEGOTIATE;
 exports.SERVER_EPHEMERAL = SERVER_EPHEMERAL;
 exports.AUTH_EPHEMERAL = AUTH_EPHEMERAL;
-
-exports.SRP_M = 0xD003CA03;
-exports.SRP_HAMK = 0xD003CA30;
+exports.SERVER_PROOF = SERVER_PROOF;
+exports.AUTH_PROOF = AUTH_PROOF;
 
 exports.ERROR_USER = ERROR_USER;
 exports.ERROR_SESSION = 0xD003CAEE;

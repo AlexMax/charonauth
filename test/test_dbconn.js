@@ -26,11 +26,11 @@ describe('DBConn', function() {
 			var dbconn = new DBConn({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
-			}, function(error) {
+			}, function(error, dbconn) {
 				if (error) {
 					done(error);
 				} else {
-					this.addUser('username', 'password123', function(error) {
+					dbconn.addUser('username', 'password123', function(error) {
 						if (error) {
 							done(error);
 						} else {
@@ -46,23 +46,22 @@ describe('DBConn', function() {
 			var dbconn = new DBConn({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
-			}, function(error) {
+			}, function(error, dbconn) {
 				if (error) {
 					done(error);
 					return;
 				}
-				var self = this;
 				fs.readFile('test/db/single_user.sql', function(error, data) {
 					if (error) {
 						done(error);
 						return;
 					}
-					self.db.query(data.toString('ascii'))
+					dbconn.db.query(data.toString('ascii'))
 					.error(function(error) {
 						done(error);
 					})
 					.success(function(data) {
-						self.findUser('username', function(error, data) {
+						dbconn.findUser('username', function(error, data) {
 							if (error) {
 								done(error);
 							} else {

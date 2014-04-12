@@ -5,15 +5,15 @@
 	"description": "An authentication server for games",
 	"dependencies": {
 		"async": "0.2.10",
-		"buffertools": "2.0.1",
+		"buffertools": "2.1.2",
 		"config": "0.4.35",
 		"date-utils": "1.2.15",
-		"sequelize": "1.7.0-rc6",
+		"sequelize": "1.7.0",
 		"srp": "git://github.com/chiiph/node-srp#feature/constEqual"
 	},
 	"devDependencies": {
 		"mocha": "*",
-		"sqlite3": "2.2.0"
+		"sqlite3": "2.2.1"
 	},
 	"scripts": {
 		"test": "mocha test -R spec"

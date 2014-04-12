@@ -13,9 +13,7 @@ var AUTH_EPHEMERAL = 0xD003CA20;
 var SERVER_PROOF = 0xD003CA03;
 var AUTH_PROOF = 0xD003CA30;
 var ERROR_USER = 0xD003CAFF;
-
-// Error constants
-var USER_NO_EXIST = 1;
+var ERROR_SESSION = 0xD003CAEE;
 
 function readString(buf, offset, encoding) {
 	if (offset === undefined) {
@@ -253,6 +251,28 @@ var userError = {
 	}
 };
 
+var sessionError = {
+	marshall: function(data) {
+		var buf = new Buffer(9);
+
+		buf.writeUInt32LE(ERROR_SESSION, 0);
+		buf.writeUInt8(data.error, 4);
+		buf.writeUInt32LE(data.session, 5);
+
+		return buf;
+	},
+	unmarshall: function(buf) {
+		if (buf.readUInt32LE(0) !== ERROR_SESSION) {
+			throw new TypeError("Buffer is not an ERROR_SESSION packet");
+		}
+
+		return {
+			error: buf.readUInt8(4),
+			session: buf.readUInt32LE(5)
+		};
+	}
+};
+
 exports.serverNegotiate = serverNegotiate;
 exports.authNegotiate = authNegotiate;
 exports.serverEphemeral = serverEphemeral;
@@ -261,6 +281,7 @@ exports.serverProof = serverProof;
 exports.authProof = authProof;
 
 exports.userError = userError;
+exports.sessionError = sessionError;
 
 exports.SERVER_NEGOTIATE = SERVER_NEGOTIATE;
 exports.AUTH_NEGOTIATE = AUTH_NEGOTIATE;
@@ -273,7 +294,7 @@ exports.ERROR_USER = ERROR_USER;
 exports.ERROR_SESSION = 0xD003CAEE;
 
 exports.USER_TRY_LATER = 0;
-exports.USER_NO_EXIST = USER_NO_EXIST;
+exports.USER_NO_EXIST = 1;
 exports.USER_OUTDATED_PROTOCOL = 2;
 exports.USER_WILL_NOT_AUTH = 3;
 

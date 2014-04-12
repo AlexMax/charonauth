@@ -386,5 +386,25 @@ describe('UDPApp', function() {
 
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
+		it("should send an error packet if the proof doesn't work.", function(done) {
+			var socket = dgram.createSocket('udp4');
+
+			socket.on('message', function(msg, rinfo) {
+				var response = proto.sessionError.unmarshall(msg);
+				assert.equal(response.session, 123456);
+				assert.equal(response.error, 3);
+				done();
+			});
+
+			var proof = new Buffer(256);
+			proof.fill(0);
+
+			var packet = proto.serverProof.marshall({
+				session: 123456,
+				proof: proof
+			});
+
+			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
+		});
 	});
 });

@@ -242,14 +242,22 @@ UDPApp.prototype = {
 				);
 
 				var proof = undefined;
-				try {
-					// Reset A so we can check the message.
-					srpServer.setA(session.ephemeral);
 
+				// Reset A so we can check the message.
+				srpServer.setA(session.ephemeral);
+
+				try {
 					// Check the client's proof.  This will throw if it fails.
 					proof = srpServer.checkM1(packet.proof);
 				} catch(e) {
-					next(e);
+					// Authentication failed.
+					var error = proto.sessionError.marshall({
+						session: packet.session,
+						error: proto.SESSION_AUTH_FAILED
+					});
+
+					self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
+					return;
 				}
 
 				// Write the response packet

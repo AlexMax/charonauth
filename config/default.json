@@ -1,6 +1,6 @@
 {
 	"dbConnection": "",
-	"dbImport": ["test/db/single_user.sql"],
+	"dbImport": null,
 	"dbOptions": {},
 	"port": 16666,
 	"workers": 1

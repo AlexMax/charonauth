@@ -23,6 +23,7 @@ if (!cluster.isMaster || workers <= 1) {
 	var udpapp = new UDPApp({
 		dbConnection: config.dbConnection,
 		dbOptions: config.dbOptions,
+		dbImport: config.dbImport,
 		port: config.port
 	}, function() {
 		// TODO: Do something here...

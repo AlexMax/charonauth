@@ -193,6 +193,8 @@ UDPApp.prototype = {
 				// Try to generate the server's ephemeral value.
 				var srpServer = new srp.Server(
 					srp.params['2048'],
+					session.salt,
+					new Buffer(session.username, 'ascii'),
 					session.verifier,
 					secret
 				);
@@ -237,6 +239,8 @@ UDPApp.prototype = {
 				// Recreate the necessary SRP state to check the client's proof.
 				var srpServer = new srp.Server(
 					srp.params['2048'],
+					session.salt,
+					new Buffer(session.username, 'ascii'),
 					session.verifier,
 					session.secret
 				);

@@ -26,7 +26,7 @@ if (!cluster.isMaster || workers <= 1) {
 		dbImport: config.dbImport,
 		port: config.port
 	}, function() {
-		// TODO: Do something here...
+		util.log("Charon is listening on port " + config.port + ".");
 	});
 } else {
 	util.log("Charon is starting.");

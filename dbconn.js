@@ -129,6 +129,8 @@ DBConn.prototype = {
 					ephemeral: sess.ephemeral,
 					secret: sess.secret,
 					session: sess.session,
+					salt: user.salt,
+					username: user.username,
 					verifier: user.verifier
 				});
 			})

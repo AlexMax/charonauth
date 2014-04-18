@@ -2,10 +2,16 @@
 "use strict";
 
 var cluster = require('cluster');
+var config = require('config');
 var util = require('util');
 
 if (cluster.isMaster) {
-	var config = require('config');
+	var workers = config.webWorkers;
+	util.log('Forking ' + workers + ' web worker processes.');
+	for (var i = 0;i < workers;i++) {
+		cluster.fork();
+	}
+} else {
 	var WebApp = require('./webapp');
 
 	var webapp = new WebApp({
@@ -19,8 +25,4 @@ if (cluster.isMaster) {
 			util.log('Web worker started.');
 		}
 	});
-} else {
-	for (var i = 0;i < config.webWorkers;i++) {
-		cluster.fork();
-	}
 }

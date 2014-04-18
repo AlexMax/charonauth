@@ -2,10 +2,16 @@
 "use strict";
 
 var cluster = require('cluster');
+var config = require('config');
 var util = require('util');
 
 if (cluster.isMaster) {
-	var config = require('config');
+	var workers = config.authWorkers;
+	util.log('Forking ' + workers + ' authentication worker processes.');
+	for (var i = 0;i < workers;i++) {
+		cluster.fork();
+	}
+} else {
 	var UDPApp = require('./udpapp');
 
 	var udpapp = new UDPApp({
@@ -19,8 +25,4 @@ if (cluster.isMaster) {
 			util.log('Authentication worker started.');
 		}
 	});
-} else {
-	for (var i = 0;i < config.authWorkers;i++) {
-		cluster.fork();
-	}
 }

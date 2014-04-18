@@ -3,6 +3,8 @@
 
 var express = require('express');
 
+var DBConn = require('./dbconn');
+
 function WebApp(config, callback) {
 	if (!("dbConnection" in config)) {
 		callback(new Error("Missing dbConnection in WebApp configuration."));
@@ -17,24 +19,35 @@ function WebApp(config, callback) {
 		return;
 	}
 
-	this.app = express();
-
-	// Configuration
-	this.app.set('view engine', 'hbs');
-
-	// Top-level routes
-	this.app.get('/login', this.login);
-	this.app.get('/logout', this.logout);
-	this.app.get('/register', this.register);
-
-	// Users
-	this.app.get('/users', this.getUsers);
-	this.app.post('/users', this.postUsers);
-
-	// Start listening for connections
+	// Create database connection
 	var self = this;
-	this.app.listen(config.webPort, function() {
-		callback(null, self);
+	this.dbconn = new DBConn({
+		dbConnection: config.dbConnection,
+		dbOptions: config.dbOptions
+	}, function(err, dbconn) {
+		if (err) {
+			callback(err);
+			return;
+		}
+
+		self.app = express();
+
+		// Configuration
+		self.app.set('view engine', 'hbs');
+
+		// Top-level routes
+		self.app.get('/login', self.login);
+		self.app.get('/logout', self.logout);
+		self.app.get('/register', self.register);
+
+		// Users
+		self.app.get('/users', self.getUsers);
+		self.app.post('/users', self.postUsers);
+
+		// Start listening for connections
+		self.app.listen(config.webPort, function() {
+			callback(null, self);
+		});
 	});
 }
 

@@ -28,6 +28,9 @@ if (!cluster.isMaster || workers <= 1) {
 	}, function() {
 		util.log("Charon is listening on port " + config.port + ".");
 	});
+
+	// Start the webserver
+	var webapp = new WebApp();
 } else {
 	util.log("Charon is starting.");
 

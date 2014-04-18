@@ -25,6 +25,7 @@ var DBConn = function(config, callback) {
 			});
 			self.User = self.db.define('User', {
 				username: Sequelize.STRING,
+				email: Sequelize.STRING,
 				verifier: Sequelize.BLOB,
 				salt: Sequelize.BLOB
 			});

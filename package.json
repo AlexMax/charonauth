@@ -8,12 +8,14 @@
 		"buffertools": "2.1.2",
 		"config": "0.4.35",
 		"date-utils": "1.2.15",
-		"sequelize": "1.7.0",
+		"express": "4.0.0",
+		"hbs": "2.6.0",
+		"sequelize": "1.7.3",
 		"srp": "git://github.com/AlexMax/node-srp#rfc2945"
 	},
 	"devDependencies": {
 		"mocha": "*",
-		"sqlite3": "2.2.1"
+		"sqlite3": "2.2.3"
 	},
 	"scripts": {
 		"test": "mocha test -R spec"

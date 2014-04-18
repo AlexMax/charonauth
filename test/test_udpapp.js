@@ -18,7 +18,7 @@ describe('UDPApp', function() {
 			new UDPApp({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
-				port: 16666
+				authPort: 16666
 			}, function(error) {
 				if (error) {
 					done(error);
@@ -31,7 +31,7 @@ describe('UDPApp', function() {
 			UDPApp({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
-				port: 16666
+				authPort: 16666
 			}, function(error) {
 				if (error) {
 					done();
@@ -43,7 +43,7 @@ describe('UDPApp', function() {
 		it("should send an error to the callback on missing dbConnection.", function(done) {
 			new UDPApp({
 				dbOptions: { "storage": ":memory:" },
-				port: 16666
+				authPort: 16666
 			}, function(error) {
 				if (error) {
 					done();
@@ -55,7 +55,7 @@ describe('UDPApp', function() {
 		it("should send an error to the callback on missing dbOptions.", function(done) {
 			new UDPApp({
 				dbConnection: "sqlite://charonauth/",
-				port: 16666
+				authPort: 16666
 			}, function(error) {
 				if (error) {
 					done();
@@ -88,7 +88,7 @@ describe('UDPApp', function() {
 			udp_app = new UDPApp({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
-				port: 16666
+				authPort: 16666
 			}, finished);
 		});
 		afterEach(function() {
@@ -127,7 +127,7 @@ describe('UDPApp', function() {
 						dbConnection: "sqlite://charonauth/",
 						dbOptions: { "storage": ":memory:" },
 						dbImport: ['test/db/single_user.sql'],
-						port: 16666
+						authPort: 16666
 					}, next);
 				}
 			], function(err) {
@@ -191,7 +191,7 @@ describe('UDPApp', function() {
 						dbConnection: "sqlite://charonauth/",
 						dbOptions: { "storage": ":memory:" },
 						dbImport: ['test/db/single_user.sql', 'test/db/session.sql'],
-						port: 16666
+						authPort: 16666
 					}, next);
 				}
 			], function(err) {
@@ -329,7 +329,7 @@ describe('UDPApp', function() {
 						dbConnection: "sqlite://charonauth/",
 						dbOptions: { "storage": ":memory:" },
 						dbImport: ['test/db/single_user.sql', 'test/db/session_ephemeral.sql'],
-						port: 16666
+						authPort: 16666
 					}, next);
 				}
 			], function(err) {

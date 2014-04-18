@@ -4,6 +4,19 @@
 var express = require('express');
 
 function WebApp(config, callback) {
+	if (!("dbConnection" in config)) {
+		callback(new Error("Missing dbConnection in WebApp configuration."));
+		return;
+	}
+	if (!("dbOptions" in config)) {
+		callback(new Error("Missing dbOptions in WebApp configuration."));
+		return;
+	}
+	if (!("webPort" in config)) {
+		callback(new Error("Missing webPort in WebApp configuration."));
+		return;
+	}
+
 	this.app = express();
 
 	// Configuration
@@ -19,7 +32,10 @@ function WebApp(config, callback) {
 	this.app.post('/users', this.postUsers);
 
 	// Start listening for connections
-	this.app.listen(9000);
+	var self = this;
+	this.app.listen(config.webPort, function() {
+		callback(null, self);
+	});
 }
 
 // Top level controllers

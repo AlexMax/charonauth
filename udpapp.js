@@ -40,8 +40,8 @@ var UDPApp = function(config, callback) {
 		callback(new Error("Missing dbOptions in UDPApp configuration."));
 		return;
 	}
-	if (!("port" in config)) {
-		callback(new Error("Missing port in UDPApp configuration."));
+	if (!("authPort" in config)) {
+		callback(new Error("Missing authPort in UDPApp configuration."));
 		return;
 	}
 
@@ -111,7 +111,7 @@ var UDPApp = function(config, callback) {
 		function listen() {
 			self.socket = dgram.createSocket('udp4');
 			self.socket.on('message', self.router.bind(self));
-			self.socket.bind(config.port, function() {
+			self.socket.bind(config.authPort, function() {
 				// We're finally done constructing at this point.
 				callback(null, self);
 			});

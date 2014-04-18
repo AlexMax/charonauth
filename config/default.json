@@ -2,6 +2,8 @@
 	"dbConnection": "",
 	"dbImport": null,
 	"dbOptions": {},
-	"port": 16666,
-	"workers": 1
+	"authPort": 16666,
+	"authWorkers": 1,
+	"webPort": 9000,
+	"webWorkers": 1
 }

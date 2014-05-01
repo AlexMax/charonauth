@@ -11,7 +11,8 @@
 		"express": "4.0.0",
 		"hbs": "2.6.0",
 		"sequelize": "1.7.3",
-		"srp": "git://github.com/AlexMax/node-srp#rfc2945"
+		"srp": "git://github.com/AlexMax/node-srp#rfc2945",
+		"winston": "0.7.3"
 	},
 	"devDependencies": {
 		"mocha": "*",

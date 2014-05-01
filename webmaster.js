@@ -3,15 +3,19 @@
 
 var cluster = require('cluster');
 var config = require('config');
-var util = require('util');
+var winston = require('winston');
 
 if (cluster.isMaster) {
+	process.title = 'charonauth: web master';
+
 	var workers = config.webWorkers;
-	util.log('Forking ' + workers + ' web worker processes.');
+	winston.info('Forking ' + workers + ' web worker processes.');
 	for (var i = 0;i < workers;i++) {
 		cluster.fork();
 	}
 } else {
+	process.title = 'charonauth: web worker';
+
 	var WebApp = require('./webapp');
 
 	var webapp = new WebApp({
@@ -20,9 +24,9 @@ if (cluster.isMaster) {
 		webPort: config.webPort
 	}, function(err) {
 		if (err) {
-			util.log(err);
+			winston.error(err);
 		} else {
-			util.log('Web worker started.');
+			winston.info('Web worker ' + process.pid  + ' started.');
 		}
 	});
 }

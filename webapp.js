@@ -41,7 +41,7 @@ function WebApp(config, callback) {
 		self.app.get('/register', self.register);
 
 		// Users
-		self.app.get('/users', self.getUsers);
+		self.app.get('/users', self.getUsers.bind(self));
 		self.app.post('/users', self.postUsers);
 
 		// Start listening for connections
@@ -66,7 +66,10 @@ WebApp.prototype.register = function(req, res) {
 
 // Get Users
 WebApp.prototype.getUsers = function(req, res) {
-	res.render('users');
+	this.dbconn.User.findAll()
+	.success(function(users) {
+		res.render('users', { users: users });
+	});
 };
 // Create User
 WebApp.prototype.postUsers = function(req, res) {

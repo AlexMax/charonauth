@@ -3,15 +3,19 @@
 
 var cluster = require('cluster');
 var config = require('config');
-var util = require('util');
+var winston = require('winston');
 
 if (cluster.isMaster) {
+	process.title = 'charonauth: auth master';
+
 	var workers = config.authWorkers;
-	util.log('Forking ' + workers + ' authentication worker processes.');
+	winston.info('Forking ' + workers + ' authentication worker processes.');
 	for (var i = 0;i < workers;i++) {
 		cluster.fork();
 	}
 } else {
+	process.title = 'charonauth: auth worker';
+
 	var UDPApp = require('./udpapp');
 
 	var udpapp = new UDPApp({
@@ -20,9 +24,9 @@ if (cluster.isMaster) {
 		authPort: config.authPort
 	}, function(err) {
 		if (err) {
-			util.log(err);
+			winston.error(err);
 		} else {
-			util.log('Authentication worker started.');
+			winston.info('Authentication worker ' + process.pid + ' started.');
 		}
 	});
 }

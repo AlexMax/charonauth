@@ -21,6 +21,8 @@ if (cluster.isMaster) {
 	var udpapp = new UDPApp({
 		dbConnection: config.dbConnection,
 		dbOptions: config.dbOptions,
+		dbImport: config.dbImport, /* FIXME: gross, handle database init stuff elsewhere */
+
 		authPort: config.authPort
 	}, function(err) {
 		if (err) {

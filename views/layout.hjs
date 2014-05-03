@@ -7,7 +7,7 @@
 </head>
 <body>
 	<div class="pure-g">
-		{{{ body }}}
+		{{> body }}
 	</div>
 </body>
 </html>

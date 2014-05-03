@@ -1,6 +1,7 @@
 /* jshint node: true */
 "use strict";
 
+var consolidate = require('consolidate');
 var express = require('express');
 
 var DBConn = require('./dbconn');
@@ -32,8 +33,11 @@ function WebApp(config, callback) {
 
 		self.app = express();
 
+		// Template engine
+		self.app.engine('hjs', consolidate.hogan);
+
 		// Configuration
-		self.app.set('view engine', 'hbs');
+		self.app.set('view engine', 'hjs');
 
 		// Top-level routes
 		self.app.get('/login', self.login);
@@ -68,7 +72,7 @@ WebApp.prototype.register = function(req, res) {
 WebApp.prototype.getUsers = function(req, res) {
 	this.dbconn.User.findAll()
 	.success(function(users) {
-		res.render('users', { users: users });
+		res.render('layout', { users: users, partials: { body: 'users' }});
 	});
 };
 // Create User

@@ -18,20 +18,35 @@ var DBConn = function(config, callback) {
 		if (error) {
 			callback.call(null, error);
 		} else {
+			// Session is used for authentication sessions
 			self.Session = self.db.define('Session', {
 				session: Sequelize.INTEGER,
 				ephemeral: Sequelize.BLOB,
 				secret: Sequelize.BLOB
 			});
+			// User is used for user information vital for a functioning user
 			self.User = self.db.define('User', {
 				username: Sequelize.STRING,
 				email: Sequelize.STRING,
 				verifier: Sequelize.BLOB,
 				salt: Sequelize.BLOB
 			});
+			// Profile is used for incidental user information.
+			self.Profile = self.db.define('Profile', {
+				clan: Sequelize.STRING,
+				clantag: Sequelize.STRING,
+				contactinfo: Sequelize.STRING,
+				country: Sequelize.STRING,
+				location: Sequelize.STRING,
+				message: Sequelize.STRING,
+				prettyname: Sequelize.STRING
+			}, { timestamps: false });
 
 			self.User.hasMany(self.Session);
 			self.Session.belongsTo(self.User);
+
+			self.User.hasOne(self.Profile);
+			self.Profile.belongsTo(self.User);
 
 			self.db.sync().success(function() {
 				callback.call(null, null, self);

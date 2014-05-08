@@ -1,0 +1,12 @@
+<h2>{{ user.profile.clantag }}{{ user.profile.prettyname }}</h2>
+<img src="{{ gravatar.url }}" width="{{ gravatar.width }}" height="{{ gravatar.height }}">
+<dl>
+<dt>Location</dt>
+<dd>{{ user.profile.location }}</dd>
+<dt>Clan</dt>
+<dd>{{ user.profile.clan }}</dd>
+<dt>Contact Info</dt>
+<dd>{{ user.profile.contactinfo }}</dd>
+<dt>Message</dt>
+<dd>{{ user.profile.message }}</dd>
+</dl>

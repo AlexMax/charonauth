@@ -6,6 +6,7 @@ var consolidate = require('consolidate');
 var express = require('express');
 
 var DBConn = require('./dbconn');
+var gravatar = require('./gravatar');
 
 function WebApp(config, callback) {
 	if (!("dbConnection" in config)) {
@@ -101,8 +102,15 @@ WebApp.prototype.newUser = function(req, res) {
 	});
 };
 WebApp.prototype.getUser = function(req, res) {
-	res.render('layout', {
-		partials: { body: 'getUser' }
+	this.dbconn.User.find({
+		include: [ this.dbconn.Profile ],
+		where: { username: req.params.id }
+	}).success(function(user) {
+		res.render('layout', {
+			user: user,
+			gravatar: gravatar.image(user.email),
+			partials: { body: 'getUser' }
+		});
 	});
 };
 WebApp.prototype.editUser = function(req, res) {

@@ -16,9 +16,9 @@ if (cluster.isMaster) {
 } else {
 	process.title = 'charonauth: auth worker';
 
-	var UDPApp = require('./udpapp');
+	var AuthApp = require('./authapp');
 
-	var udpapp = new UDPApp({
+	var authapp = new AuthApp({
 		dbConnection: config.dbConnection,
 		dbOptions: config.dbOptions,
 		dbImport: config.dbImport, /* FIXME: gross, handle database init stuff elsewhere */

@@ -10,12 +10,12 @@ var srp = require('srp');
 var util = require('util');
 
 var proto = require('../proto');
-var UDPApp = require('../udpapp');
+var AuthApp = require('../authapp');
 
-describe('UDPApp', function() {
-	describe('new UDPApp()', function() {
+describe('AuthApp', function() {
+	describe('new AuthApp()', function() {
 		it("should construct correctly.", function(done) {
-			new UDPApp({
+			new AuthApp({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
 				authPort: 16666
@@ -28,7 +28,7 @@ describe('UDPApp', function() {
 			});
 		});
 		it("should send an error to the callback without new.", function(done) {
-			UDPApp({
+			AuthApp({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
 				authPort: 16666
@@ -41,7 +41,7 @@ describe('UDPApp', function() {
 			});
 		});
 		it("should send an error to the callback on missing dbConnection.", function(done) {
-			new UDPApp({
+			new AuthApp({
 				dbOptions: { "storage": ":memory:" },
 				authPort: 16666
 			}, function(error) {
@@ -53,7 +53,7 @@ describe('UDPApp', function() {
 			});
 		});
 		it("should send an error to the callback on missing dbOptions.", function(done) {
-			new UDPApp({
+			new AuthApp({
 				dbConnection: "sqlite://charonauth/",
 				authPort: 16666
 			}, function(error) {
@@ -65,7 +65,7 @@ describe('UDPApp', function() {
 			});
 		});
 		it("should send an error to the callback on missing port.", function(done) {
-			new UDPApp({
+			new AuthApp({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
 			}, function(error) {
@@ -77,15 +77,15 @@ describe('UDPApp', function() {
 			});
 		});
 	});
-	describe('UDPApp.router()', function() {
-		var udp_app = undefined;
+	describe('AuthApp.router()', function() {
+		var auth_app = undefined;
 
 		beforeEach(function(done) {
 			function finished() {
 				done();
 			}
 
-			udp_app = new UDPApp({
+			auth_app = new AuthApp({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
 				authPort: 16666
@@ -93,12 +93,12 @@ describe('UDPApp', function() {
 		});
 		afterEach(function() {
 			// Prevent memory leaks...
-			udp_app.removeAllListeners();
+			auth_app.removeAllListeners();
 			
-			udp_app = undefined;
+			auth_app = undefined;
 		});
 		it('should emit an error if the packet is too short.', function(done) {
-			udp_app.on('error', function(err) {
+			auth_app.on('error', function(err) {
 				assert.ok(util.isError(err));
 				done();
 			});
@@ -108,7 +108,7 @@ describe('UDPApp', function() {
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
 		it('should emit an error if the packet doesn\'t route anywhere.', function(done) {
-			udp_app.on('error', function(err) {
+			auth_app.on('error', function(err) {
 				assert.ok(util.isError(err));
 				done();
 			});
@@ -118,12 +118,12 @@ describe('UDPApp', function() {
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
 	});
-	describe('UDPApp.serverNegotiate()', function() {
+	describe('AuthApp.serverNegotiate()', function() {
 		beforeEach(function(done) {
 			// Load the test data into an in-memory database.
 			async.waterfall([
 				function(next) {
-					new UDPApp({
+					new AuthApp({
 						dbConnection: "sqlite://charonauth/",
 						dbOptions: { "storage": ":memory:" },
 						dbImport: ['test/db/single_user.sql'],
@@ -179,15 +179,15 @@ describe('UDPApp', function() {
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
 	});
-	describe('UDPApp.serverEphemeral()', function() {
-		var udp_app = undefined;
+	describe('AuthApp.serverEphemeral()', function() {
+		var auth_app = undefined;
 
 		beforeEach(function(done) {
 			// Load the test data into an in-memory database, plus start a new
 			// session with it.
 			async.waterfall([
 				function(next) {
-					udp_app = new UDPApp({
+					auth_app = new AuthApp({
 						dbConnection: "sqlite://charonauth/",
 						dbOptions: { "storage": ":memory:" },
 						dbImport: ['test/db/single_user.sql', 'test/db/session.sql'],
@@ -204,13 +204,13 @@ describe('UDPApp', function() {
 		});
 		afterEach(function() {
 			// Prevent memory leaks...
-			udp_app.removeAllListeners();
+			auth_app.removeAllListeners();
 			
-			udp_app = undefined;
+			auth_app = undefined;
 		});
 		it("should be capable of sending a valid ephemeral value B.", function(done) {
 			// Any errors get bubbled up to the unit testing framework.
-			udp_app.on('error', function(err) {
+			auth_app.on('error', function(err) {
 				done(err);
 			});
 
@@ -269,7 +269,7 @@ describe('UDPApp', function() {
 			});
 		});
 		it("should emit an error if session does not exist.", function(done) {
-			udp_app.on('error', function(err) {
+			auth_app.on('error', function(err) {
 				assert.ok(util.isError(err));
 				done();
 			});
@@ -284,7 +284,7 @@ describe('UDPApp', function() {
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
 		it("should emit an error if ephemeral length is too short.", function(done) {
-			udp_app.on('error', function(err) {
+			auth_app.on('error', function(err) {
 				assert.ok(util.isError(err));
 				done();
 			});
@@ -299,7 +299,7 @@ describe('UDPApp', function() {
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
 		it("should emit an error if ephemeral is bad.", function(done) {
-			udp_app.on('error', function(err) {
+			auth_app.on('error', function(err) {
 				assert.ok(util.isError(err));
 				done();
 			});
@@ -317,15 +317,15 @@ describe('UDPApp', function() {
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
 	});
-	describe('UDPApp.serverProof()', function() {
-		var udp_app = undefined;
+	describe('AuthApp.serverProof()', function() {
+		var auth_app = undefined;
 
 		beforeEach(function(done) {
 			// Load the test data into an in-memory database, plus start a new
 			// session with it.
 			async.waterfall([
 				function(next) {
-					udp_app = new UDPApp({
+					auth_app = new AuthApp({
 						dbConnection: "sqlite://charonauth/",
 						dbOptions: { "storage": ":memory:" },
 						dbImport: ['test/db/single_user.sql', 'test/db/session_ephemeral.sql'],
@@ -342,9 +342,9 @@ describe('UDPApp', function() {
 		});
 		afterEach(function() {
 			// Prevent memory leaks...
-			udp_app.removeAllListeners();
+			auth_app.removeAllListeners();
 			
-			udp_app = undefined;
+			auth_app = undefined;
 		});
 		it("should be capable of logging a user in.", function(done) {
 			// What the client knows.

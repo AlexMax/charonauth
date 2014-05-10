@@ -14,32 +14,32 @@ require('date-utils');
 var DBConn = require('./dbconn');
 var proto = require('./proto');
 
-// UDPApp
+// AuthApp
 //
 // This object encompasses all functionality dealing with the UDP endpoint of
 // charon.  More specifically, the socket server lives here.
-function UDPApp(config, callback) {
-	// UDPApp is an EventEmitter
+function AuthApp(config, callback) {
+	// AuthApp is an EventEmitter
 	events.EventEmitter.call(this);
 
 	if (typeof callback !== 'function') {
 		callback = function() { };
 	}
 
-	if (!(this instanceof UDPApp)) {
+	if (!(this instanceof AuthApp)) {
 		callback(new Error("Constructor called as function"));
 		return;
 	}
 	if (!("dbConnection" in config)) {
-		callback(new Error("Missing dbConnection in UDPApp configuration."));
+		callback(new Error("Missing dbConnection in AuthApp configuration."));
 		return;
 	}
 	if (!("dbOptions" in config)) {
-		callback(new Error("Missing dbOptions in UDPApp configuration."));
+		callback(new Error("Missing dbOptions in AuthApp configuration."));
 		return;
 	}
 	if (!("authPort" in config)) {
-		callback(new Error("Missing authPort in UDPApp configuration."));
+		callback(new Error("Missing authPort in AuthApp configuration."));
 		return;
 	}
 
@@ -116,12 +116,12 @@ function UDPApp(config, callback) {
 		}
 	});
 };
-util.inherits(UDPApp, events.EventEmitter);
+util.inherits(AuthApp, events.EventEmitter);
 
 // Router.
 //
 // Routes incoming requests to the proper function.
-UDPApp.prototype.router = function(msg, rinfo) {
+AuthApp.prototype.router = function(msg, rinfo) {
 	if (msg.length < 4) {
 		this.emit('error', new Error('Message is too small'));
 		return;
@@ -148,7 +148,7 @@ UDPApp.prototype.router = function(msg, rinfo) {
 // Server Negotiate Route
 //
 // This is the initial route that creates an authentication session.
-UDPApp.prototype.serverNegotiate = function(msg, rinfo) {
+AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 	var self = this;
 
 	// Unmarshall the server negotiation packet
@@ -189,7 +189,7 @@ UDPApp.prototype.serverNegotiate = function(msg, rinfo) {
 //
 // With the client ephemeral A value, generate an ephemeral number B to be sent
 // back to the client.
-UDPApp.prototype.serverEphemeral = function(msg, rinfo) {
+AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 	var self = this;
 
 	// Unmarshall the server negotiation packet
@@ -247,7 +247,7 @@ UDPApp.prototype.serverEphemeral = function(msg, rinfo) {
 // Using the client M1, attempts to verify that the client is legitimate, and
 // if so send the client an M2 that the client can use to verify that the auth
 // server is who he says he is.
-UDPApp.prototype.serverProof = function(msg, rinfo) {
+AuthApp.prototype.serverProof = function(msg, rinfo) {
 	var self = this;
 
 	// Unmarshall the server negotiation packet
@@ -302,4 +302,4 @@ UDPApp.prototype.serverProof = function(msg, rinfo) {
 	});
 };
 
-module.exports = UDPApp;
+module.exports = AuthApp;

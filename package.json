@@ -11,10 +11,11 @@
 		"connect-session-sequelize": "1.0.0",
 		"consolidate": "0.10.0",
 		"date-utils": "1.2.15",
-		"express": "4.0.0",
+		"express": "4.1.2",
+		"forms": "0.6.0",
 		"hogan.js": "2.0.0",
 		"nodemailer": "0.6.3",
-		"sequelize": "1.7.3",
+		"sequelize": "1.7.4",
 		"srp": "git://github.com/AlexMax/node-srp#rfc2945",
 		"winston": "0.7.3"
 	},

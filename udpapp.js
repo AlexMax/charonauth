@@ -18,9 +18,7 @@ var proto = require('./proto');
 //
 // This object encompasses all functionality dealing with the UDP endpoint of
 // charon.  More specifically, the socket server lives here.
-
-// Constructor
-var UDPApp = function(config, callback) {
+function UDPApp(config, callback) {
 	// UDPApp is an EventEmitter
 	events.EventEmitter.call(this);
 
@@ -118,176 +116,190 @@ var UDPApp = function(config, callback) {
 		}
 	});
 };
+util.inherits(UDPApp, events.EventEmitter);
 
-// Object methods
-UDPApp.prototype = {
-	router: function(msg, rinfo) {
-		if (msg.length < 4) {
-			this.emit('error', new Error('Message is too small'));
-			return;
-		}
+// Router.
+//
+// Routes incoming requests to the proper function.
+UDPApp.prototype.router = function(msg, rinfo) {
+	if (msg.length < 4) {
+		this.emit('error', new Error('Message is too small'));
+		return;
+	}
 
-		var packetType = msg.readUInt32LE(0);
-		if (packetType in UDPApp.prototype.routes) {
-			UDPApp.prototype.routes[packetType].call(this, msg, rinfo);
-		} else {
-			this.emit('error', new Error('Message has invalid packet type'));
-		}
-	},
+	var packetType = msg.readUInt32LE(0);
 
-	// Routes
-	serverNegotiate: function(msg, rinfo) {
-		var self = this;
+	switch (packetType) {
+		case proto.SERVER_NEGOTIATE:
+		this.serverNegotiate(msg, rinfo);
+		break;
+		case proto.SERVER_EPHEMERAL:
+		this.serverEphemeral(msg, rinfo);
+		break;
+		case proto.SERVER_PROOF:
+		this.serverProof(msg, rinfo);
+		break;
+		default:
+		this.emit('error', new Error('Message has invalid packet type'));
+		break;
+	}
+};
 
-		// Unmarshall the server negotiation packet
-		var packet = proto.serverNegotiate.unmarshall(msg);
-		var username = packet.username;
+// Server Negotiate Route
+//
+// This is the initial route that creates an authentication session.
+UDPApp.prototype.serverNegotiate = function(msg, rinfo) {
+	var self = this;
 
-		// Create a new session for given user.
-		this.dbconn.newSession(username, function(err, data) {
+	// Unmarshall the server negotiation packet
+	var packet = proto.serverNegotiate.unmarshall(msg);
+	var username = packet.username;
+
+	// Create a new session for given user.
+	this.dbconn.newSession(username, function(err, data) {
+		if (err) {
+			// FIXME: Specifically check for a "User does not exist" error.
 			if (err) {
-				// FIXME: Specifically check for a "User does not exist" error.
-				if (err) {
-					var error = proto.userError.marshall({
-						username: username,
-						error: proto.USER_NO_EXIST
-					});
+				var error = proto.userError.marshall({
+					username: username,
+					error: proto.USER_NO_EXIST
+				});
 
-					self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
-					return;
-				}
-
-				self.emit('error', err);
+				self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 				return;
 			}
 
+			self.emit('error', err);
+			return;
+		}
+
+		// Write the response packet
+		var response = proto.authNegotiate.marshall({
+			session: data.session,
+			salt: data.salt,
+			username: data.username
+		});
+
+		// Send the response packet to the sender
+		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+	});
+};
+
+// Server Ephemeral Route
+//
+// With the client ephemeral A value, generate an ephemeral number B to be sent
+// back to the client.
+UDPApp.prototype.serverEphemeral = function(msg, rinfo) {
+	var self = this;
+
+	// Unmarshall the server negotiation packet
+	var packet = proto.serverEphemeral.unmarshall(msg);
+
+	async.waterfall([
+		function(next) {
+			// Is the session we were passed an active and valid session?
+			self.dbconn.findSession(packet.session, self.sessionTimeout, next);
+		},
+		function(session, next) {
+			// Generate a secret key for use in the ephemeral value.
+			srp.genKey(32, function(err, secret) {
+				next(err, session, secret);
+			});
+		},
+		function(session, secret, next) {
+			// Try to generate the server's ephemeral value.
+			var srpServer = new srp.Server(
+				srp.params['2048'],
+				session.salt,
+				new Buffer(session.username, 'ascii'),
+				session.verifier,
+				secret
+			);
+			try {
+				srpServer.setA(packet.ephemeral);
+			} catch(e) {
+				next(e);
+			}
+			var serverEphemeral = srpServer.computeB();
+			self.dbconn.setEphemeral(packet.session, packet.ephemeral, secret, function(err) {
+				next(err, serverEphemeral);
+			});
+		},
+		function(serverEphemeral, next) {
 			// Write the response packet
-			var response = proto.authNegotiate.marshall({
-				session: data.session,
-				salt: data.salt,
-				username: data.username
+			var response = proto.authEphemeral.marshall({
+				session: packet.session,
+				ephemeral: serverEphemeral
 			});
 
 			// Send the response packet to the sender
 			self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
-		});
-	},
-	serverEphemeral: function(msg, rinfo) {
-		var self = this;
-
-		// Unmarshall the server negotiation packet
-		var packet = proto.serverEphemeral.unmarshall(msg);
-
-		async.waterfall([
-			function(next) {
-				// Is the session we were passed an active and valid session?
-				self.dbconn.findSession(packet.session, self.sessionTimeout, next);
-			},
-			function(session, next) {
-				// Generate a secret key for use in the ephemeral value.
-				srp.genKey(32, function(err, secret) {
-					next(err, session, secret);
-				});
-			},
-			function(session, secret, next) {
-				// Try to generate the server's ephemeral value.
-				var srpServer = new srp.Server(
-					srp.params['2048'],
-					session.salt,
-					new Buffer(session.username, 'ascii'),
-					session.verifier,
-					secret
-				);
-				try {
-					srpServer.setA(packet.ephemeral);
-				} catch(e) {
-					next(e);
-				}
-				var serverEphemeral = srpServer.computeB();
-				self.dbconn.setEphemeral(packet.session, packet.ephemeral, secret, function(err) {
-					next(err, serverEphemeral);
-				});
-			},
-			function(serverEphemeral, next) {
-				// Write the response packet
-				var response = proto.authEphemeral.marshall({
-					session: packet.session,
-					ephemeral: serverEphemeral
-				});
-
-				// Send the response packet to the sender
-				self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
-			}
-		], function(err) {
-			if (err) {
-				self.emit('error', err);
-			}
-		});
-	},
-	serverProof: function(msg, rinfo) {
-		var self = this;
-
-		// Unmarshall the server negotiation packet
-		var packet = proto.serverProof.unmarshall(msg);
-
-		async.waterfall([
-			function(next) {
-				// Is the session we were passed an active and valid session?
-				self.dbconn.findSession(packet.session, self.sessionTimeout, next);
-			},
-			function(session, next) {
-				// Recreate the necessary SRP state to check the client's proof.
-				var srpServer = new srp.Server(
-					srp.params['2048'],
-					session.salt,
-					new Buffer(session.username, 'ascii'),
-					session.verifier,
-					session.secret
-				);
-
-				var proof = undefined;
-
-				// Reset A so we can check the message.
-				srpServer.setA(session.ephemeral);
-
-				try {
-					// Check the client's proof.  This will throw if it fails.
-					proof = srpServer.checkM1(packet.proof);
-				} catch(e) {
-					// Authentication failed.
-					var error = proto.sessionError.marshall({
-						session: packet.session,
-						error: proto.SESSION_AUTH_FAILED
-					});
-
-					self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
-					return;
-				}
-
-				// Write the response packet
-				var response = proto.authProof.marshall({
-					session: packet.session,
-					proof: proof
-				});
-
-				// Send the response packet to the sender
-				self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
-			}
-		], function(err) {
-			if (err) {
-				throw err;
-			}
-		});
-	},
-	routes: {}
+		}
+	], function(err) {
+		if (err) {
+			self.emit('error', err);
+		}
+	});
 };
 
-// Attach functions to routes
-UDPApp.prototype.routes[proto.SERVER_NEGOTIATE] = UDPApp.prototype.serverNegotiate;
-UDPApp.prototype.routes[proto.SERVER_EPHEMERAL] = UDPApp.prototype.serverEphemeral;
-UDPApp.prototype.routes[proto.SERVER_PROOF] = UDPApp.prototype.serverProof;
+// Server Proof Route
+//
+// Using the client M1, attempts to verify that the client is legitimate, and
+// if so send the client an M2 that the client can use to verify that the auth
+// server is who he says he is.
+UDPApp.prototype.serverProof = function(msg, rinfo) {
+	var self = this;
 
-// UDPApp is an EventEmitter
-UDPApp.prototype.__proto__ = events.EventEmitter.prototype;
+	// Unmarshall the server negotiation packet
+	var packet = proto.serverProof.unmarshall(msg);
+
+	async.waterfall([
+		function(next) {
+			// Is the session we were passed an active and valid session?
+			self.dbconn.findSession(packet.session, self.sessionTimeout, next);
+		},
+		function(session, next) {
+			// Recreate the necessary SRP state to check the client's proof.
+			var srpServer = new srp.Server(
+				srp.params['2048'],
+				session.salt,
+				new Buffer(session.username, 'ascii'),
+				session.verifier,
+				session.secret
+			);
+
+			var proof = undefined;
+			// Reset A so we can check the message.
+			srpServer.setA(session.ephemeral);
+
+			try {
+				// Check the client's proof.  This will throw if it fails.
+				proof = srpServer.checkM1(packet.proof);
+			} catch(e) {
+				// Authentication failed.
+				var error = proto.sessionError.marshall({
+					session: packet.session,
+					error: proto.SESSION_AUTH_FAILED
+				});
+
+				self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
+				return;
+			}
+
+			// Write the response packet
+			var response = proto.authProof.marshall({
+				session: packet.session,
+				proof: proof
+			});
+
+			// Send the response packet to the sender
+			self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+		}
+	], function(err) {
+		if (err) {
+			throw err;
+		}
+	});
+};
 
 module.exports = UDPApp;

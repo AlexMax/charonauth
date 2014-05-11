@@ -7,6 +7,7 @@ var express = require('express');
 
 var DBConn = require('./dbconn');
 var gravatar = require('./gravatar');
+var webforms = require('./webforms');
 
 function WebApp(config, callback) {
 	if (!("dbConnection" in config)) {
@@ -82,9 +83,33 @@ WebApp.prototype.logout = function(req, res) {
 	});
 };
 WebApp.prototype.register = function(req, res) {
-	res.render('layout', {
+	function render(form) {
+		res.render('layout', {
+			form: form.toHTML(),
+			partials: { body: 'register' }
+		});
+		return;
+	}
+
+	var form = webforms.registerForm({
+		recaptcha_private_key: '---PRIVATE KEY---',
 		recaptcha_public_key: '6LdxD_MSAAAAAKJzPFhS7NuRzsDimgw6QLKgNmhY',
-		partials: { body: 'register' }
+		recaptcha_ip: req.ip
+	});
+
+	form.handle(req, {
+		success: function (f) {
+			res.render('layout', {
+				form: form.toHTML(),
+				partials: { body: 'registerNotify' }
+			});
+		},
+		error: function (f) {
+			render(f);
+		},
+		empty: function (f) {
+			render(f);
+		}
 	});
 };
 

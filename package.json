@@ -1,30 +1,30 @@
 {
-	"name": "charonauth",
-	"version": "0.0.1",
-	"author": "Alex Mayfield <alexmax2742@gmail.com>",
-	"description": "An authentication server for games",
-	"dependencies": {
-		"async": "0.2.10",
-		"body-parser": "1.0.2",
-		"buffertools": "2.1.2",
-		"config": "0.4.35",
-		"connect-session-sequelize": "1.0.0",
-		"consolidate": "0.10.0",
-		"date-utils": "1.2.15",
-		"express": "4.1.2",
-		"forms": "0.6.0",
-		"hogan.js": "2.0.0",
-		"nodemailer": "0.6.3",
-		"request": "2.34.0",
-		"sequelize": "1.7.4",
-		"srp": "git://github.com/AlexMax/node-srp#rfc2945",
-		"winston": "0.7.3"
-	},
-	"devDependencies": {
-		"mocha": "*",
-		"sqlite3": "2.2.3"
-	},
-	"scripts": {
-		"test": "mocha test -R spec"
-	}
+  "name": "charonauth",
+  "version": "0.0.1",
+  "author": "Alex Mayfield <alexmax2742@gmail.com>",
+  "description": "An authentication server for games",
+  "dependencies": {
+    "async": "0.2.10",
+    "body-parser": "1.2.2",
+    "buffertools": "2.1.2",
+    "config": "0.4.36",
+    "consolidate": "0.10.0",
+    "date-utils": "1.2.15",
+    "express": "4.3.1",
+    "fs-session": "0.1.2",
+    "forms": "0.7.0",
+    "hogan.js": "2.0.0",
+    "nodemailer": "0.6.5",
+    "request": "2.36.0",
+    "sequelize": "1.7.5",
+    "srp": "git://github.com/AlexMax/node-srp#rfc2945",
+    "winston": "0.7.3"
+  },
+  "devDependencies": {
+    "mocha": "*",
+    "sqlite3": "2.2.3"
+  },
+  "scripts": {
+    "test": "mocha test -R spec"
+  }
 }

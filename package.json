@@ -9,8 +9,10 @@
     "buffertools": "2.1.2",
     "config": "0.4.36",
     "consolidate": "0.10.0",
+    "cookie-parser": "1.1.0",
     "date-utils": "1.2.15",
     "express": "4.3.1",
+    "express-session": "1.2.1",
     "fs-session": "0.1.2",
     "forms": "0.7.0",
     "hogan.js": "2.0.0",
@@ -18,6 +20,7 @@
     "request": "2.36.0",
     "sequelize": "1.7.5",
     "srp": "git://github.com/AlexMax/node-srp#rfc2945",
+    "underscore": "1.6.0",
     "winston": "0.7.3"
   },
   "devDependencies": {

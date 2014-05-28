@@ -2,8 +2,11 @@
 "use strict";
 
 var bodyParser = require('body-parser');
+var cookieParser = require('cookie-parser');
 var consolidate = require('consolidate');
 var express = require('express');
+var session = require('express-session');
+var fsSession = require('fs-session')({ session: session });
 
 var DBConn = require('./dbconn');
 var gravatar = require('./gravatar');
@@ -20,6 +23,10 @@ function WebApp(config, callback) {
 	}
 	if (!("webPort" in config)) {
 		callback(new Error("Missing webPort in WebApp configuration."));
+		return;
+	}
+	if (!("webSecret" in config)) {
+		callback(new Error("Missing webSecret in WebApp configuration."));
 		return;
 	}
 
@@ -39,6 +46,11 @@ function WebApp(config, callback) {
 		// Middleware
 		self.app.use(express.static(__dirname + '/public'));
 		self.app.use(bodyParser.urlencoded());
+		self.app.use(cookieParser());
+		self.app.use(session({
+			secret: config.webSecret,
+			store: new fsSession()
+		}));
 
 		// Template engine
 		self.app.engine('hjs', consolidate.hogan);

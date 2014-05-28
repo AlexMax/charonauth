@@ -21,7 +21,8 @@ if (cluster.isMaster) {
 	var webapp = new WebApp({
 		dbConnection: config.dbConnection,
 		dbOptions: config.dbOptions,
-		webPort: config.webPort
+		webPort: config.webPort,
+		webSecret: config.webSecret
 	}, function(err) {
 		if (err) {
 			winston.error(err);

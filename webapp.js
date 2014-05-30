@@ -107,7 +107,7 @@ WebApp.prototype.render = function(req, res, layout, options) {
 			header: 'header'
 		}
 	}));
-}
+};
 
 // Top level controllers
 WebApp.prototype.home = function(req, res) {
@@ -117,8 +117,8 @@ WebApp.prototype.login = function(req, res) {
 	var self = this;
 
 	function render(data, errors) {
-		var data = data || {};
-		var errors = errors || {};
+		data = data || {};
+		errors = errors || {};
 
 		data._csrf = req.csrfToken();
 		self.render(req, res, 'login', {
@@ -152,8 +152,8 @@ WebApp.prototype.register = function(req, res) {
 	var self = this;
 
 	function render(data, errors) {
-		var data = data || {};
-		var errors = errors || {};
+		data = data || {};
+		errors = errors || {};
 
 		data._csrf = req.csrfToken();
 		self.render(req, res, 'register', {

@@ -1,0 +1,6 @@
+{{# session.user.id }}
+<h6>Welcome back, {{ session.user.username }}</h6>
+{{/ session.user.id }}
+{{^ session.user.id }}
+<h6>Welcome guest</h6>
+{{/ session.user.id }}

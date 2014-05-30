@@ -18,12 +18,7 @@ if (cluster.isMaster) {
 
 	var WebApp = require('./webapp');
 
-	var webapp = new WebApp({
-		dbConnection: config.dbConnection,
-		dbOptions: config.dbOptions,
-		webPort: config.webPort,
-		webSecret: config.webSecret
-	}, function(err) {
+	var webapp = new WebApp(config, function(err) {
 		if (err) {
 			winston.error(err);
 		} else {

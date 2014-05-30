@@ -1,7 +1,37 @@
 <h2>Register an Account</h2>
 <form method="post">
 	<fieldset>
-		{{{ form }}}
+		<input type="hidden" name="_csrf" value="{{ data._csrf }}">
+		<div>
+			{{ errors.username }}
+			<label for="username">Username</label>
+			<input name="username" id="username" value="{{ data.username }}">
+		</div>
+		<div>
+			{{ errors.password }}
+			<label for="password">Password</label>
+			<input type="password" name="password" id="password" value="{{ data.password }}">
+		</div>
+		<div>
+			{{ errors.confirm }}
+			<label for="confirm">Confirm</label>
+			<input type="password" name="confirm" id="confirm" value="{{ data.confirm }}">
+		</div>
+		<div>
+			{{ errors.email }}
+			<label for="email">E-Mail</label>
+			<input name="email" id="email" value="{{ data.email }}">
+		</div>
+		<div>
+			{{ errors.captcha }}
+			<script type="text/javascript" src="http://www.google.com/recaptcha/api/challenge?k={{ recaptcha_public_key }}"></script>
+			<noscript>
+			 <iframe src="http://www.google.com/recaptcha/api/noscript?k={{ recaptcha_public_key }}" height="300" width="500" frameborder="0"></iframe><br>
+			 <textarea name="recaptcha_challenge_field" rows="3" cols="40">
+			 </textarea>
+			 <input type="hidden" name="recaptcha_response_field" value="manual_challenge">
+			</noscript>
+		</div>
 		<button type="submit">Next Step</button>
 	</fieldset>
 </form>

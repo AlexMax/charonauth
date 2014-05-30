@@ -4,9 +4,11 @@
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var consolidate = require('consolidate');
+var csurf = require('csurf');
 var express = require('express');
 var session = require('express-session');
 var fsSession = require('fs-session')({ session: session });
+var _ = require('underscore');
 
 var DBConn = require('./dbconn');
 var gravatar = require('./gravatar');
@@ -30,6 +32,24 @@ function WebApp(config, callback) {
 		return;
 	}
 
+	// Set ReCAPTCHA settings if present
+	if ("recaptcha" in config) {
+		if (!("privateKey" in config.recaptcha)) {
+			callback(new Error("Missing privateKey in WebApp ReCAPTCHA configuration."));
+			return;
+		}
+
+		if (!("publicKey" in config.recaptcha)) {
+			callback(new Error("Missing publicKey in WebApp ReCAPTCHA configuration."));
+			return;
+		}
+
+		this.recaptcha = {
+			publicKey: config.recaptcha.publicKey,
+			privateKey: config.recaptcha.privateKey
+		};
+	}
+
 	// Create database connection
 	var self = this;
 	this.dbconn = new DBConn({
@@ -51,6 +71,7 @@ function WebApp(config, callback) {
 			secret: config.webSecret,
 			store: new fsSession()
 		}));
+		self.app.use(csurf());
 
 		// Template engine
 		self.app.engine('hjs', consolidate.hogan);
@@ -60,7 +81,7 @@ function WebApp(config, callback) {
 
 		// Top-level routes
 		self.app.get('/', self.home.bind(self));
-		self.app.get('/login', self.login.bind(self));
+		self.app.all('/login', self.login.bind(self));
 		self.app.get('/logout', self.logout.bind(self));
 		self.app.all('/register', self.register.bind(self));
 
@@ -78,51 +99,89 @@ function WebApp(config, callback) {
 	});
 }
 
+WebApp.prototype.render = function(req, res, layout, options) {
+	res.render('layout', _.extend(options || {}, {
+		session: req.session,
+		partials: {
+			body: layout,
+			header: 'header'
+		}
+	}));
+}
+
 // Top level controllers
 WebApp.prototype.home = function(req, res) {
-	res.render('layout', {
-		partials: { body: 'home' }
-	});
+	this.render(req, res, 'home');
 };
 WebApp.prototype.login = function(req, res) {
-	res.render('layout', {
-		partials: { body: 'login' }
-	});
+	var self = this;
+
+	function render(data, errors) {
+		var data = data || {};
+		var errors = errors || {};
+
+		data._csrf = req.csrfToken();
+		self.render(req, res, 'login', {
+			data: data, errors: errors,
+		});
+		return;
+	}
+
+	var data = req.body;
+	if (!_.isEmpty(data)) {
+		webforms.loginForm(data, this.dbconn.User, function(errors, user) {
+			if (errors) {
+				render(data, errors);
+			} else {
+				req.session.user = user;
+				res.redirect('/');
+			}
+		});
+	} else {
+		render();
+	}
 };
 WebApp.prototype.logout = function(req, res) {
+	delete req.session.user;
+
 	res.render('layout', {
 		partials: { body: 'logout' }
 	});
 };
 WebApp.prototype.register = function(req, res) {
-	function render(form) {
-		res.render('layout', {
-			form: form.toHTML(),
-			partials: { body: 'register' }
+	var self = this;
+
+	function render(data, errors) {
+		var data = data || {};
+		var errors = errors || {};
+
+		data._csrf = req.csrfToken();
+		self.render(req, res, 'register', {
+			data: data, errors: errors,
+			recaptcha_public_key: self.recaptcha ? self.recaptcha.publicKey : null
 		});
 		return;
 	}
 
-	var form = webforms.registerForm({
-		recaptcha_private_key: '---PRIVATE KEY---',
-		recaptcha_public_key: '6LdxD_MSAAAAAKJzPFhS7NuRzsDimgw6QLKgNmhY',
-		recaptcha_ip: req.ip
-	});
-
-	form.handle(req, {
-		success: function (f) {
-			res.render('layout', {
-				form: form.toHTML(),
-				partials: { body: 'registerNotify' }
-			});
-		},
-		error: function (f) {
-			render(f);
-		},
-		empty: function (f) {
-			render(f);
-		}
-	});
+	var data = req.body;
+	if (!_.isEmpty(data)) {
+		webforms.registerForm(
+			data, req.ip,
+			this.recaptcha ? this.recaptcha.privateKey : null,
+			this.dbconn.User,
+			function(errors, user) {
+				if (errors) {
+					render(data, errors);
+				} else {
+					self.render(req, res, 'registerNotify', {
+						data: data
+					});
+				}
+			}
+		);
+	} else {
+		render();
+	}
 };
 
 // Users controllers

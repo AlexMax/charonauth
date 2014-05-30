@@ -1,10 +1,21 @@
 <h2>Login</h2>
-<form>
+<form method="post">
+	{{# errors.form }}
+	{{ errors.form }}
+	{{/ errors.form }}
 	<fieldset>
-		<label for="username">Username</label>
-		<input id="username" type="text">
-		<label for="password">Password</label>
-		<input id="password" type="password">
-		<button type="submit">Sign In</button>
+		<input type="hidden" name="_csrf" value="{{ data._csrf }}">
+		<div>
+			{{ errors.login }}
+			<label for="login">Username/Email</label>
+			<input name="login" id="login" value="{{ data.login }}">
+		</div>
+		<div>
+			{{ errors.password }}
+			<label for="password">Password</label>
+			<input type="password" name="password" id="password" value="{{ data.password }}">
+		</div>
+		<button>Sign In</button>
 	</fieldset>
 </form>
+<a href="#">I forgot my password!</a>

@@ -1,2 +1,5 @@
+/config/runtime.json
 /node_modules
+/sessions
 /*.db
+*.swp

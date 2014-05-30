@@ -87,14 +87,14 @@ function AuthApp(config, callback) {
 					}
 
 					// Run each statement in sequence.
-					var statements = [].concat.apply([], statements);
+					statements = [].concat.apply([], statements);
 					async.mapSeries(
 						statements,
 						function(statement, call) {
 							dbconn.db.query(statement)
 							.done(function(err, result) {
 								call(err, result);
-							})
+							});
 						}, function(err, results) {
 							listen();
 						}
@@ -115,7 +115,7 @@ function AuthApp(config, callback) {
 			});
 		}
 	});
-};
+}
 util.inherits(AuthApp, events.EventEmitter);
 
 // Router.
@@ -268,7 +268,7 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 				session.secret
 			);
 
-			var proof = undefined;
+			var proof;
 			// Reset A so we can check the message.
 			srpServer.setA(session.ephemeral);
 

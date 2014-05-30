@@ -3,6 +3,7 @@
   "version": "0.0.1",
   "author": "Alex Mayfield <alexmax2742@gmail.com>",
   "description": "An authentication server for games",
+  "license": "AGPL-3.0",
   "dependencies": {
     "async": "0.2.10",
     "bluebird": "1.2.4",
@@ -13,7 +14,7 @@
     "cookie-parser": "1.1.0",
     "csurf": "1.2.0",
     "date-utils": "1.2.15",
-    "express": "4.3.1",
+    "express": "4.3.2",
     "express-session": "1.2.1",
     "fs-session": "0.1.2",
     "hogan.js": "2.0.0",

@@ -19,6 +19,7 @@
 /* jshint node: true */
 "use strict";
 
+var Promise = require('bluebird');
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var consolidate = require('consolidate');
@@ -27,6 +28,7 @@ var express = require('express');
 var session = require('express-session');
 var fsSession = require('fs-session')({ session: session });
 var _ = require('underscore');
+var uuid = require('node-uuid');
 
 var DBConn = require('./dbconn');
 var gravatar = require('./gravatar');
@@ -102,6 +104,9 @@ function WebApp(config, callback) {
 		self.app.all('/login', self.login.bind(self));
 		self.app.get('/logout', self.logout.bind(self));
 		self.app.all('/register', self.register.bind(self));
+		self.app.get('/register/:token', self.registerVerify.bind(self));
+		self.app.all('/reset', self.reset.bind(self));
+		self.app.get('/reset/:token', self.resetVerify.bind(self));
 
 		// Users
 		self.app.get('/users', self.getUsers.bind(self));
@@ -186,20 +191,49 @@ WebApp.prototype.register = function(req, res) {
 		webforms.registerForm(
 			data, req.ip,
 			this.recaptcha ? this.recaptcha.privateKey : null,
-			this.dbconn.User,
-			function(errors, user) {
-				if (errors) {
-					render(data, errors);
-				} else {
-					self.render(req, res, 'registerNotify', {
-						data: data
-					});
-				}
+			this.dbconn.User
+		).then(function(errors) {
+			if (errors) {
+				render(data, errors);
+			} else {
+				return Promise.all([
+					self.dbconn.addUser(data.username, data.password, data.email),
+					self.dbconn.Verify.create({
+						token: uuid.v4()
+					})
+				]).spread(function(user, verify) {
+					return user.setVerify(verify);
+				}).then(function(verify){
+					return verify.getUser();
+				});
 			}
-		);
+		}).then(function(user) {
+			self.render(req, res, 'registerNotify', {
+				email: user.email
+			});
+		});
 	} else {
 		render();
 	}
+};
+WebApp.prototype.registerVerify = function(req, res) {
+	self.dbconn.Verify.find({
+		where: {
+			token: req.params.token
+		}
+	}).success(function(data) {
+		if (data) {
+			self.render(req, res, 'registerVerify');
+		} else {
+			res.send(404);
+		}
+	});
+};
+WebApp.prototype.reset = function(req, res) {
+
+};
+WebApp.prototype.resetVerify = function(req, res) {
+
 };
 
 // Users controllers

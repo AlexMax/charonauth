@@ -30,12 +30,11 @@ describe('DBConn', function() {
 				if (error) {
 					done(error);
 				} else {
-					dbconn.addUser('username', 'password123', function(error) {
-						if (error) {
-							done(error);
-						} else {
-							done();
-						}
+					dbconn.addUser('username', 'password123', 'example@example.com')
+					.then(function() {
+						done()
+					}).catch(function(error) {
+						done(error);
 					});
 				}
 			});

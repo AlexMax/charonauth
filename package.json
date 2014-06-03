@@ -18,6 +18,7 @@
     "express-session": "1.2.1",
     "fs-session": "0.1.2",
     "hogan.js": "2.0.0",
+    "node-uuid": "1.4.1",
     "nodemailer": "0.6.5",
     "request": "2.36.0",
     "sequelize": "1.7.5",

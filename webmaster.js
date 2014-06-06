@@ -26,6 +26,11 @@ var winston = require('winston');
 if (cluster.isMaster) {
 	process.title = 'charonauth: web master';
 
+	cluster.on('exit', function(worker, code, signal) {
+		winston.error('Web worker ' + worker.process.pid + ' died, respawning...');
+		cluster.fork();
+	});
+
 	var workers = config.webWorkers;
 	winston.info('Forking ' + workers + ' web worker processes.');
 	for (var i = 0;i < workers;i++) {

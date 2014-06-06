@@ -26,6 +26,11 @@ var winston = require('winston');
 if (cluster.isMaster) {
 	process.title = 'charonauth: auth master';
 
+	cluster.on('exit', function(worker, code, signal) {
+		winston.error('Authentication worker ' + worker.process.pid + ' died, respawning...');
+		cluster.fork();
+	});
+
 	var workers = config.authWorkers;
 	winston.info('Forking ' + workers + ' authentication worker processes.');
 	for (var i = 0;i < workers;i++) {

@@ -14,8 +14,12 @@ describe('DBConn', function() {
 					uri: "sqlite://charonauth/",
 					options: { "storage": ":memory:" }
 				}
-			}).then(function() {
-				done();
+			}).then(function(db) {
+				if (!(db instanceof DBConn)) {
+					done(new Error("Did not get a DBConn from constructor"));
+				} else {
+					done();
+				}
 			});
 		});
 	});
@@ -28,8 +32,12 @@ describe('DBConn', function() {
 				}
 			}).then(function(dbconn) {
 				return dbconn.addUser('username', 'password123', 'example@example.com')
-			}).then(function() {
-				done();
+			}).then(function(user) {
+				if (user.username !== 'username') {
+					done(new Error("User was not added as expected"));
+				} else {
+					done();
+				}
 			});
 		});
 	});
@@ -43,7 +51,9 @@ describe('DBConn', function() {
 				dbImport: ['test/db/single_user.sql']
 			}).then(function(dbconn) {
 				return dbconn.findUser('Username');
-			}).then(done);
+			}).then(function(user) {
+				done();
+			}).catch(done);
 		});
 	});
 });

@@ -121,10 +121,10 @@ DBConn.prototype.addUser = function(username, password, email, access) {
 	});
 };
 DBConn.prototype.findUser = function(username) {
-	this.User.find({ where: { username: username.toLowerCase() }})
+	return this.User.find({ where: { username: username.toLowerCase() }})
 	.then(function(data) {
-		if (!data) {
-			return new Error("User not found");
+		if (data === null) {
+			throw new Error("User not found");
 		} else {
 			return data;
 		}

@@ -29,62 +29,71 @@ var srp = require('srp');
 // Handles communication with the database.
 
 // Constructor
-var DBConn = function(config, callback) {
+var DBConn = function(config) {
 	var self = this;
+
 	config.dbOptions.logging = config.dbOptions.logging || false;
-	this.db = new Sequelize(config.dbConnection, config.dbOptions);
-	this.db.authenticate().complete(function(error) {
-		if (error) {
-			callback.call(null, error);
-		} else {
-			// Session is used for authentication sessions
-			self.Session = self.db.define('Session', {
-				session: Sequelize.INTEGER,
-				ephemeral: Sequelize.BLOB,
-				secret: Sequelize.BLOB
-			});
-			// User is used for user information vital for a functioning user
-			self.User = self.db.define('User', {
-				username: Sequelize.STRING,
-				email: Sequelize.STRING,
-				verifier: Sequelize.BLOB,
-				salt: Sequelize.BLOB,
-				access: Sequelize.ENUM('OWNER', 'MASTER', 'OP', 'USER', 'UNVERIFIED')
-			});
-			// Verify is used to store user verification attempts
-			self.Verify = self.db.define('Verify', {
-				token: Sequelize.STRING
-			});
-			// Reset is used to store password reset attempts
-			self.Reset = self.db.define('Reset', {
-				token: Sequelize.STRING
-			});
-			// Profile is used for incidental user information.
-			self.Profile = self.db.define('Profile', {
-				clan: Sequelize.STRING,
-				clantag: Sequelize.STRING,
-				contactinfo: Sequelize.STRING,
-				country: Sequelize.STRING,
-				location: Sequelize.STRING,
-				message: Sequelize.STRING,
-				prettyname: Sequelize.STRING
-			}, { timestamps: false });
 
-			self.User.hasMany(self.Session);
-			self.Session.belongsTo(self.User);
-
-			self.User.hasOne(self.Verify);
-			self.Verify.belongsTo(self.User);
-
-			self.User.hasOne(self.Profile);
-			self.Profile.belongsTo(self.User);
-
-			self.db.sync().success(function() {
-				callback.call(null, null, self);
-			}).error(function(error) {
-				callback.call(null, error);
-			});
+	return new Promise(function(resolve, reject) {
+		try {
+			self.db = new Sequelize(config.dbConnection, config.dbOptions);
+			resolve();
+		} catch (e) {
+			reject(e);
 		}
+	}).then(function() {
+		return self.db.authenticate();
+	}).then(function() {
+		// Session is used for authentication sessions
+		self.Session = self.db.define('Session', {
+			session: Sequelize.INTEGER,
+			ephemeral: Sequelize.BLOB,
+			secret: Sequelize.BLOB
+		});
+
+		// User is used for user information vital for a functioning user
+		self.User = self.db.define('User', {
+			username: Sequelize.STRING,
+			email: Sequelize.STRING,
+			verifier: Sequelize.BLOB,
+			salt: Sequelize.BLOB,
+			access: Sequelize.ENUM('OWNER', 'MASTER', 'OP', 'USER', 'UNVERIFIED')
+		});
+
+		// Verify is used to store user verification attempts
+		self.Verify = self.db.define('Verify', {
+			token: Sequelize.STRING
+		});
+
+		// Reset is used to store password reset attempts
+		self.Reset = self.db.define('Reset', {
+			token: Sequelize.STRING
+		});
+
+		// Profile is used for incidental user information.
+		self.Profile = self.db.define('Profile', {
+			clan: Sequelize.STRING,
+			clantag: Sequelize.STRING,
+			contactinfo: Sequelize.STRING,
+			country: Sequelize.STRING,
+			location: Sequelize.STRING,
+			message: Sequelize.STRING,
+			prettyname: Sequelize.STRING
+		}, { timestamps: false });
+
+		self.User.hasMany(self.Session);
+		self.Session.belongsTo(self.User);
+
+		self.User.hasOne(self.Verify);
+		self.Verify.belongsTo(self.User);
+
+		self.User.hasOne(self.Profile);
+		self.Profile.belongsTo(self.User);
+
+		// FIXME: Don't do this automatically
+		return self.db.sync();
+	}).then(function() {
+		return self;
 	});
 };
 

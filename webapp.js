@@ -35,6 +35,8 @@ var gravatar = require('./gravatar');
 var webforms = require('./webforms');
 
 function WebApp(config, callback) {
+	var self = this;
+
 	if (!("dbConnection" in config)) {
 		callback(new Error("Missing dbConnection in WebApp configuration."));
 		return;
@@ -71,15 +73,8 @@ function WebApp(config, callback) {
 	}
 
 	// Create database connection
-	var self = this;
-	this.dbconn = new DBConn({
-		dbConnection: config.dbConnection,
-		dbOptions: config.dbOptions
-	}, function(err, dbconn) {
-		if (err) {
-			callback(err);
-			return;
-		}
+	new DBConn(config).then(function(dbconn) {
+		self.dbconn = dbconn;
 
 		self.app = express();
 

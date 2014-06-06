@@ -9,47 +9,32 @@ var DBConn = require('../dbconn');
 describe('DBConn', function() {
 	describe('new DBConn()', function() {
 		it("should construct correctly.", function(done) {
-			var dbconn = new DBConn({
+			new DBConn({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
-			}, function(error) {
-				if (error) {
-					done(error);
-				} else {
-					done();
-				}
+			}).then(function() {
+				done();
 			});
 		});
 	});
 	describe('DBConn.addUser()', function() {
 		it("should correctly add a user.", function(done) {
-			var dbconn = new DBConn({
+			new DBConn({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
-			}, function(error, dbconn) {
-				if (error) {
-					done(error);
-				} else {
-					dbconn.addUser('username', 'password123', 'example@example.com')
-					.then(function() {
-						done()
-					}).catch(function(error) {
-						done(error);
-					});
-				}
+			}).then(function(dbconn) {
+				return dbconn.addUser('username', 'password123', 'example@example.com')
+			}).then(function() {
+				done();
 			});
 		});
 	});
 	describe('DBConn.findUser()', function() {
 		it("should correctly find a user.", function(done) {
-			var dbconn = new DBConn({
+			new DBConn({
 				dbConnection: "sqlite://charonauth/",
 				dbOptions: { "storage": ":memory:" },
-			}, function(error, dbconn) {
-				if (error) {
-					done(error);
-					return;
-				}
+			}).then(function(dbconn) {
 				fs.readFile('test/db/single_user.sql', function(error, data) {
 					if (error) {
 						done(error);

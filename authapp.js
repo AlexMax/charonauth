@@ -37,6 +37,8 @@ var proto = require('./proto');
 // This object encompasses all functionality dealing with the UDP endpoint of
 // charon.  More specifically, the socket server lives here.
 function AuthApp(config, callback) {
+	var self = this;
+
 	// AuthApp is an EventEmitter
 	events.EventEmitter.call(this);
 
@@ -62,15 +64,8 @@ function AuthApp(config, callback) {
 	}
 
 	// Create database connection
-	var self = this;
-	this.dbconn = new DBConn({
-		dbConnection: config.dbConnection,
-		dbOptions: config.dbOptions
-	}, function(err, dbconn) {
-		if (err) {
-			callback(err);
-			return;
-		}
+	new DBConn(config).then(function(dbconn) {
+		self.dbconn = dbconn;
 
 		// If we have an array of SQL files to import, import them.
 		if ("dbImport" in config) {

@@ -212,7 +212,9 @@ WebApp.prototype.register = function(req, res) {
 	}
 };
 WebApp.prototype.registerVerify = function(req, res) {
-	self.dbconn.Verify.find({
+	var self = this;
+
+	this.dbconn.Verify.find({
 		where: {
 			token: req.params.token
 		}

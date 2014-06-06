@@ -215,7 +215,7 @@ var serverProof = {
 			proof: proof
 		};
 	}
-}
+};
 
 // Auth server Proof
 // UInt32, Int32, Buffer
@@ -244,7 +244,7 @@ var authProof = {
 			proof: proof
 		};
 	}
-}
+};
 
 // Errors
 var userError = {

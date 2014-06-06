@@ -34,33 +34,16 @@ describe('DBConn', function() {
 		});
 	});
 	describe('DBConn.findUser()', function() {
-		it("should correctly find a user.", function(done) {
+		it("should correctly find a user in a case-insensitive manner.", function(done) {
 			new DBConn({
 				database: {
 					uri: "sqlite://charonauth/",
 					options: { "storage": ":memory:" }
-				}
+				},
+				dbImport: ['test/db/single_user.sql']
 			}).then(function(dbconn) {
-				fs.readFile('test/db/single_user.sql', function(error, data) {
-					if (error) {
-						done(error);
-						return;
-					}
-					dbconn.db.query(data.toString('ascii'))
-					.error(function(error) {
-						done(error);
-					})
-					.success(function(data) {
-						dbconn.findUser('username', function(error, data) {
-							if (error) {
-								done(error);
-							} else {
-								done();
-							}
-						});
-					});
-				});
-			});
+				return dbconn.findUser('Username');
+			}).then(done);
 		});
 	});
 });

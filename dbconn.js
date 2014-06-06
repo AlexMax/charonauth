@@ -120,15 +120,13 @@ DBConn.prototype.addUser = function(username, password, email, access) {
 		return profile.getUser();
 	});
 };
-DBConn.prototype.findUser = function(username, callback) {
-	this.User.find({ where: { username: username }})
-	.complete(function(err, data) {
-		if (err) {
-			callback(err);
-		} else if (!data) {
-			callback(new Error("User not found"));
+DBConn.prototype.findUser = function(username) {
+	this.User.find({ where: { username: username.toLowerCase() }})
+	.then(function(data) {
+		if (!data) {
+			return new Error("User not found");
 		} else {
-			callback(null, data);
+			return data;
 		}
 	});
 };

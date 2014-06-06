@@ -50,14 +50,6 @@ function AuthApp(config, callback) {
 		callback(new Error("Constructor called as function"));
 		return;
 	}
-	if (!("dbConnection" in config)) {
-		callback(new Error("Missing dbConnection in AuthApp configuration."));
-		return;
-	}
-	if (!("dbOptions" in config)) {
-		callback(new Error("Missing dbOptions in AuthApp configuration."));
-		return;
-	}
 	if (!("authPort" in config)) {
 		callback(new Error("Missing authPort in AuthApp configuration."));
 		return;

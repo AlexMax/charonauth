@@ -37,14 +37,6 @@ var webforms = require('./webforms');
 function WebApp(config, callback) {
 	var self = this;
 
-	if (!("dbConnection" in config)) {
-		callback(new Error("Missing dbConnection in WebApp configuration."));
-		return;
-	}
-	if (!("dbOptions" in config)) {
-		callback(new Error("Missing dbOptions in WebApp configuration."));
-		return;
-	}
 	if (!("webPort" in config)) {
 		callback(new Error("Missing webPort in WebApp configuration."));
 		return;

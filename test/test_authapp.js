@@ -16,8 +16,10 @@ describe('AuthApp', function() {
 	describe('new AuthApp()', function() {
 		it("should construct correctly.", function(done) {
 			new AuthApp({
-				dbConnection: "sqlite://charonauth/",
-				dbOptions: { "storage": ":memory:" },
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" },
+				},
 				authPort: 16666
 			}, function(error) {
 				if (error) {
@@ -29,32 +31,10 @@ describe('AuthApp', function() {
 		});
 		it("should send an error to the callback without new.", function(done) {
 			AuthApp({
-				dbConnection: "sqlite://charonauth/",
-				dbOptions: { "storage": ":memory:" },
-				authPort: 16666
-			}, function(error) {
-				if (error) {
-					done();
-				} else {
-					done(new Error("Did not error"));
-				}
-			});
-		});
-		it("should send an error to the callback on missing dbConnection.", function(done) {
-			new AuthApp({
-				dbOptions: { "storage": ":memory:" },
-				authPort: 16666
-			}, function(error) {
-				if (error) {
-					done();
-				} else {
-					done(new Error("Did not error"));
-				}
-			});
-		});
-		it("should send an error to the callback on missing dbOptions.", function(done) {
-			new AuthApp({
-				dbConnection: "sqlite://charonauth/",
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" },
+				},
 				authPort: 16666
 			}, function(error) {
 				if (error) {
@@ -65,10 +45,7 @@ describe('AuthApp', function() {
 			});
 		});
 		it("should send an error to the callback on missing port.", function(done) {
-			new AuthApp({
-				dbConnection: "sqlite://charonauth/",
-				dbOptions: { "storage": ":memory:" },
-			}, function(error) {
+			new AuthApp({}, function(error) {
 				if (error) {
 					done();
 				} else {
@@ -81,15 +58,13 @@ describe('AuthApp', function() {
 		var auth_app = undefined;
 
 		beforeEach(function(done) {
-			function finished() {
-				done();
-			}
-
 			auth_app = new AuthApp({
-				dbConnection: "sqlite://charonauth/",
-				dbOptions: { "storage": ":memory:" },
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				},
 				authPort: 16666
-			}, finished);
+			}, done);
 		});
 		afterEach(function() {
 			// Prevent memory leaks...
@@ -124,8 +99,10 @@ describe('AuthApp', function() {
 			async.waterfall([
 				function(next) {
 					new AuthApp({
-						dbConnection: "sqlite://charonauth/",
-						dbOptions: { "storage": ":memory:" },
+						database: {
+							uri: "sqlite://charonauth/",
+							options: { "storage": ":memory:" }
+						},
 						dbImport: ['test/db/single_user.sql'],
 						authPort: 16666
 					}, next);
@@ -188,8 +165,10 @@ describe('AuthApp', function() {
 			async.waterfall([
 				function(next) {
 					auth_app = new AuthApp({
-						dbConnection: "sqlite://charonauth/",
-						dbOptions: { "storage": ":memory:" },
+						database: {
+							uri: "sqlite://charonauth/",
+							options: { "storage": ":memory:" },
+						},
 						dbImport: ['test/db/single_user.sql', 'test/db/session.sql'],
 						authPort: 16666
 					}, next);
@@ -326,8 +305,10 @@ describe('AuthApp', function() {
 			async.waterfall([
 				function(next) {
 					auth_app = new AuthApp({
-						dbConnection: "sqlite://charonauth/",
-						dbOptions: { "storage": ":memory:" },
+						database: {
+							uri: "sqlite://charonauth/",
+							options: { "storage": ":memory:" }
+						},
 						dbImport: ['test/db/single_user.sql', 'test/db/session_ephemeral.sql'],
 						authPort: 16666
 					}, next);

@@ -32,11 +32,11 @@ var srp = require('srp');
 var DBConn = function(config) {
 	var self = this;
 
-	config.dbOptions.logging = config.dbOptions.logging || false;
+	config.database.options.logging = config.database.options.logging || false;
 
 	return new Promise(function(resolve, reject) {
 		try {
-			self.db = new Sequelize(config.dbConnection, config.dbOptions);
+			self.db = new Sequelize(config.database.uri, config.database.options);
 			resolve();
 		} catch (e) {
 			reject(e);

@@ -10,8 +10,10 @@ describe('DBConn', function() {
 	describe('new DBConn()', function() {
 		it("should construct correctly.", function(done) {
 			new DBConn({
-				dbConnection: "sqlite://charonauth/",
-				dbOptions: { "storage": ":memory:" },
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				}
 			}).then(function() {
 				done();
 			});
@@ -20,8 +22,10 @@ describe('DBConn', function() {
 	describe('DBConn.addUser()', function() {
 		it("should correctly add a user.", function(done) {
 			new DBConn({
-				dbConnection: "sqlite://charonauth/",
-				dbOptions: { "storage": ":memory:" },
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				}
 			}).then(function(dbconn) {
 				return dbconn.addUser('username', 'password123', 'example@example.com')
 			}).then(function() {
@@ -32,8 +36,10 @@ describe('DBConn', function() {
 	describe('DBConn.findUser()', function() {
 		it("should correctly find a user.", function(done) {
 			new DBConn({
-				dbConnection: "sqlite://charonauth/",
-				dbOptions: { "storage": ":memory:" },
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				}
 			}).then(function(dbconn) {
 				fs.readFile('test/db/single_user.sql', function(error, data) {
 					if (error) {

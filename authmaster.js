@@ -41,13 +41,7 @@ if (cluster.isMaster) {
 
 	var AuthApp = require('./authapp');
 
-	var authapp = new AuthApp({
-		dbConnection: config.dbConnection,
-		dbOptions: config.dbOptions,
-		dbImport: config.dbImport, /* FIXME: gross, handle database init stuff elsewhere */
-
-		authPort: config.authPort
-	}, function(err) {
+	var authapp = new AuthApp(config, function(err) {
 		if (err) {
 			winston.error(err);
 		} else {

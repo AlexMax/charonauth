@@ -1,7 +1,9 @@
 {
-	"dbConnection": "",
+	"database": {
+		"uri": null,
+		"options": null
+	},
 	"dbImport": null,
-	"dbOptions": {},
 	"authPort": 16666,
 	"authWorkers": 1,
 	"webPort": 9000,

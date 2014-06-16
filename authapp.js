@@ -22,10 +22,10 @@
 var async = require('async');
 var Promise = require('bluebird');
 var dgram = require('dgram');
-var events = require('events');
 var fs = require('fs');
 var srp = Promise.promisifyAll(require('srp'));
 var util = require('util');
+var winston = require('winston');
 
 require('date-utils');
 
@@ -39,9 +39,6 @@ var proto = require('./proto');
 // charon.  More specifically, the socket server lives here.
 function AuthApp(config, callback) {
 	var self = this;
-
-	// AuthApp is an EventEmitter
-	events.EventEmitter.call(this);
 
 	if (typeof callback !== 'function') {
 		callback = function() { };
@@ -114,7 +111,7 @@ function AuthApp(config, callback) {
 		// Start listening for UDP packets
 		function listen() {
 			self.socket = dgram.createSocket('udp4');
-			self.socket.on('message', self.router.bind(self));
+			self.socket.on('message', self.message.bind(self));
 			self.socket.bind(config.authPort, function() {
 				// We're finally done constructing at this point.
 				callback(null, self);
@@ -122,33 +119,50 @@ function AuthApp(config, callback) {
 		}
 	});
 }
-util.inherits(AuthApp, events.EventEmitter);
+
+// Message handler.
+//
+// Passes messages onto the router, and correctly handles errors at the
+// top level.  This is done in order to make the router testable, yet
+// properly log/ignore errors that trickle down this far.
+AuthApp.prototype.message = function(msg, rinfo) {
+	this.router(msg, rinfo)
+	.catch(error.IgnorableProtocol, function(err) {
+		// Ignorable protocol errors should only be logged if we actually
+		// want them to be logged.
+		winston.debug(err.stack);
+	});
+}
+
 
 // Router.
 //
 // Routes incoming requests to the proper function.
 AuthApp.prototype.router = function(msg, rinfo) {
-	if (msg.length < 4) {
-		this.emit('error', new Error('Message is too small'));
-		return;
-	}
+	var self = this;
 
-	var packetType = msg.readUInt32LE(0);
+	return new Promise(function(resolve, reject) {
+		if (msg.length < 4) {
+			reject(new error.IgnorableProtocol("Message is too small"));
+		}
 
-	switch (packetType) {
-		case proto.SERVER_NEGOTIATE:
-		this.serverNegotiate(msg, rinfo);
-		break;
-		case proto.SERVER_EPHEMERAL:
-		this.serverEphemeral(msg, rinfo);
-		break;
-		case proto.SERVER_PROOF:
-		this.serverProof(msg, rinfo);
-		break;
-		default:
-		this.emit('error', new Error('Message has invalid packet type'));
-		break;
-	}
+		var packetType = msg.readUInt32LE(0);
+
+		switch (packetType) {
+			case proto.SERVER_NEGOTIATE:
+			resolve(self.serverNegotiate(msg, rinfo));
+			break;
+			case proto.SERVER_EPHEMERAL:
+			resolve(self.serverEphemeral(msg, rinfo));
+			break;
+			case proto.SERVER_PROOF:
+			resolve(self.serverProof(msg, rinfo));
+			break;
+			default:
+			reject(new error.IgnorableProtocol("Message has invalid packet type"));
+			break;
+		}
+	});
 };
 
 // Server Negotiate Route

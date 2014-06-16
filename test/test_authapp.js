@@ -9,6 +9,7 @@ var fs = require('fs');
 var srp = require('srp');
 var util = require('util');
 
+var error = require('../error');
 var proto = require('../proto');
 var AuthApp = require('../authapp');
 
@@ -66,31 +67,23 @@ describe('AuthApp', function() {
 				authPort: 16666
 			}, done);
 		});
-		afterEach(function() {
-			// Prevent memory leaks...
-			auth_app.removeAllListeners();
-			
-			auth_app = undefined;
-		});
-		it('should emit an error if the packet is too short.', function(done) {
-			auth_app.on('error', function(err) {
-				assert.ok(util.isError(err));
-				done();
-			});
-
-			var socket = dgram.createSocket('udp4');
+		it('should error if the packet is too short.', function(done) {
 			var packet = new Buffer('00', 'hex');
-			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
-		});
-		it('should emit an error if the packet doesn\'t route anywhere.', function(done) {
-			auth_app.on('error', function(err) {
-				assert.ok(util.isError(err));
+			auth_app.router(packet)
+			.catch(error.IgnorableProtocol, function(err) {
 				done();
+			}).catch(function(err) {
+				done(err);
 			});
-
-			var socket = dgram.createSocket('udp4');
+		});
+		it('should error if the packet doesn\'t route anywhere.', function(done) {
 			var packet = new Buffer('00010203', 'hex');
-			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
+			auth_app.router(packet)
+			.catch(error.IgnorableProtocol, function(err) {
+				done();
+			}).catch(function(err) {
+				done(err);
+			});
 		});
 	});
 	describe('AuthApp.serverNegotiate()', function() {

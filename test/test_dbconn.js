@@ -2,8 +2,6 @@
 /* global describe, it */
 "use strict";
 
-var fs = require('fs');
-
 var DBConn = require('../dbconn');
 
 describe('DBConn', function() {
@@ -43,15 +41,48 @@ describe('DBConn', function() {
 	});
 	describe('DBConn.findUser()', function() {
 		it("should correctly find a user in a case-insensitive manner.", function(done) {
+			var db;
+
 			new DBConn({
 				database: {
 					uri: "sqlite://charonauth/",
 					options: { "storage": ":memory:" }
-				},
-				dbImport: ['test/db/single_user.sql']
+				}
 			}).then(function(dbconn) {
-				return dbconn.findUser('Username');
+				db = dbconn;
+				return require('./fixture/single_user')(db.User);
+			}).then(function() {
+				return db.findUser('Username');
 			}).then(function(user) {
+				done();
+			}).catch(done);
+		});
+	});
+	describe('DBConn.newSession()', function() {
+		it("should correctly create a session.", function(done) {
+			var db;
+
+			new DBConn({
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				}
+			}).then(function(dbconn) {
+				db = dbconn;
+				return require('./fixture/single_user')(db.User);
+			}).then(function() {
+				return db.newSession('username');
+			}).then(function(user) {
+				return db.Session.findAndCountAll();
+			}).then(function(sessions) {
+				if (sessions.count !== 1) {
+					done(new Error("Session was not created"));
+				}
+				return sessions.rows[0].getUser();
+			}).then(function(user) {
+				if (user === null) {
+					done(new Error("Session is not attached to User"));
+				}
 				done();
 			}).catch(done);
 		});

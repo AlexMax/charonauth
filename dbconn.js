@@ -24,6 +24,8 @@ var crypto = require('crypto');
 var Sequelize = require('sequelize');
 var srp = require('srp');
 
+var error = require('./error');
+
 // DBConn
 //
 // Handles communication with the database.
@@ -124,102 +126,65 @@ DBConn.prototype.findUser = function(username) {
 	return this.User.find({ where: { username: username.toLowerCase() }})
 	.then(function(data) {
 		if (data === null) {
-			throw new Error("User not found");
+			throw new error.UserNotFound("User not found");
 		} else {
 			return data;
 		}
 	});
 };
-DBConn.prototype.newSession = function(username, callback) {
+DBConn.prototype.newSession = function(username) {
 	var self = this;
 
-	// Find user by username first...
-	this.User.find({ where: { username: username }})
-	.error(function(err) {
-		callback(err);
-	})
-	.success(function(user) {
-		if (!user) {
-			callback(new Error("User does not exist"));
-			return;
-		}
-
-		// Now that we know we have a valid user, create a session
-		var sessionBuffer = crypto.randomBytes(4);
-		var sessionID = sessionBuffer.readUInt32LE(0);
-
-		self.Session.create({ session: sessionID })
-		.error(function(err) {
-			callback(new Error('Session could not be created'));
+	return Promise.all([
+		this.findUser(username),
+		new Promise(function(resolve, reject) {
+			var sessionBuffer = crypto.randomBytes(4);
+			var sessionID = sessionBuffer.readUInt32LE(0);
+			resolve(sessionID);
+		}).then(function(sessionID) {
+			return self.Session.create({ session: sessionID });
 		})
-		.success(function(sess) {
-			// With a created session, link the user to the session
-			sess.setUser(user)
-			.error(function(err) {
-				callback(err);
-			})
-			.success(function() {
-				callback(null, {
-					session: sess.session,
-					username: user.username,
-					salt: user.salt
-				});
-			});
-		});
+	]).spread(function(user, session) {
+		return session.setUser(user);
 	});
 };
-DBConn.prototype.findSession = function(session, timeout, callback) {
-	this.Session.find({ where: { session: session }})
-	.success(function(sess) {
-		if (!sess) {
-			callback(new Error("Session not found"));
-			return;
+DBConn.prototype.findSession = function(session, timeout) {
+	return this.Session.find({ where: { session: session }})
+	.then(function(sess) {
+		if (sess === null) {
+			throw new Error("Session not found");
 		}
 
 		// A session that is expired is not a valid session.
 		var diff = sess.createdAt.getSecondsBetween(new Date());
 		if (diff > timeout) {
-			callback(new Error('Session has expired'));
-			return;
+			throw new Error('Session has expired');
 		}
 
 		// Get data associated with session.
-		sess.getUser()
-		.success(function(user) {
-			callback(null, {
-				ephemeral: sess.ephemeral,
-				secret: sess.secret,
-				session: sess.session,
-				salt: user.salt,
-				username: user.username,
-				verifier: user.verifier
-			});
-		})
-		.error(function(err) {
-			callback(err);
-		});
-	})
-	.error(function(err) {
-		callback(err);
+		return [sess, sess.getUser()];
+	}).spread(function(sess, user) {
+		if (user === null) {
+			throw new Error("Session is not attached to User");
+		} else if (user.access === "UNVERIFIED") {
+			throw new Error("Session belongs to UNVERIFIED User");
+		}
+
+		return sess;
 	});
 };
 DBConn.prototype.setEphemeral = function(session, ephemeral, secret, callback) {
-	this.Session.find({ where: ['session = ? AND ephemeral IS NULL AND secret IS NULL', session] })
-	.complete(function(err, data) {
-		if (err) {
-			callback(err);
-		} else if (!data) {
-			callback(new Error("Session not found"));
-		} else {
-			data.updateAttributes({ ephemeral: ephemeral, secret: secret })
-			.complete(function(err) {
-				if (err) {
-					callback(err);
-				} else {
-					callback(null, true);
-				}
-			});
+	return this.Session.find({
+		where: ['session = ? AND ephemeral IS NULL AND secret IS NULL', session]
+	}).then(function(sess) {
+		if (sess === null) {
+			throw new Error("Session not found");
 		}
+
+		return sess.updateAttributes({
+			ephemeral: ephemeral,
+			secret: secret
+		});
 	});
 };
 

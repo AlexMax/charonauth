@@ -20,16 +20,17 @@
 "use strict";
 
 var async = require('async');
-var crypto = require('crypto');
+var Promise = require('bluebird');
 var dgram = require('dgram');
 var events = require('events');
 var fs = require('fs');
-var srp = require('srp');
+var srp = Promise.promisifyAll(require('srp'));
 var util = require('util');
 
 require('date-utils');
 
 var DBConn = require('./dbconn');
+var error = require('./error');
 var proto = require('./proto');
 
 // AuthApp
@@ -161,32 +162,30 @@ AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 	var username = packet.username;
 
 	// Create a new session for given user.
-	this.dbconn.newSession(username, function(err, data) {
-		if (err) {
-			// FIXME: Specifically check for a "User does not exist" error.
-			if (err) {
-				var error = proto.userError.marshall({
-					username: username,
-					error: proto.USER_NO_EXIST
-				});
-
-				self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
-				return;
-			}
-
-			self.emit('error', err);
-			return;
-		}
-
+	this.dbconn.newSession(username)
+	.then(function(session) {
+		return [session, session.getUser()];
+	}).spread(function(session, user) {
 		// Write the response packet
 		var response = proto.authNegotiate.marshall({
-			session: data.session,
-			salt: data.salt,
-			username: data.username
+			session: session.session,
+			salt: user.salt,
+			username: user.username
 		});
 
 		// Send the response packet to the sender
 		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+	}).catch(error.UserNotFound, function(err) {
+		// User was not found
+		var error = proto.userError.marshall({
+			username: username,
+			error: proto.USER_NO_EXIST
+		});
+
+		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
+	}).catch(function(e) {
+		// Unknown exception.
+		// TODO: Log it here.
 	});
 };
 
@@ -200,50 +199,36 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 	// Unmarshall the server negotiation packet
 	var packet = proto.serverEphemeral.unmarshall(msg);
 
-	async.waterfall([
-		function(next) {
-			// Is the session we were passed an active and valid session?
-			self.dbconn.findSession(packet.session, self.sessionTimeout, next);
-		},
-		function(session, next) {
-			// Generate a secret key for use in the ephemeral value.
-			srp.genKey(32, function(err, secret) {
-				next(err, session, secret);
-			});
-		},
-		function(session, secret, next) {
-			// Try to generate the server's ephemeral value.
-			var srpServer = new srp.Server(
-				srp.params['2048'],
-				session.salt,
-				new Buffer(session.username, 'ascii'),
-				session.verifier,
-				secret
-			);
-			try {
-				srpServer.setA(packet.ephemeral);
-			} catch(e) {
-				next(e);
-			}
-			var serverEphemeral = srpServer.computeB();
-			self.dbconn.setEphemeral(packet.session, packet.ephemeral, secret, function(err) {
-				next(err, serverEphemeral);
-			});
-		},
-		function(serverEphemeral, next) {
-			// Write the response packet
-			var response = proto.authEphemeral.marshall({
-				session: packet.session,
-				ephemeral: serverEphemeral
-			});
+	// Is the session we were passed an active and valid session?
+	this.dbconn.findSession(packet.session, this.sessionTimeout)
+	.then(function(session) {
+		return [session, session.getUser()];
+	}).spread(function(session, user) {
+		return [session, user, srp.genKeyAsync(32)];
+	}).spread(function(session, user, secret) {
+		// Try to generate the server's ephemeral value.
+		var srpServer = new srp.Server(
+			srp.params['2048'],
+			user.salt,
+			new Buffer(user.username, 'ascii'),
+			user.verifier,
+			secret
+		);
+		srpServer.setA(packet.ephemeral);
+		var serverEphemeral = srpServer.computeB();
+		return self.dbconn.setEphemeral(packet.session, packet.ephemeral, secret);
+	}).then(function(session) {
+		// Write the response packet
+		var response = proto.authEphemeral.marshall({
+			session: packet.session,
+			ephemeral: session.ephemeral
+		});
 
-			// Send the response packet to the sender
-			self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
-		}
-	], function(err) {
-		if (err) {
-			self.emit('error', err);
-		}
+		// Send the response packet to the sender
+		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+	}).catch(function(err) {
+		// Unknown exception.
+		// TODO: Log it here.
 	});
 };
 
@@ -258,52 +243,51 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 	// Unmarshall the server negotiation packet
 	var packet = proto.serverProof.unmarshall(msg);
 
-	async.waterfall([
-		function(next) {
-			// Is the session we were passed an active and valid session?
-			self.dbconn.findSession(packet.session, self.sessionTimeout, next);
-		},
-		function(session, next) {
-			// Recreate the necessary SRP state to check the client's proof.
-			var srpServer = new srp.Server(
-				srp.params['2048'],
-				session.salt,
-				new Buffer(session.username, 'ascii'),
-				session.verifier,
-				session.secret
-			);
+	// Is the session we were passed an active and valid session?
+	this.dbconn.findSession(packet.session, this.sessionTimeout)
+	.then(function(session) {
+		return [session, session.getUser()];
+	}).spread(function(session, user) {
+		// Recreate the necessary SRP state to check the client's proof.
+		var srpServer = new srp.Server(
+			srp.params['2048'],
+			user.salt,
+			new Buffer(user.username, 'ascii'),
+			user.verifier,
+			session.secret
+		);
 
-			var proof;
-			// Reset A so we can check the message.
-			srpServer.setA(session.ephemeral);
+		// Reset A so we can check the message.
+		srpServer.setA(session.ephemeral);
 
-			try {
-				// Check the client's proof.  This will throw if it fails.
-				proof = srpServer.checkM1(packet.proof);
-			} catch(e) {
-				// Authentication failed.
-				var error = proto.sessionError.marshall({
-					session: packet.session,
-					error: proto.SESSION_AUTH_FAILED
-				});
-
-				self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
-				return;
-			}
-
-			// Write the response packet
-			var response = proto.authProof.marshall({
-				session: packet.session,
-				proof: proof
-			});
-
-			// Send the response packet to the sender
-			self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+		var proof;
+		try {
+			// Check the client's proof.  This will throw if it fails.
+			proof = srpServer.checkM1(packet.proof);
+		} catch(e) {
+			// Authentication failed.
+			throw new error.SessionAuthFailed("Authentication failed");
 		}
-	], function(err) {
-		if (err) {
-			throw err;
-		}
+
+		// Write the response packet
+		var response = proto.authProof.marshall({
+			session: packet.session,
+			proof: proof
+		});
+
+		// Send the response packet to the sender
+		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+	}).catch(error.SessionAuthFailed, function(err) {
+		// Authentication failed
+		var errorPacket = proto.sessionError.marshall({
+			session: packet.session,
+			error: proto.SESSION_AUTH_FAILED
+		});
+
+		self.socket.send(errorPacket, 0, errorPacket.length, rinfo.port, rinfo.address);
+	}).catch(function(err) {
+		// Unknown exception.
+		// TODO: Log it here.
 	});
 };
 

@@ -19,12 +19,10 @@
 /* jshint node: true */
 "use strict";
 
-var async = require('async');
 var Promise = require('bluebird');
-var dgram = require('dgram');
-var fs = require('fs');
+
+var dgram = Promise.promisifyAll(require('dgram'));
 var srp = Promise.promisifyAll(require('srp'));
-var util = require('util');
 var winston = require('winston');
 
 require('date-utils');
@@ -37,86 +35,31 @@ var proto = require('./proto');
 //
 // This object encompasses all functionality dealing with the UDP endpoint of
 // charon.  More specifically, the socket server lives here.
-function AuthApp(config, callback) {
+function AuthApp(config) {
 	var self = this;
 
-	if (typeof callback !== 'function') {
-		callback = function() { };
-	}
+	return new Promise(function(resolve, reject) {
+		if (!("auth" in config)) {
+			reject(new Error("Missing auth configuration"));
+			return;
+		}
 
-	if (!(this instanceof AuthApp)) {
-		callback(new Error("Constructor called as function"));
-		return;
-	}
-	if (!("authPort" in config)) {
-		callback(new Error("Missing authPort in AuthApp configuration."));
-		return;
-	}
+		if (!("port" in config.auth)) {
+			reject(new Error("Missing port in auth configuration."));
+			return;
+		}
 
-	// Create database connection
-	new DBConn(config).then(function(dbconn) {
+		// Create database connection.
+		resolve(new DBConn(config));
+	}).then(function(dbconn) {
 		self.dbconn = dbconn;
 
-		// If we have an array of SQL files to import, import them.
-		if ("dbImport" in config) {
-			if (!util.isArray(config.dbImport)) {
-				callback(new Error("dbImport is not an Array."));
-				return;
-			}
-
-			// Load each of the provided SQL files
-			async.map(
-				config.dbImport,
-				function(filename, call) {
-					fs.readFile(filename, { encoding: 'utf8' }, function(err, data) {
-						// Split multiple SQL statements into separate strings.
-						// [AM] This is nowhere near foolproof, but its good enough for
-						//      loading my SQL dumps for unit tests.
-						var statements = data.split(';\n');
-						
-						// Remove empty strings from list
-						for (var i = statements.length - 1;i >= 0;i--) {
-							if (statements[i].length === 0) {
-								statements.splice(i, 1);
-							}
-						}
-
-						call(err, statements);
-					});
-				}, function(err, statements) {
-					if (err) {
-						callback(err);
-						return;
-					}
-
-					// Run each statement in sequence.
-					statements = [].concat.apply([], statements);
-					async.mapSeries(
-						statements,
-						function(statement, call) {
-							dbconn.db.query(statement)
-							.done(function(err, result) {
-								call(err, result);
-							});
-						}, function(err, results) {
-							listen();
-						}
-					);
-				}
-			);
-		} else {
-			listen();
-		}
-
 		// Start listening for UDP packets
-		function listen() {
-			self.socket = dgram.createSocket('udp4');
-			self.socket.on('message', self.message.bind(self));
-			self.socket.bind(config.authPort, function() {
-				// We're finally done constructing at this point.
-				callback(null, self);
-			});
-		}
+		self.socket = dgram.createSocket('udp4');
+		self.socket.on('message', self.message.bind(self));
+		return self.socket.bindAsync(config.authPort);
+	}).then(function() {
+		return self;
 	});
 }
 
@@ -126,14 +69,24 @@ function AuthApp(config, callback) {
 // top level.  This is done in order to make the router testable, yet
 // properly log/ignore errors that trickle down this far.
 AuthApp.prototype.message = function(msg, rinfo) {
-	this.router(msg, rinfo)
-	.catch(error.IgnorableProtocol, function(err) {
-		// Ignorable protocol errors should only be logged if we actually
-		// want them to be logged.
+	var self = this;
+
+	this.router(msg, rinfo).then(function(response) {
+		// If our handler has a valid response, send it back
+		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
+	}).catch(error.UserNotFound, function(err) {
+		// User was not found
+		var error = proto.userError.marshall({
+			username: username,
+			error: proto.USER_NO_EXIST
+		});
+
+		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
+	}).catch(error.IgnorableProtocol, function(err) {
+		// Protocol error that can be ignored unless we're debugging
 		winston.debug(err.stack);
 	});
 }
-
 
 // Router.
 //
@@ -176,30 +129,16 @@ AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 	var username = packet.username;
 
 	// Create a new session for given user.
-	this.dbconn.newSession(username)
+	return this.dbconn.newSession(username)
 	.then(function(session) {
-		return [session, session.getUser()];
+		return Promise.all([session, session.getUser()]);
 	}).spread(function(session, user) {
 		// Write the response packet
-		var response = proto.authNegotiate.marshall({
+		return proto.authNegotiate.marshall({
 			session: session.session,
 			salt: user.salt,
 			username: user.username
 		});
-
-		// Send the response packet to the sender
-		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
-	}).catch(error.UserNotFound, function(err) {
-		// User was not found
-		var error = proto.userError.marshall({
-			username: username,
-			error: proto.USER_NO_EXIST
-		});
-
-		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
-	}).catch(function(e) {
-		// Unknown exception.
-		// TODO: Log it here.
 	});
 };
 
@@ -216,9 +155,11 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 	// Is the session we were passed an active and valid session?
 	this.dbconn.findSession(packet.session, this.sessionTimeout)
 	.then(function(session) {
-		return [session, session.getUser()];
+		// Find the user associated with this session
+		return Promise.all([session, session.getUser()]);
 	}).spread(function(session, user) {
-		return [session, user, srp.genKeyAsync(32)];
+		// Generate a session key 
+		return Promise.all([session, user, srp.genKeyAsync(32)]);
 	}).spread(function(session, user, secret) {
 		// Try to generate the server's ephemeral value.
 		var srpServer = new srp.Server(
@@ -233,17 +174,11 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 		return self.dbconn.setEphemeral(packet.session, packet.ephemeral, secret);
 	}).then(function(session) {
 		// Write the response packet
-		var response = proto.authEphemeral.marshall({
+		return proto.authEphemeral.marshall({
 			session: packet.session,
 			ephemeral: session.ephemeral
 		});
-
-		// Send the response packet to the sender
-		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
-	}).catch(function(err) {
-		// Unknown exception.
-		// TODO: Log it here.
-	});
+	})
 };
 
 // Server Proof Route

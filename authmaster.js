@@ -41,11 +41,9 @@ if (cluster.isMaster) {
 
 	var AuthApp = require('./authapp');
 
-	var authapp = new AuthApp(config, function(err) {
-		if (err) {
-			winston.error(err);
-		} else {
+	new AuthApp(config).then(function() {
 			winston.info('Authentication worker ' + process.pid + ' started.');
-		}
+	}).catch(function(err) {
+			winston.error(err);
 	});
 }

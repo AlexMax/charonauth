@@ -4,8 +4,10 @@
 		"options": null
 	},
 	"dbImport": null,
-	"authPort": 16666,
-	"authWorkers": 1,
+	"auth": {
+		"port": 16666,
+		"workers": 1
+	},
 	"webPort": 9000,
 	"webWorkers": 1
 }

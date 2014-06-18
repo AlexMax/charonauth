@@ -2,12 +2,8 @@
 /* global describe, it, beforeEach */
 "use strict";
 
+var Promise = require('bluebird');
 var assert = require('assert');
-var async = require('async');
-var dgram = require('dgram');
-var fs = require('fs');
-var srp = require('srp');
-var util = require('util');
 
 var error = require('../error');
 var proto = require('../proto');
@@ -15,141 +11,102 @@ var AuthApp = require('../authapp');
 
 describe('AuthApp', function() {
 	describe('new AuthApp()', function() {
-		it("should construct correctly.", function(done) {
-			new AuthApp({
+		it("should construct correctly.", function() {
+			return new AuthApp({
 				database: {
 					uri: "sqlite://charonauth/",
 					options: { "storage": ":memory:" },
 				},
-				authPort: 16666
-			}, function(error) {
-				if (error) {
-					done(error);
-				} else {
-					done();
+				auth: {
+					port: 16666
 				}
 			});
 		});
-		it("should send an error to the callback without new.", function(done) {
-			AuthApp({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" },
-				},
-				authPort: 16666
-			}, function(error) {
-				if (error) {
-					done();
-				} else {
-					done(new Error("Did not error"));
-				}
-			});
-		});
-		it("should send an error to the callback on missing port.", function(done) {
-			new AuthApp({}, function(error) {
-				if (error) {
-					done();
-				} else {
-					done(new Error("Did not error"));
-				}
+		it("should error on missing port.", function() {
+			return new AuthApp({}).then(function() {
+				throw new Error("Did not error");
+			}).catch(function(err) {
+				// Success
 			});
 		});
 	});
 	describe('AuthApp.router()', function() {
-		var auth_app = undefined;
-
-		beforeEach(function(done) {
-			auth_app = new AuthApp({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				},
-				authPort: 16666
-			}, done);
-		});
-		it('should error if the packet is too short.', function(done) {
+		var config = {
+			database: {
+				uri: "sqlite://charonauth/",
+				options: { "storage": ":memory:" }
+			},
+			auth: {
+				port: 16666
+			}
+		};
+		it('should error if the packet is too short.', function() {
 			var packet = new Buffer('00', 'hex');
-			auth_app.router(packet)
-			.catch(error.IgnorableProtocol, function(err) {
-				done();
-			}).catch(function(err) {
-				done(err);
+			return new AuthApp(config).then(function(app) {
+				return app.router(packet);
+			}).then(function() {
+				throw new Error("Did not error");
+			}).catch(error.IgnorableProtocol, function() {
+				// Success
 			});
 		});
-		it('should error if the packet doesn\'t route anywhere.', function(done) {
+		it('should error if the packet doesn\'t route anywhere.', function() {
 			var packet = new Buffer('00010203', 'hex');
-			auth_app.router(packet)
-			.catch(error.IgnorableProtocol, function(err) {
-				done();
-			}).catch(function(err) {
-				done(err);
+			return new AuthApp(config).then(function(app) {
+				return app.router(packet);
+			}).then(function() {
+				throw new Error("Did not error");
+			}).catch(error.IgnorableProtocol, function() {
+				// Success
 			});
 		});
 	});
 	describe('AuthApp.serverNegotiate()', function() {
-		beforeEach(function(done) {
-			// Load the test data into an in-memory database.
-			async.waterfall([
-				function(next) {
-					new AuthApp({
-						database: {
-							uri: "sqlite://charonauth/",
-							options: { "storage": ":memory:" }
-						},
-						dbImport: ['test/db/single_user.sql'],
-						authPort: 16666
-					}, next);
-				}
-			], function(err) {
-				if (err) {
-					done(err);
-				} else {
-					done();
-				}
+		var config = {
+			database: {
+				uri: "sqlite://charonauth/",
+				options: { "storage": ":memory:" }
+			},
+			auth: {
+				port: 16666
+			}
+		};
+
+		it("should be capable of creating new authentication sessions.", function() {
+			var packet = proto.serverNegotiate.marshall({
+				username: 'username'
 			});
-		});
-		it("should be capable of creating new authentication sessions.", function(done) {
-			var username = 'username';
 
-			var socket = dgram.createSocket('udp4');
-
-			socket.on('message', function(msg, rinfo) {
+			return new AuthApp(config).then(function(app) {
+				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
+			}).spread(function(app, _) {
+				return app.serverNegotiate(packet);
+			}).then(function(msg) {
+				// Will throw and reject the promise if it fails
 				var response = proto.authNegotiate.unmarshall(msg);
-				if (response.username === username) {
-					done();
-				} else {
-					done(new Error("Response contains unexpected data"));
-				}
-			});
 
-			var packet = proto.serverNegotiate.marshall({
-				username: username
+				assert.equal(response.username, "username", "Username is incorrect");
+				assert.equal(response.salt.toString('hex'), '615a9e29', "Salt is incorrect");
 			});
-
-			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
-		it("should send an error packet if the user does not exist.", function(done) {
-			var username = 'alice';
-
-			var socket = dgram.createSocket('udp4');
-
-			socket.on('message', function(msg, rinfo) {
-				var response = proto.userError.unmarshall(msg);
-				if (response.error === proto.USER_NO_EXIST && response.username === username) {
-					done();
-				} else {
-					done(new Error("Response contains unexpected data"));
-				}
-			});
-
+		it("should error if the user does not exist.", function() {
 			var packet = proto.serverNegotiate.marshall({
-				username: username
+				username: 'alice'
 			});
 
-			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
+			return new AuthApp(config).then(function(app) {
+				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
+			}).spread(function(app, _) {
+				return app.serverNegotiate(packet);
+			}).then(function() {
+				throw new Error("Did not error");
+			}).catch(error.UserNotFound, function() {
+				// Success
+			});
 		});
 	});
-	describe('AuthApp.serverEphemeral()', function() {
+});
+/*	describe('AuthApp.serverEphemeral()', function() {
 		var auth_app = undefined;
 
 		beforeEach(function(done) {
@@ -381,4 +338,4 @@ describe('AuthApp', function() {
 			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
 	});
-});
+});*/

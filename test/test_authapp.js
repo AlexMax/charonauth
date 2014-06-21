@@ -3,7 +3,9 @@
 "use strict";
 
 var Promise = require('bluebird');
+
 var assert = require('assert');
+var srp = Promise.promisifyAll(require('srp'));
 
 var error = require('../error');
 var proto = require('../proto');
@@ -105,44 +107,49 @@ describe('AuthApp', function() {
 			});
 		});
 	});
-});
-/*	describe('AuthApp.serverEphemeral()', function() {
-		var auth_app = undefined;
+	describe('AuthApp.serverEphemeral()', function() {
+		var config = {
+			database: {
+				uri: "sqlite://charonauth/",
+				options: { "storage": ":memory:" }
+			},
+			auth: {
+				port: 16666
+			}
+		};
+		it("should be capable of sending a valid ephemeral value B.", function() {
+			// What the client knows.
+			var username = 'username';
+			var password = 'password123';
 
-		beforeEach(function(done) {
-			// Load the test data into an in-memory database, plus start a new
-			// session with it.
-			async.waterfall([
-				function(next) {
-					auth_app = new AuthApp({
-						database: {
-							uri: "sqlite://charonauth/",
-							options: { "storage": ":memory:" },
-						},
-						dbImport: ['test/db/single_user.sql', 'test/db/session.sql'],
-						authPort: 16666
-					}, next);
-				}
-			], function(err) {
-				if (err) {
-					done(err);
-				} else {
-					done();
-				}
+			// What the client got from a hypothetical session establishment.
+			var salt = new Buffer('615A9E29', 'hex');
+			var session = 123456;
+
+			return new AuthApp(config).then(function(app) {
+				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
+			}).spread(function(app, _) {
+				return Promise.all([app, require('./fixture/single_user_session')(app.dbconn.User, app.dbconn.Session)]);
+			}).spread(function(app, _) {
+				return Promise.all([app, srp.genKeyAsync(32)]);
+			}).spread(function(app, secret) {
+				var srpClient = new srp.Client(srp.params['2048'], salt, new Buffer(username, 'ascii'), new Buffer(password, 'ascii'), secret);
+				var ephemeral = srpClient.computeA();
+				var packet = proto.serverEphemeral.marshall({
+					session: session,
+					ephemeral: ephemeral
+				});
+
+				return Promise.all([srpClient, app.serverEphemeral(packet)]);
+			}).spread(function(srpClient, msg) {
+				var response = proto.authEphemeral.unmarshall(msg);
+
+				assert.equal(response.session, session, "Session is incorrect");
+
+				srpClient.setB(response.ephemeral);
 			});
 		});
-		afterEach(function() {
-			// Prevent memory leaks...
-			auth_app.removeAllListeners();
-			
-			auth_app = undefined;
-		});
-		it("should be capable of sending a valid ephemeral value B.", function(done) {
-			// Any errors get bubbled up to the unit testing framework.
-			auth_app.on('error', function(err) {
-				done(err);
-			});
-
+		it("should error if session does not exist.", function() {
 			// What the client knows.
 			var username = 'username';
 			var password = 'password123';
@@ -151,102 +158,28 @@ describe('AuthApp', function() {
 			var salt = new Buffer('615A9E29', 'hex');
 			var session = 123456;
 
-			async.waterfall([
-				function(next) {
-					srp.genKey(32, next);
-				},
-				function(secret, next) {
-					var srpClient = new srp.Client(srp.params['2048'], salt, new Buffer(username, 'ascii'), new Buffer(password, 'ascii'), secret);
-					var ephemeral = srpClient.computeA();
-				
-					var socket = dgram.createSocket('udp4');
-				
-					socket.on('message', function(msg, rinfo) {
-						var response = proto.authEphemeral.unmarshall(msg);
-						if (response.session !== session) {
-							next(new Error("Response contains incorrect session"));
-							return;
-						}
-						if (response.ephemeral.length !== 256) {
-							next(new Error("Ephemeral B from server is not 256 bytes long"));
-							return;
-						}
-						next(null, srpClient, response.ephemeral);
-					});
-			
-					var packet = proto.serverEphemeral.marshall({
-						session: session,
-						ephemeral: ephemeral
-					});
+			return new AuthApp(config).then(function(app) {
+				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
+			}).spread(function(app, _) {
+				return Promise.all([app, srp.genKeyAsync(32)]);
+			}).spread(function(app, secret) {
+				var srpClient = new srp.Client(srp.params['2048'], salt, new Buffer(username, 'ascii'), new Buffer(password, 'ascii'), secret);
+				var ephemeral = srpClient.computeA();
+				var packet = proto.serverEphemeral.marshall({
+					session: session,
+					ephemeral: ephemeral
+				});
 
-					socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
-				},
-				function(srpClient, ephemeral, next) {
-					try {
-						srpClient.setB(ephemeral);
-						next();
-					} catch (e) {
-						next(e);
-					}
-				}
-			], function(err) {
-				if (err) {
-					done(err);
-				} else {
-					done();
-				}
+				return Promise.all([srpClient, app.serverEphemeral(packet)]);
+			}).then(function() {
+				throw new Error("Did not error");
+			}).catch(error.SessionNotFound, function() {
+				// Success
 			});
-		});
-		it("should emit an error if session does not exist.", function(done) {
-			auth_app.on('error', function(err) {
-				assert.ok(util.isError(err));
-				done();
-			});
-
-			var socket = dgram.createSocket('udp4');
-
-			var packet = proto.serverEphemeral.marshall({
-				session: 987654,
-				ephemeral: new Buffer('00', 'hex')
-			});
-
-			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
-		});
-		it("should emit an error if ephemeral length is too short.", function(done) {
-			auth_app.on('error', function(err) {
-				assert.ok(util.isError(err));
-				done();
-			});
-
-			var socket = dgram.createSocket('udp4');
-
-			var packet = proto.serverEphemeral.marshall({
-				session: 123456,
-				ephemeral: new Buffer('00', 'hex')
-			});
-
-			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
-		});
-		it("should emit an error if ephemeral is bad.", function(done) {
-			auth_app.on('error', function(err) {
-				assert.ok(util.isError(err));
-				done();
-			});
-
-			var socket = dgram.createSocket('udp4');
-
-			var ephemeral = new Buffer(256);
-			ephemeral.fill(0);
-
-			var packet = proto.serverEphemeral.marshall({
-				session: 123456,
-				ephemeral: ephemeral
-			});
-
-			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
 		});
 	});
-	describe('AuthApp.serverProof()', function() {
+});
+/*	describe('AuthApp.serverProof()', function() {
 		var auth_app = undefined;
 
 		beforeEach(function(done) {

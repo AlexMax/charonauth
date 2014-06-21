@@ -26,6 +26,18 @@ function UserNotFoundError(message) {
 UserNotFoundError.prototype = Object.create(Error.prototype);
 UserNotFoundError.prototype.constructor = UserNotFoundError;
 
+// SessionNotFoundError
+//
+// Thrown when a session can't be found in the database
+
+function SessionNotFoundError(message) {
+    this.message = message;
+    this.name = "SessionNotFoundError";
+    Error.captureStackTrace(this, SessionNotFoundError);
+}
+SessionNotFoundError.prototype = Object.create(Error.prototype);
+SessionNotFoundError.prototype.constructor = SessionNotFoundError;
+
 // SessionAuthFailedError
 //
 // Thrown when an authentication attempt has failed
@@ -40,4 +52,5 @@ SessionAuthFailedError.prototype.constructor = SessionAuthFailedError;
 
 module.exports.IgnorableProtocol = IgnorableProtocolError;
 module.exports.UserNotFound = UserNotFoundError;
+module.exports.SessionNotFound = SessionNotFoundError;
 module.exports.SessionAuthFailed = SessionAuthFailedError;

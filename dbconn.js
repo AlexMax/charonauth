@@ -152,7 +152,7 @@ DBConn.prototype.findSession = function(session, timeout) {
 	return this.Session.find({ where: { session: session }})
 	.then(function(sess) {
 		if (sess === null) {
-			throw new Error("Session not found");
+			throw new error.SessionNotFound("Session not found");
 		}
 
 		// A session that is expired is not a valid session.

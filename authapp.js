@@ -153,7 +153,7 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 	var packet = proto.serverEphemeral.unmarshall(msg);
 
 	// Is the session we were passed an active and valid session?
-	this.dbconn.findSession(packet.session, this.sessionTimeout)
+	return this.dbconn.findSession(packet.session, this.sessionTimeout)
 	.then(function(session) {
 		// Find the user associated with this session
 		return Promise.all([session, session.getUser()]);

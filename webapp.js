@@ -78,7 +78,9 @@ function WebApp(config, callback) {
 
 		// Middleware
 		self.app.use(express.static(__dirname + '/public'));
-		self.app.use(bodyParser.urlencoded());
+		self.app.use(bodyParser.urlencoded({
+			extended: true
+		}));
 		self.app.use(cookieParser());
 		self.app.use(session({
 			secret: config.web.secret,

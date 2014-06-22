@@ -200,12 +200,12 @@ WebApp.prototype.register = function(req, res) {
 					return user.setVerify(verify);
 				}).then(function(verify){
 					return verify.getUser();
+				}).then(function(user) {
+					self.render(req, res, 'registerNotify', {
+						email: user.email
+					});
 				});
 			}
-		}).then(function(user) {
-			self.render(req, res, 'registerNotify', {
-				email: user.email
-			});
 		});
 	} else {
 		render();

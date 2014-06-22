@@ -31,7 +31,7 @@ if (cluster.isMaster) {
 		cluster.fork();
 	});
 
-	var workers = config.webWorkers;
+	var workers = config.web.workers;
 	winston.info('Forking ' + workers + ' web worker processes.');
 	for (var i = 0;i < workers;i++) {
 		cluster.fork();

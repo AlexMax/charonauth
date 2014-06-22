@@ -37,12 +37,18 @@ var webforms = require('./webforms');
 function WebApp(config, callback) {
 	var self = this;
 
-	if (!("webPort" in config)) {
-		callback(new Error("Missing webPort in WebApp configuration."));
+	if (!("web" in config)) {
+		callback(new Error("Missing auth configuration"));
 		return;
 	}
-	if (!("webSecret" in config)) {
-		callback(new Error("Missing webSecret in WebApp configuration."));
+
+	if (!("port" in config.web)) {
+		callback(new Error("Missing port in web configuration."));
+		return;
+	}
+
+	if (!("secret" in config.web)) {
+		callback(new Error("Missing port in secret configuration."));
 		return;
 	}
 
@@ -75,7 +81,7 @@ function WebApp(config, callback) {
 		self.app.use(bodyParser.urlencoded());
 		self.app.use(cookieParser());
 		self.app.use(session({
-			secret: config.webSecret,
+			secret: config.web.secret,
 			store: new fsSession()
 		}));
 		self.app.use(csurf());
@@ -103,7 +109,7 @@ function WebApp(config, callback) {
 		self.app.all('/users/:id/destroy', self.destroyUser.bind(self));
 
 		// Start listening for connections
-		self.app.listen(config.webPort, function() {
+		self.app.listen(config.web.port, function() {
 			callback(null, self);
 		});
 	});

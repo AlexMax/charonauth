@@ -3,11 +3,12 @@
 		"uri": null,
 		"options": null
 	},
-	"dbImport": null,
 	"auth": {
 		"port": 16666,
 		"workers": 1
 	},
-	"webPort": 9000,
-	"webWorkers": 1
+	"web": {
+		"port": 9000,
+		"workers": 1
+	}
 }

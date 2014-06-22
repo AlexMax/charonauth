@@ -131,15 +131,15 @@ var authNegotiate = {
 };
 
 // Server ephemeral
-// UInt32, Int32, Buffer
+// UInt32, UInt16, Buffer
 var serverEphemeral = {
 	marshall: function(data) {
-		var buf = new Buffer(12 + data.ephemeral.length);
+		var buf = new Buffer(10 + data.ephemeral.length);
 
 		buf.writeUInt32LE(SERVER_EPHEMERAL, 0);
 		buf.writeUInt32LE(data.session, 4);
-		buf.writeInt32LE(data.ephemeral.length, 8);
-		data.ephemeral.copy(buf, 12);
+		buf.writeUInt16LE(data.ephemeral.length, 8);
+		data.ephemeral.copy(buf, 10);
 
 		return buf;
 	},
@@ -148,9 +148,9 @@ var serverEphemeral = {
 			throw new TypeError("Buffer is not a SERVER_EPHEMERAL packet");
 		}
 
-		var ephemeralLength = buf.readInt32LE(8);
+		var ephemeralLength = buf.readUInt16LE(8);
 		var ephemeral = new Buffer(ephemeralLength);
-		buf.copy(ephemeral, 0, 12, 12 + ephemeralLength);
+		buf.copy(ephemeral, 0, 10, 10 + ephemeralLength);
 
 		return {
 			session: buf.readUInt32LE(4),
@@ -160,15 +160,15 @@ var serverEphemeral = {
 };
 
 // Auth server ephemeral
-// UInt32, Int32, Buffer
+// UInt32, UInt16, Buffer
 var authEphemeral = {
 	marshall: function(data) {
-		var buf = new Buffer(12 + data.ephemeral.length);
+		var buf = new Buffer(10 + data.ephemeral.length);
 
 		buf.writeUInt32LE(AUTH_EPHEMERAL, 0);
 		buf.writeUInt32LE(data.session, 4);
-		buf.writeInt32LE(data.ephemeral.length, 8);
-		data.ephemeral.copy(buf, 12);
+		buf.writeUInt16LE(data.ephemeral.length, 8);
+		data.ephemeral.copy(buf, 10);
 
 		return buf;
 	},
@@ -177,9 +177,9 @@ var authEphemeral = {
 			throw new TypeError("Buffer is not an AUTH_EPHEMERAL packet");
 		}
 
-		var ephemeralLength = buf.readInt32LE(8);
+		var ephemeralLength = buf.readUInt16LE(8);
 		var ephemeral = new Buffer(ephemeralLength);
-		buf.copy(ephemeral, 0, 12, 12 + ephemeralLength);
+		buf.copy(ephemeral, 0, 10, 10 + ephemeralLength);
 
 		return {
 			session: buf.readUInt32LE(4),
@@ -189,15 +189,15 @@ var authEphemeral = {
 };
 
 // Server Proof
-// UInt32, Int32, Buffer
+// UInt32, UInt16, Buffer
 var serverProof = {
 	marshall: function(data) {
-		var buf = new Buffer(12 + data.proof.length);
+		var buf = new Buffer(10 + data.proof.length);
 
 		buf.writeUInt32LE(SERVER_PROOF, 0);
 		buf.writeUInt32LE(data.session, 4);
-		buf.writeInt32LE(data.proof.length, 8);
-		data.proof.copy(buf, 12);
+		buf.writeUInt16LE(data.proof.length, 8);
+		data.proof.copy(buf, 10);
 
 		return buf;
 	},
@@ -206,9 +206,9 @@ var serverProof = {
 			throw new TypeError("Buffer is not an SERVER_PROOF packet");
 		}
 
-		var proofLength = buf.readInt32LE(8);
+		var proofLength = buf.readUInt16LE(8);
 		var proof = new Buffer(proofLength);
-		buf.copy(proof, 0, 12, 12 + proofLength);
+		buf.copy(proof, 0, 10, 10 + proofLength);
 
 		return {
 			session: buf.readUInt32LE(4),
@@ -218,15 +218,15 @@ var serverProof = {
 };
 
 // Auth server Proof
-// UInt32, Int32, Buffer
+// UInt32, UInt16, Buffer
 var authProof = {
 	marshall: function(data) {
-		var buf = new Buffer(12 + data.proof.length);
+		var buf = new Buffer(10 + data.proof.length);
 
 		buf.writeUInt32LE(AUTH_PROOF, 0);
 		buf.writeUInt32LE(data.session, 4);
-		buf.writeInt32LE(data.proof.length, 8);
-		data.proof.copy(buf, 12);
+		buf.writeUInt16LE(data.proof.length, 8);
+		data.proof.copy(buf, 10);
 
 		return buf;
 	},
@@ -235,9 +235,9 @@ var authProof = {
 			throw new TypeError("Buffer is not an AUTH_PROOF packet");
 		}
 
-		var proofLength = buf.readInt32LE(8);
+		var proofLength = buf.readInt16LE(8);
 		var proof = new Buffer(proofLength);
-		buf.copy(proof, 0, 12, 12 + proofLength);
+		buf.copy(proof, 0, 10, 10 + proofLength);
 
 		return {
 			session: buf.readUInt32LE(4),

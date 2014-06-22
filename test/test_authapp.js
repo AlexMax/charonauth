@@ -178,39 +178,17 @@ describe('AuthApp', function() {
 			});
 		});
 	});
-});
-/*	describe('AuthApp.serverProof()', function() {
-		var auth_app = undefined;
-
-		beforeEach(function(done) {
-			// Load the test data into an in-memory database, plus start a new
-			// session with it.
-			async.waterfall([
-				function(next) {
-					auth_app = new AuthApp({
-						database: {
-							uri: "sqlite://charonauth/",
-							options: { "storage": ":memory:" }
-						},
-						dbImport: ['test/db/single_user.sql', 'test/db/session_ephemeral.sql'],
-						authPort: 16666
-					}, next);
-				}
-			], function(err) {
-				if (err) {
-					done(err);
-				} else {
-					done();
-				}
-			});
-		});
-		afterEach(function() {
-			// Prevent memory leaks...
-			auth_app.removeAllListeners();
-			
-			auth_app = undefined;
-		});
-		it("should be capable of logging a user in.", function(done) {
+	describe('AuthApp.serverProof()', function() {
+		var config = {
+			database: {
+				uri: "sqlite://charonauth/",
+				options: { "storage": ":memory:" }
+			},
+			auth: {
+				port: 16666
+			}
+		};
+		it("should be capable of logging a user in.", function() {
 			// What the client knows.
 			var username = 'username';
 			var password = 'password123';
@@ -223,52 +201,74 @@ describe('AuthApp', function() {
 			// What the client got from a hypothetical ephemeral exchange.
 			var ephemeral = new Buffer('40bac984c032dea81579054cf429bca2effe8323208a20e1f5d02f4674fa5c2300d7786c679609d2dbde9ece179bb7c3d626d528043a93ec9fcaf86af3b020b444f3dcc97402af03a7cb6275fe523e1ba7300e7666db2428a63e0ff4c6f5f7cc1434c282c65a98c06b395d287b04164de5f5ed8dd12e97b0bd1a35c231ef8fb9aa037cddfd97bd04659a7a8cfa5e285d67dc509ef4654dcf0d01eb0a7fd203270181b4b78ebf8235811fd4671c42f6b66ba3f7e76f8be75ff97cdea31b8c5f940b2f774b2d1b528b5ffbef2dc19fff7180df0f3c0816774e789c21c84cf574d72199966f2b4e64fafa707f296db9decf295bbe96f2b3a8c604f182042d99a4f2', 'hex');
 
+			// Prepare response to server
 			var srpClient = new srp.Client(srp.params['2048'], salt, new Buffer(username, 'ascii'), new Buffer(password, 'ascii'), secret);
 			srpClient.setB(ephemeral);
 			var proof = srpClient.computeM1();
-
-			var socket = dgram.createSocket('udp4');
-
-			socket.on('message', function(msg, rinfo) {
-				var response = proto.authProof.unmarshall(msg);
-				if (response.session !== session) {
-					next(new Error("Response contains incorrect session"));
-					return;
-				}
-				try {
-					srpClient.checkM2(response.proof);
-				} catch(e) {
-					next(e);
-				}
-				done();
+			var packet = proto.serverProof.marshall({
+				session: session,
+				proof: proof
 			});
+
+			return new AuthApp(config).then(function(app) {
+				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
+			}).spread(function(app, _) {
+				return Promise.all([app, require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session)]);
+			}).spread(function(app, _) {
+				return app.serverProof(packet);
+			}).then(function(msg) {
+				var response = proto.authProof.unmarshall(msg);
+
+				assert.equal(response.session, session, "Session is incorrect");
+
+				srpClient.checkM2(response.proof);
+			});
+		});
+		it("should error if the proof doesn't work.", function() {
+			// Prepare a proof with nothing in it
+			var session = 123456;
+			var proof = new Buffer(256);
+			proof.fill(0);
 
 			var packet = proto.serverProof.marshall({
 				session: session,
 				proof: proof
 			});
 
-			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
-		});
-		it("should send an error packet if the proof doesn't work.", function(done) {
-			var socket = dgram.createSocket('udp4');
-
-			socket.on('message', function(msg, rinfo) {
-				var response = proto.sessionError.unmarshall(msg);
-				assert.equal(response.session, 123456);
-				assert.equal(response.error, 3);
-				done();
+			return new AuthApp(config).then(function(app) {
+				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
+			}).spread(function(app, _) {
+				return Promise.all([app, require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session)]);
+			}).spread(function(app, _) {
+				return app.serverProof(packet);
+			}).then(function(msg) {
+				throw new Error("Did not error");
+			}).catch(error.SessionAuthFailed, function() {
+				// Success
 			});
-
+		});
+		it("should error if the session doesn't exist.", function() {
+			// Prepare a proof with nothing in it
+			var session = 654321;
 			var proof = new Buffer(256);
 			proof.fill(0);
 
 			var packet = proto.serverProof.marshall({
-				session: 123456,
+				session: session,
 				proof: proof
 			});
 
-			socket.send(packet, 0, packet.length, 16666, '127.0.0.1');
+			return new AuthApp(config).then(function(app) {
+				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
+			}).spread(function(app, _) {
+				return Promise.all([app, require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session)]);
+			}).spread(function(app, _) {
+				return app.serverProof(packet);
+			}).then(function(msg) {
+				throw new Error("Did not error");
+			}).catch(error.SessionNotFound, function() {
+				// Success
+			});
 		});
 	});
-});*/
+});

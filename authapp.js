@@ -82,6 +82,22 @@ AuthApp.prototype.message = function(msg, rinfo) {
 		});
 
 		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
+	}).catch(error.SessionNotFound, function(err) {
+		// Session was not found
+		var error = proto.userError.marshall({
+			username: username,
+			error: proto.SESSION_NO_EXIST
+		});
+
+		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
+	}).catch(error.SessionAuthFailed, function(err) {
+		// Session authentication failed
+		var error = proto.userError.marshall({
+			username: username,
+			error: proto.SESSION_AUTH_FAILED
+		});
+
+		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.IgnorableProtocol, function(err) {
 		// Protocol error that can be ignored unless we're debugging
 		winston.debug(err.stack);
@@ -193,9 +209,9 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 	var packet = proto.serverProof.unmarshall(msg);
 
 	// Is the session we were passed an active and valid session?
-	this.dbconn.findSession(packet.session, this.sessionTimeout)
+	return this.dbconn.findSession(packet.session, this.sessionTimeout)
 	.then(function(session) {
-		return [session, session.getUser()];
+		return Promise.all([session, session.getUser()]);
 	}).spread(function(session, user) {
 		// Recreate the necessary SRP state to check the client's proof.
 		var srpServer = new srp.Server(
@@ -219,24 +235,10 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 		}
 
 		// Write the response packet
-		var response = proto.authProof.marshall({
+		return proto.authProof.marshall({
 			session: packet.session,
 			proof: proof
 		});
-
-		// Send the response packet to the sender
-		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
-	}).catch(error.SessionAuthFailed, function(err) {
-		// Authentication failed
-		var errorPacket = proto.sessionError.marshall({
-			session: packet.session,
-			error: proto.SESSION_AUTH_FAILED
-		});
-
-		self.socket.send(errorPacket, 0, errorPacket.length, rinfo.port, rinfo.address);
-	}).catch(function(err) {
-		// Unknown exception.
-		// TODO: Log it here.
 	});
 };
 

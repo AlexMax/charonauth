@@ -5,10 +5,10 @@
 var Promise = require('bluebird');
 
 var assert = require('assert');
-var srp = Promise.promisifyAll(require('srp'));
 
 var error = require('../error');
 var proto = require('../proto');
+var srp = Promise.promisifyAll(require('../srp'));
 var AuthApp = require('../authapp');
 
 describe('AuthApp', function() {

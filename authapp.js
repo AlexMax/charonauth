@@ -22,7 +22,6 @@
 var Promise = require('bluebird');
 
 var dgram = Promise.promisifyAll(require('dgram'));
-var srp = Promise.promisifyAll(require('srp'));
 var winston = require('winston');
 
 require('date-utils');
@@ -30,6 +29,7 @@ require('date-utils');
 var DBConn = require('./dbconn');
 var error = require('./error');
 var proto = require('./proto');
+var srp = Promise.promisifyAll(require('./srp'));
 
 // AuthApp
 //

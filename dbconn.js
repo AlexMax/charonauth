@@ -22,9 +22,9 @@
 var Promise = require('bluebird');
 var crypto = require('crypto');
 var Sequelize = require('sequelize');
-var srp = require('srp');
 
 var error = require('./error');
+var srp = require('./srp');
 
 // DBConn
 //

@@ -21,7 +21,6 @@
     "nodemailer": "~0.7.0",
     "request": "2.36.0",
     "sequelize": "~1.7.9",
-    "srp": "git://github.com/AlexMax/node-srp#rfc2945",
     "underscore": "1.6.0",
     "validator": "~3.16.0",
     "winston": "0.7.3"

@@ -2,7 +2,11 @@
 /* global describe, it */
 "use strict";
 
+var assert = require('assert');
+var Promise = require('bluebird');
+
 var DBConn = require('../dbconn');
+var error = require('../error');
 
 describe('DBConn', function() {
 	describe('new DBConn()', function() {
@@ -56,6 +60,82 @@ describe('DBConn', function() {
 			}).then(function(user) {
 				done();
 			}).catch(done);
+		});
+	});
+	describe('DBConn.verifyUser()', function() {
+		it("should correctly verify a user given a plaintext password.", function() {
+			return new DBConn({
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				}
+			}).then(function(db) {
+				return Promise.all([db, require('./fixture/single_user')(db.User)]);
+			}).spread(function(db, _) {
+				return db.verifyUser('username', 'password123');
+			}).then(function(user) {
+				assert.equal(user.username, 'username');
+			});
+		});
+		it("should correctly verify a user with incorrect capitalization.", function() {
+			return new DBConn({
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				}
+			}).then(function(db) {
+				return Promise.all([db, require('./fixture/single_user')(db.User)]);
+			}).spread(function(db, _) {
+				return db.verifyUser('Username', 'password123');
+			}).then(function(user) {
+				assert.equal(user.username, 'username');
+			});
+		});
+		it("should correctly verify a user given an e-mail address.", function() {
+			return new DBConn({
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				}
+			}).then(function(db) {
+				return Promise.all([db, require('./fixture/single_user')(db.User)]);
+			}).spread(function(db, _) {
+				return db.verifyUser('example@example.com', 'password123');
+			}).then(function(user) {
+				assert.equal(user.username, 'username');
+			});
+		});
+		it("should correctly error if a user doesn't exist.", function() {
+			return new DBConn({
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				}
+			}).then(function(db) {
+				return Promise.all([db, require('./fixture/single_user')(db.User)]);
+			}).spread(function(db, _) {
+				return db.verifyUser('capodecima', 'password123');
+			}).then(function(user) {
+				throw new Error("Did not error");
+			}).catch(error.UserNotFound, function() {
+				// Success
+			});
+		});
+		it("should correctly error a user with the wrong password.", function() {
+			return new DBConn({
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				}
+			}).then(function(db) {
+				return Promise.all([db, require('./fixture/single_user')(db.User)]);
+			}).spread(function(db, _) {
+				return db.verifyUser('username', 'password');
+			}).then(function(user) {
+				throw new Error("Did not error");
+			}).catch(error.LoginAuthFailed, function() {
+				// Success
+			});
 		});
 	});
 	describe('DBConn.newSession()', function() {

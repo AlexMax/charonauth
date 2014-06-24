@@ -26,6 +26,8 @@ var Sequelize = require('sequelize');
 var _ = require('underscore');
 var validator = require('validator');
 
+var error = require('./error');
+
 function verifyReCAPTCHA(privateKey, ip, challenge, response) {
 	return new Promise(function (resolve, reject) {
 		request.post(
@@ -62,39 +64,27 @@ function verifyReCAPTCHA(privateKey, ip, challenge, response) {
 	});
 }
 
-function loginForm(data, user, callback) {
-	var errors = {};
+function loginForm(dbconn, data) {
+	return new Promise(function(resolve, reject) {
+		var errors = {};
 
-	if (!("login" in data) || validator.isNull(data.login)) {
-		errors.login = "Login is required";
-	}
-	if (!("password" in data) || validator.isNull(data.password)) {
-		errors.password = "Password is required";
-	}
-
-	if (!_.isEmpty(errors)) {
-		callback(errors);
-		return;
-	}
-
-	user.find({
-		where: Sequelize.or(
-			{ username: data.login.toLowerCase() },
-			{ email: data.login.toLowerCase() }
-		)
-	}).success(function(data) {
-		if (!data) {
-			callback({ form: "Login failed" });
-			return;
+		if (!("login" in data) || validator.isNull(data.login)) {
+			errors.login = "Login is required";
+		}
+		if (!("password" in data) || validator.isNull(data.password)) {
+			errors.password = "Password is required";
 		}
 
-		// TODO: Check to see if password matches stored hashed verifier.
-
-		callback(null, {
-			id: data.id,
-			username: data.username,
-			email: data.email
-		});
+		if (!_.isEmpty(errors)) {
+			reject(new error.FormValidation("Form validation failed", errors));
+		} else {
+			dbconn.verifyUser(data.login, data.password)
+			.then(function(user) {
+				resolve(user);
+			}).catch(function(e) {
+				reject(new error.FormValidation("Form validation failed", {form: "Login failed"}));
+			});
+		}
 	});
 }
 

@@ -14,6 +14,19 @@ function IgnorableProtocolError(message) {
 IgnorableProtocolError.prototype = Object.create(Error.prototype);
 IgnorableProtocolError.prototype.constructor = IgnorableProtocolError;
 
+// FormValidationError
+//
+// Thrown when a form validator cannot validate a form.
+
+function FormValidationError(message, invalidFields) {
+    this.message = message;
+    this.name = "FormValidationError";
+		this.invalidFields = invalidFields;
+    Error.captureStackTrace(this, FormValidationError);
+}
+FormValidationError.prototype = Object.create(Error.prototype);
+FormValidationError.prototype.constructor = FormValidationError;
+
 // UserNotFoundError
 //
 // Thrown when a user can't be found in the database
@@ -50,7 +63,21 @@ function SessionAuthFailedError(message) {
 SessionAuthFailedError.prototype = Object.create(Error.prototype);
 SessionAuthFailedError.prototype.constructor = SessionAuthFailedError;
 
+// LoginAuthFailedError
+//
+// Thrown when an plaintext login attempt has failed
+
+function LoginAuthFailedError(message) {
+    this.message = message;
+    this.name = "LoginAuthFailedError";
+    Error.captureStackTrace(this, LoginAuthFailedError);
+}
+LoginAuthFailedError.prototype = Object.create(Error.prototype);
+LoginAuthFailedError.prototype.constructor = LoginAuthFailedError;
+
 module.exports.IgnorableProtocol = IgnorableProtocolError;
+module.exports.FormValidation = FormValidationError;
 module.exports.UserNotFound = UserNotFoundError;
 module.exports.SessionNotFound = SessionNotFoundError;
 module.exports.SessionAuthFailed = SessionAuthFailedError;
+module.exports.LoginAuthFailed = LoginAuthFailedError;

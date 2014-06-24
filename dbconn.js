@@ -132,6 +132,34 @@ DBConn.prototype.findUser = function(username) {
 		}
 	});
 };
+
+// Attempts to verify a user in when the password is delivered directly to
+// the application (i.e. through a web login form).
+DBConn.prototype.verifyUser = function(identity, password) {
+	var passwordBuffer = new Buffer(password, 'ascii');
+
+	return this.User.find({
+		where: Sequelize.or(
+			{ username: identity.toLowerCase() },
+			{ email: identity.toLowerCase() }
+		)
+	}).then(function(data) {
+		if (data === null) {
+			throw new error.UserNotFound("User not found");
+		} else {
+			var params = srp.params['2048'];
+
+			var usernameBuffer = new Buffer(data.username.toLowerCase(), 'ascii');
+			var verifier = srp.computeVerifier(params, data.salt, usernameBuffer, passwordBuffer);
+
+			if (verifier.toString('hex') !== data.verifier.toString('hex')) {
+				throw new error.LoginAuthFailed("Login failed");
+			} else {
+				return data;
+			}
+		}
+	});
+};
 DBConn.prototype.newSession = function(username) {
 	var self = this;
 

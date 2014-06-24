@@ -31,8 +31,9 @@ var _ = require('underscore');
 var uuid = require('node-uuid');
 
 var DBConn = require('./dbconn');
+var error = require('./error');
 var gravatar = require('./gravatar');
-var webforms = require('./webforms');
+var webform = require('./webform');
 
 function WebApp(config, callback) {
 	var self = this;
@@ -96,7 +97,8 @@ function WebApp(config, callback) {
 
 		// Top-level routes
 		self.app.get('/', self.home.bind(self));
-		self.app.all('/login', self.login.bind(self));
+		self.app.get('/login', self.getLogin.bind(self));
+		self.app.post('/login', self.postLogin.bind(self));
 		self.app.get('/logout', self.logout.bind(self));
 		self.app.all('/register', self.register.bind(self));
 		self.app.get('/register/:token', self.registerVerify.bind(self));
@@ -131,34 +133,31 @@ WebApp.prototype.render = function(req, res, layout, options) {
 WebApp.prototype.home = function(req, res) {
 	this.render(req, res, 'home');
 };
-WebApp.prototype.login = function(req, res) {
+
+// Render a login form
+WebApp.prototype.getLogin = function(req, res) {
+	req.body._csrf = req.csrfToken();
+	this.render(req, res, 'login', {
+		data: req.body, errors: {},
+	});
+}
+
+// Process a login form
+WebApp.prototype.postLogin = function(req, res) {
 	var self = this;
 
-	function render(data, errors) {
-		data = data || {};
-		errors = errors || {};
-
-		data._csrf = req.csrfToken();
+	webform.loginForm(this.dbconn, req.body)
+	.then(function(user) {
+		req.session.user = user;
+		res.redirect('/');
+	}).catch(error.FormValidation, function(e) {
+		req.body._csrf = req.csrfToken();
 		self.render(req, res, 'login', {
-			data: data, errors: errors,
+			data: req.body, errors: e.invalidFields
 		});
-		return;
-	}
-
-	var data = req.body;
-	if (!_.isEmpty(data)) {
-		webforms.loginForm(data, this.dbconn.User, function(errors, user) {
-			if (errors) {
-				render(data, errors);
-			} else {
-				req.session.user = user;
-				res.redirect('/');
-			}
-		});
-	} else {
-		render();
-	}
+	});
 };
+
 WebApp.prototype.logout = function(req, res) {
 	delete req.session.user;
 
@@ -183,7 +182,7 @@ WebApp.prototype.register = function(req, res) {
 
 	var data = req.body;
 	if (!_.isEmpty(data)) {
-		webforms.registerForm(
+		webform.registerForm(
 			data, req.ip,
 			this.recaptcha ? this.recaptcha.privateKey : null,
 			this.dbconn.User

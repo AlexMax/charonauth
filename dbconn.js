@@ -109,7 +109,7 @@ DBConn.prototype.addUser = function(username, password, email, access) {
 
 	return Promise.all([
 		this.User.create({
-			username: username,
+			username: username.toLowerCase(),
 			verifier: verifier,
 			salt: salt,
 			email: email,

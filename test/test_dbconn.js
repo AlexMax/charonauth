@@ -42,6 +42,22 @@ describe('DBConn', function() {
 				}
 			});
 		});
+		it("should correctly lowercase a username.", function(done) {
+			new DBConn({
+				database: {
+					uri: "sqlite://charonauth/",
+					options: { "storage": ":memory:" }
+				}
+			}).then(function(dbconn) {
+				return dbconn.addUser('Username', 'password123', 'example@example.com')
+			}).then(function(user) {
+				if (user.username !== 'username') {
+					done(new Error("User was not added as expected"));
+				} else {
+					done();
+				}
+			});
+		});
 	});
 	describe('DBConn.findUser()', function() {
 		it("should correctly find a user in a case-insensitive manner.", function(done) {

@@ -88,8 +88,8 @@ function loginForm(dbconn, data) {
 	});
 }
 
-function registerForm(data, ip, recaptchaPrivateKey, user) {
-	return new Promise(function (resolve, reject) {
+function registerForm(dbconn, data, ip, recaptchaPrivateKey) {
+	return new Promise(function(resolve, reject) {
 		var promises = [];
 		var errors = {};
 
@@ -100,7 +100,7 @@ function registerForm(data, ip, recaptchaPrivateKey, user) {
 			errors.username = "Username must be Alphanumeric (A-Z, 0-9)";
 		} else {
 			promises.push(new Promise(function (resolve, reject) {
-				user.find({ where: { username: data.username.toLowerCase() }})
+				dbconn.User.find({ where: { username: data.username.toLowerCase() }})
 				.success(function (data) {
 					if (data) {
 						errors.username = "Username is taken";
@@ -179,10 +179,15 @@ function registerForm(data, ip, recaptchaPrivateKey, user) {
 
 		if (!_.isEmpty(promises)) {
 			Promise.all(promises).then(function() {
-				resolve(_.isEmpty(errors) ? null : errors);
+				if (_.isEmpty(errors)) {
+					resolve();
+				} else {
+					reject(new error.FormValidation("Form validation failed", errors));
+				}
 			});
 		} else {
-			resolve(_.isEmpty(errors) ? null : errors);
+			// We can't get to this point without at least one error.
+			reject(new error.FormValidation("Form validation failed", errors));
 		}
 	});
 }

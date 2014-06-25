@@ -100,7 +100,8 @@ function WebApp(config, callback) {
 		self.app.get('/login', self.getLogin.bind(self));
 		self.app.post('/login', self.postLogin.bind(self));
 		self.app.get('/logout', self.logout.bind(self));
-		self.app.all('/register', self.register.bind(self));
+		self.app.get('/register', self.getRegister.bind(self));
+		self.app.post('/register', self.postRegister.bind(self));
 		self.app.get('/register/:token', self.registerVerify.bind(self));
 		self.app.all('/reset', self.reset.bind(self));
 		self.app.get('/reset/:token', self.resetVerify.bind(self));
@@ -165,51 +166,47 @@ WebApp.prototype.logout = function(req, res) {
 		partials: { body: 'logout' }
 	});
 };
-WebApp.prototype.register = function(req, res) {
+
+// Render a registration form
+WebApp.prototype.getRegister = function(req, res) {
+	req.body._csrf = req.csrfToken();
+	this.render(req, res, 'register', {
+		data: req.body, errors: {},
+		recaptcha_public_key: this.recaptcha ? this.recaptcha.publicKey : null
+	});
+}
+
+// Process a registration form
+WebApp.prototype.postRegister = function(req, res) {
 	var self = this;
 
-	function render(data, errors) {
-		data = data || {};
-		errors = errors || {};
-
-		data._csrf = req.csrfToken();
+	webform.registerForm(
+		this.dbconn, req.body, req.ip,
+		this.recaptcha ? this.recaptcha.privateKey : null
+	).then(function() {
+		return Promise.all([
+			self.dbconn.addUser(data.username, data.password, data.email),
+			self.dbconn.Verify.create({
+				token: uuid.v4()
+			})
+		]);
+	}).spread(function(user, verify) {
+		return user.setVerify(verify);
+	}).then(function(verify){
+		return verify.getUser();
+	}).then(function(user) {
+		self.render(req, res, 'registerNotify', {
+			email: user.email
+		});
+	}).catch(error.FormValidation, function(e) {
+		req.body._csrf = req.csrfToken();
 		self.render(req, res, 'register', {
-			data: data, errors: errors,
+			data: req.body, errors: e.invalidFields,
 			recaptcha_public_key: self.recaptcha ? self.recaptcha.publicKey : null
 		});
-		return;
-	}
-
-	var data = req.body;
-	if (!_.isEmpty(data)) {
-		webform.registerForm(
-			data, req.ip,
-			this.recaptcha ? this.recaptcha.privateKey : null,
-			this.dbconn.User
-		).then(function(errors) {
-			if (errors) {
-				render(data, errors);
-			} else {
-				return Promise.all([
-					self.dbconn.addUser(data.username, data.password, data.email),
-					self.dbconn.Verify.create({
-						token: uuid.v4()
-					})
-				]).spread(function(user, verify) {
-					return user.setVerify(verify);
-				}).then(function(verify){
-					return verify.getUser();
-				}).then(function(user) {
-					self.render(req, res, 'registerNotify', {
-						email: user.email
-					});
-				});
-			}
-		});
-	} else {
-		render();
-	}
+	});
 };
+
 WebApp.prototype.registerVerify = function(req, res) {
 	var self = this;
 

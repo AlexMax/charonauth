@@ -80,7 +80,7 @@ var DBConn = function(config) {
 			country: Sequelize.STRING,
 			location: Sequelize.STRING,
 			message: Sequelize.STRING,
-			prettyname: Sequelize.STRING
+			username: Sequelize.STRING
 		}, { timestamps: false });
 
 		self.User.hasMany(self.Session);
@@ -115,7 +115,9 @@ DBConn.prototype.addUser = function(username, password, email, access) {
 			email: email,
 			access: access || 'UNVERIFIED'
 		}),
-		this.Profile.create()
+		this.Profile.create({
+			username: username
+		})
 	]).spread(function(user, profile) {
 		return user.setProfile(profile);
 	}).then(function(profile) {

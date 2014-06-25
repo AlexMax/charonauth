@@ -135,7 +135,7 @@ function registerForm(dbconn, data, ip, recaptchaPrivateKey) {
 			errors.email = "E-Mail must be valid";
 		} else {
 			promises.push(new Promise(function (resolve, reject) {
-				user.find({ where: { email: data.email.toLowerCase() }})
+				dbconn.User.find({ where: { email: data.email.toLowerCase() }})
 				.success(function (data) {
 					if (data) {
 						errors.email = "E-Mail is already associated with a user";

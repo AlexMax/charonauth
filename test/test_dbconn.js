@@ -21,7 +21,7 @@ describe('DBConn', function() {
 		});
 	});
 	describe('DBConn.addUser()', function() {
-		it("should correctly add a user.", function() {
+		it("should correctly add a user and profile.", function() {
 			return new DBConn({
 				database: {
 					uri: "sqlite://charonauth/",
@@ -31,9 +31,13 @@ describe('DBConn', function() {
 				return dbconn.addUser('username', 'password123', 'example@example.com')
 			}).then(function(user) {
 				assert.equal(user.username, 'username');
+
+				return user.getProfile();
+			}).then(function(profile) {
+				assert.notEqual(profile, null);
 			});
 		});
-		it("should correctly lowercase a username.", function() {
+		it("should correctly lowercase username in User table.", function() {
 			return new DBConn({
 				database: {
 					uri: "sqlite://charonauth/",
@@ -43,6 +47,10 @@ describe('DBConn', function() {
 				return dbconn.addUser('Username', 'password123', 'example@example.com')
 			}).then(function(user) {
 				assert.equal(user.username, 'username');
+
+				return user.getProfile();
+			}).then(function(profile) {
+				assert.equal(profile.username, 'Username');
 			});
 		});
 	});

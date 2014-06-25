@@ -185,20 +185,28 @@ WebApp.prototype.postRegister = function(req, res) {
 		this.dbconn, req.body, req.ip,
 		this.recaptcha ? this.recaptcha.privateKey : null
 	).then(function() {
-		return Promise.all([
-			self.dbconn.addUser(data.username, data.password, data.email),
-			self.dbconn.Verify.create({
-				token: uuid.v4()
-			})
-		]);
-	}).spread(function(user, verify) {
-		return user.setVerify(verify);
-	}).then(function(verify){
-		return verify.getUser();
-	}).then(function(user) {
-		self.render(req, res, 'registerNotify', {
-			email: user.email
-		});
+		if (false) {
+			// Do E-mail verification of new accounts
+			return Promise.all([
+				self.dbconn.addUser(req.body.username, req.body.password, req.body.email),
+				self.dbconn.Verify.create({
+					token: uuid.v4()
+				})
+			]).spread(function(user, verify) {
+				return Promise.all([user, user.setVerify(verify)]);
+			}).spread(function(user, _) {
+				self.render(req, res, 'registerNotify', {
+					user: user
+				});
+			});
+		} else {
+			// Don't do E-mail verification of new accounts
+			return self.dbconn.addUser(req.body.username, req.body.password, req.body.email, 'USER')
+			.then(function(user) {
+				req.session.user = user;
+				self.render(req, res, 'registerSuccess');
+			});
+		}
 	}).catch(error.FormValidation, function(e) {
 		req.body._csrf = req.csrfToken();
 		self.render(req, res, 'register', {

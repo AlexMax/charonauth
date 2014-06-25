@@ -8,6 +8,9 @@
 		"type": "git",
 		"url": "https://github.com/AlexMax/charonauth.git"
 	},
+	"bin": {
+		"charonauth": "./bin/charonauth"
+	},
   "dependencies": {
     "bignum": "~0.7.0",
     "bluebird": "~2.1.3",

@@ -29,7 +29,7 @@ require('date-utils');
 var DBConn = require('./dbconn');
 var error = require('./error');
 var proto = require('./proto');
-var srp = Promise.promisifyAll(require('./srp'));
+var srp = Promise.promisifyAll(require('../srp'));
 
 // AuthApp
 //

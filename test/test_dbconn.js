@@ -2,11 +2,12 @@
 /* global describe, it */
 "use strict";
 
-var assert = require('assert');
 var Promise = require('bluebird');
 
-var DBConn = require('../dbconn');
-var error = require('../error');
+var assert = require('assert');
+
+var DBConn = require('../source/dbconn');
+var error = require('../source/error');
 
 describe('DBConn', function() {
 	describe('new DBConn()', function() {

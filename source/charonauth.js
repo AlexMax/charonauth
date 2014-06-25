@@ -21,5 +21,5 @@
 
 var child_process = require('child_process');
 
-child_process.fork('webmaster');
-child_process.fork('authmaster');
+child_process.fork(__dirname + '/webmaster');
+child_process.fork(__dirname + '/authmaster');

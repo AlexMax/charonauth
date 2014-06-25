@@ -24,7 +24,7 @@ var crypto = require('crypto');
 var Sequelize = require('sequelize');
 
 var error = require('./error');
-var srp = require('./srp');
+var srp = require('../srp');
 
 // DBConn
 //

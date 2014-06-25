@@ -78,7 +78,7 @@ function WebApp(config, callback) {
 		self.app = express();
 
 		// Middleware
-		self.app.use(express.static(__dirname + '/public'));
+		self.app.use(express.static(__dirname + '/../public'));
 		self.app.use(bodyParser.urlencoded({
 			extended: true
 		}));
@@ -94,6 +94,7 @@ function WebApp(config, callback) {
 
 		// Configuration
 		self.app.set('view engine', 'hjs');
+		self.app.set('views', __dirname + '/views');
 
 		// Top-level routes
 		self.app.get('/', self.home.bind(self));

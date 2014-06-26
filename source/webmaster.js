@@ -20,32 +20,47 @@
 "use strict";
 
 var cluster = require('cluster');
-var config = require('config');
-var winston = require('winston');
 
-if (cluster.isMaster) {
-	process.title = 'charonauth: web master';
+var Logger = require('./logger');
 
-	cluster.on('exit', function(worker, code, signal) {
-		winston.error('Web worker ' + worker.process.pid + ' died, respawning...');
-		cluster.fork();
-	});
-
-	var workers = config.web.workers;
-	winston.info('Forking ' + workers + ' web worker processes.');
-	for (var i = 0;i < workers;i++) {
-		cluster.fork();
+function master(msg) {
+	if (!"config" in msg) {
+		process.stderr.write("No configuration supplied for subprocess " + process.pid + ", aborting.");
+		process.exit(255);
 	}
-} else {
-	process.title = 'charonauth: web worker';
 
-	var WebApp = require('./webapp');
+	var config = msg.config;
+	var log = new Logger(config);
 
-	var webapp = new WebApp(config, function(err) {
-		if (err) {
-			winston.error(err);
-		} else {
-			winston.info('Web worker ' + process.pid  + ' started.');
+	if (cluster.isMaster) {
+		process.title = 'charonauth: web master';
+
+		cluster.on('exit', function(worker, code, signal) {
+			log.error('Web worker ' + worker.process.pid + ' died, respawning...');
+			cluster.fork().send({config: config});
+		});
+
+		var workers = 1;
+		if ("web" in config && "workers" in config.web) {
+			workers = config.web.workers;
 		}
-	});
+
+		log.info('Forking ' + workers + ' web worker processes.');
+
+		for (var i = 0;i < workers;i++) {
+			cluster.fork().send({config: config});
+		}
+	} else {
+		process.title = 'charonauth: web worker';
+
+		var WebApp = require('./webapp');
+
+		new WebApp(config, {logger: log}).then(function() {
+			log.info('Web worker ' + process.pid + ' started.');
+		}).catch(function(err) {
+			log.error(err);
+		});
+	}
 }
+
+process.on('message', master);

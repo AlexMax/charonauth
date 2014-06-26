@@ -20,6 +20,7 @@
 "use strict";
 
 var Promise = require('bluebird');
+
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var consolidate = require('consolidate');
@@ -27,7 +28,7 @@ var csurf = require('csurf');
 var express = require('express');
 var session = require('express-session');
 var fsSession = require('fs-session')({ session: session });
-var _ = require('underscore');
+var _ = require('lodash');
 var uuid = require('node-uuid');
 
 var DBConn = require('./dbconn');
@@ -35,47 +36,37 @@ var error = require('./error');
 var gravatar = require('./gravatar');
 var webform = require('./webform');
 
-function WebApp(config, callback) {
+var config_defaults = {
+	web: {
+		port: 16666,
+		secret: undefined
+	}
+};
+
+function WebApp(config) {
 	var self = this;
 
-	if (!("web" in config)) {
-		callback(new Error("Missing auth configuration"));
-		return;
-	}
+	return new Promise(function(resolve, reject) {
+		config = _.merge(config, config_defaults, _.defaults);
 
-	if (!("port" in config.web)) {
-		callback(new Error("Missing port in web configuration."));
-		return;
-	}
-
-	if (!("secret" in config.web)) {
-		callback(new Error("Missing port in secret configuration."));
-		return;
-	}
-
-	// Set ReCAPTCHA settings if present
-	if ("recaptcha" in config) {
-		if (!("privateKey" in config.recaptcha)) {
-			callback(new Error("Missing privateKey in WebApp ReCAPTCHA configuration."));
+		if (!config.web.port) {
+			reject(new Error("Missing port in web configuration."));
 			return;
 		}
 
-		if (!("publicKey" in config.recaptcha)) {
-			callback(new Error("Missing publicKey in WebApp ReCAPTCHA configuration."));
+		if (!config.web.secret) {
+			reject(new Error("Missing secret in web configuration."));
 			return;
 		}
 
-		this.recaptcha = {
-			publicKey: config.recaptcha.publicKey,
-			privateKey: config.recaptcha.privateKey
-		};
-	}
-
-	// Create database connection
-	new DBConn(config).then(function(dbconn) {
+		// Create database connection
+		resolve(new DBConn(config));
+	}).then(function(dbconn) {
 		self.dbconn = dbconn;
 
+		// Create the express app
 		self.app = express();
+		self.app.listenAsync = Promise.promisify(self.app.listen);
 
 		// Middleware
 		self.app.use(express.static(__dirname + '/../public'));
@@ -115,9 +106,9 @@ function WebApp(config, callback) {
 		self.app.all('/users/:id/destroy', self.destroyUser.bind(self));
 
 		// Start listening for connections
-		self.app.listen(config.web.port, function() {
-			callback(null, self);
-		});
+		return self.app.listenAsync(config.web.port);
+	}).then(function() {
+		return self;
 	});
 }
 

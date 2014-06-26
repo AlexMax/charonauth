@@ -19,12 +19,36 @@
 /* jshint node: true */
 "use strict";
 
-var child_process = require('child_process');
+var _ = require('lodash');
+var winston = require('winston');
 
-module.exports = function(config) {
-	this.authmaster = child_process.fork(__dirname + '/authmaster')
-		.send({config: config});
+var config_defaults = {
+	log: {
+		file: undefined
+	}
+};
 
-	this.webmaster = child_process.fork(__dirname + '/webmaster')
-		.send({config: config});
+function Logger(config) {
+	config = _.merge(config, config_defaults, _.defaults);
+
+	this.logger = new (winston.Logger)({
+		transports: [
+			new (winston.transports.Console)()
+		]
+	});
+
+	this.log = this.logger.log;
+	this.info = this.logger.info;
+	this.error = this.logger.error;
+
+	// Log to a file if supplied
+	if (config.log.file) {
+		this.logger.add(winston.transports.File, {
+			filename: config.log.file,
+			json: false,
+			timestamp: true
+		});
+	}
 }
+
+module.exports = Logger;

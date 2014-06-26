@@ -4,19 +4,18 @@
   "author": "Alex Mayfield <alexmax2742@gmail.com>",
   "description": "An authentication server for games",
   "license": "AGPL-3.0",
-	"repository": {
-		"type": "git",
-		"url": "https://github.com/AlexMax/charonauth.git"
-	},
-	"bin": {
-		"charonauth": "./bin/charonauth"
-	},
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/AlexMax/charonauth.git"
+  },
+  "bin": {
+    "charonauth": "./bin/charonauth"
+  },
   "dependencies": {
     "bignum": "~0.7.0",
     "bluebird": "~2.1.3",
     "body-parser": "~1.4.3",
     "buffertools": "2.1.2",
-    "config": "0.4.36",
     "consolidate": "0.10.0",
     "cookie-parser": "~1.3.1",
     "csurf": "~1.2.2",
@@ -31,7 +30,8 @@
     "sequelize": "~1.7.9",
     "underscore": "1.6.0",
     "validator": "~3.16.0",
-    "winston": "0.7.3"
+    "winston": "0.7.3",
+    "lodash": "~2.4.1"
   },
   "devDependencies": {
     "mocha": ">1.18.0",

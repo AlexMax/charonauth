@@ -20,30 +20,47 @@
 "use strict";
 
 var cluster = require('cluster');
-var config = require('config');
-var winston = require('winston');
 
-if (cluster.isMaster) {
-	process.title = 'charonauth: auth master';
+var Logger = require('./logger');
 
-	cluster.on('exit', function(worker, code, signal) {
-		winston.error('Authentication worker ' + worker.process.pid + ' died, respawning...');
-		cluster.fork();
-	});
-
-	var workers = config.auth.workers;
-	winston.info('Forking ' + workers + ' authentication worker processes.');
-	for (var i = 0;i < workers;i++) {
-		cluster.fork();
+function master(msg) {
+	if (!"config" in msg) {
+		process.stderr.write("No configuration supplied for subprocess " + process.pid + ", aborting.");
+		process.exit(255);
 	}
-} else {
-	process.title = 'charonauth: auth worker';
 
-	var AuthApp = require('./authapp');
+	var config = msg.config;
+	var log = new Logger(config);
 
-	new AuthApp(config).then(function() {
-			winston.info('Authentication worker ' + process.pid + ' started.');
-	}).catch(function(err) {
-			winston.error(err);
-	});
+	if (cluster.isMaster) {
+		process.title = 'charonauth: auth master';
+
+		cluster.on('exit', function(worker, code, signal) {
+			log.error('Authentication worker ' + worker.process.pid + ' died, respawning...');
+			cluster.fork().send({config: config});
+		});
+
+		var workers = 1;
+		if ("auth" in config && "workers" in config.auth) {
+			workers = config.auth.workers;
+		}
+
+		log.info('Forking ' + workers + ' authentication worker processes.');
+
+		for (var i = 0;i < workers;i++) {
+			cluster.fork().send({config: config});
+		}
+	} else {
+		process.title = 'charonauth: auth worker';
+
+		var AuthApp = require('./authapp');
+
+		new AuthApp(config, {logger: log}).then(function() {
+			log.info('Authentication worker ' + process.pid + ' started.');
+		}).catch(function(err) {
+			log.error(err);
+		});
+	}
 }
+
+process.on('message', master);

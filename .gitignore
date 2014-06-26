@@ -1,4 +1,5 @@
-/config/runtime.json
+/charonauth.ini
+/charonauth.log
 /node_modules
 /sessions
 /*.db

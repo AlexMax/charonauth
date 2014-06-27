@@ -38,7 +38,7 @@ var webform = require('./webform');
 
 var config_defaults = {
 	web: {
-		port: 16666,
+		port: 8080,
 		secret: undefined
 	}
 };

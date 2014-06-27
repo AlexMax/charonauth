@@ -24,20 +24,26 @@ var cluster = require('cluster');
 var Logger = require('./logger');
 
 function master(msg) {
-	if (!"config" in msg) {
-		process.stderr.write("No configuration supplied for subprocess " + process.pid + ", aborting.");
-		process.exit(255);
+	if (!("config" in msg)) {
+		process.stderr.write("No configuration supplied for subprocess " + process.pid + ", aborting...\n");
+		process.exit(1);
 	}
 
 	var config = msg.config;
 	var log = new Logger(config);
 
 	if (cluster.isMaster) {
+		// If this is the master, fork X children
 		process.title = 'charonauth: web master';
 
 		cluster.on('exit', function(worker, code, signal) {
-			log.error('Web worker ' + worker.process.pid + ' died, respawning...');
-			cluster.fork().send({config: config});
+			if (code === 1) {
+				log.error('Web worker ' + worker.process.pid + ' is shutting everything down.');
+				process.exit(1);
+			} else {
+				log.warn('Web worker ' + worker.process.pid + ' died, respawning...');
+				cluster.fork().send({config: config});
+			}
 		});
 
 		var workers = 1;
@@ -51,6 +57,7 @@ function master(msg) {
 			cluster.fork().send({config: config});
 		}
 	} else {
+		// If this is a worker, start an instance of the authapp
 		process.title = 'charonauth: web worker';
 
 		var WebApp = require('./webapp');
@@ -58,7 +65,8 @@ function master(msg) {
 		new WebApp(config, {logger: log}).then(function() {
 			log.info('Web worker ' + process.pid + ' started.');
 		}).catch(function(err) {
-			log.error(err);
+			log.error(err.message);
+			process.exit(1);
 		});
 	}
 }

@@ -22,6 +22,7 @@
 var Promise = require('bluebird');
 
 var dgram = Promise.promisifyAll(require('dgram'));
+var _ = require('lodash');
 var winston = require('winston');
 
 require('date-utils');
@@ -31,6 +32,12 @@ var error = require('./error');
 var proto = require('./proto');
 var srp = Promise.promisifyAll(require('../srp'));
 
+var config_defaults = {
+	auth: {
+		port: 16666
+	}
+};
+
 // AuthApp
 //
 // This object encompasses all functionality dealing with the UDP endpoint of
@@ -39,12 +46,9 @@ function AuthApp(config) {
 	var self = this;
 
 	return new Promise(function(resolve, reject) {
-		if (!("auth" in config)) {
-			reject(new Error("Missing auth configuration"));
-			return;
-		}
+		config = _.merge(config, config_defaults, _.defaults);
 
-		if (!("port" in config.auth)) {
+		if (!config.auth.port) {
 			reject(new Error("Missing port in auth configuration."));
 			return;
 		}

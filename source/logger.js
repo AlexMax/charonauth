@@ -39,6 +39,7 @@ function Logger(config) {
 
 	this.log = this.logger.log;
 	this.info = this.logger.info;
+	this.warn = this.logger.warn;
 	this.error = this.logger.error;
 
 	// Log to a file if supplied

@@ -21,10 +21,17 @@
 
 var child_process = require('child_process');
 
-module.exports = function(config) {
-	this.authmaster = child_process.fork(__dirname + '/authmaster')
-		.send({config: config});
-
-	this.webmaster = child_process.fork(__dirname + '/webmaster')
-		.send({config: config});
+function shutdown(code, signal) {
+	process.stderr.write("Shutting down...\n");
+	process.exit(1);
 }
+
+module.exports = function(config) {
+	this.authmaster = child_process.fork(__dirname + '/authmaster');
+	this.authmaster.on('exit', shutdown);
+	this.authmaster.send({config: config});
+
+	this.webmaster = child_process.fork(__dirname + '/webmaster');
+	this.webmaster.on('exit', shutdown);
+	this.webmaster.send({config: config});
+};

@@ -12,7 +12,7 @@
     "charonauth": "./bin/charonauth"
   },
   "dependencies": {
-    "bignum": "~0.7.0",
+    "bignum": "git://github.com/RichardBsolut/node-bignum.git",
     "bluebird": "~2.1.3",
     "body-parser": "~1.4.3",
     "buffertools": "2.1.2",
@@ -31,7 +31,9 @@
     "underscore": "1.6.0",
     "validator": "~3.16.0",
     "winston": "0.7.3",
-    "lodash": "~2.4.1"
+    "lodash": "~2.4.1",
+    "ini": "^1.2.1",
+    "commander": "^2.2.0"
   },
   "devDependencies": {
     "mocha": ">1.18.0",

@@ -62,7 +62,39 @@ describe('Config', function() {
 			assert.equal(config.get('one.five.ten'), undefined);
 		});
 	});
-	describe('Config.get()', function() {
+	describe('Config.getBool()', function() {
+		it('should get true from truthy values.', function() {
+			var config = new Config({
+				"true": true,
+				"trues": "true",
+				"yes": "yes",
+				"1": 1,
+				"1s": "1"
+			});
+
+			assert.deepEqual(config.getBool('true'), true, "Boolean true does not return true");
+			assert.deepEqual(config.getBool('trues'), true, "String true does not return true");
+			assert.deepEqual(config.getBool('yes'), true, "yes does not return true");
+			assert.deepEqual(config.getBool('1'), true, "Numeric 1 does not return true");
+			assert.deepEqual(config.getBool('1s'), true, "String 1 does not return true");
+		});
+		it('should get false from falsy values.', function() {
+			var config = new Config({
+				"false": false,
+				"falses": "false",
+				"no": "no",
+				"0": 0,
+				"0s": "0"
+			});
+
+			assert.deepEqual(config.getBool('false'), false, "Boolean false does not return false");
+			assert.deepEqual(config.getBool('falses'), false, "String false does not return false");
+			assert.deepEqual(config.getBool('no'), false, "no does not return false");
+			assert.deepEqual(config.getBool('0'), false, "Numeric 0 does not return false");
+			assert.deepEqual(config.getBool('0s'), false, "String 0 does not return false");
+		});
+	});
+	describe('Config.set()', function() {
 		it('should set an already-exisitng trivial setting.', function() {
 			var config = new Config({
 				one: 1,

@@ -19,25 +19,21 @@
 /* jshint node: true */
 "use strict";
 
-var _ = require('lodash');
-
 var winston = require('winston');
 
-var config_defaults = {
-	log: {
-		file: undefined,
-		verbose: false
-	}
-};
+var Config = require('./config');
 
 function Logger(config) {
-	config = _.merge(config, config_defaults, _.defaults);
+	this.config = new Config(config, {
+		file: undefined,
+		verbose: false
+	});
 
 	this.logger = new (winston.Logger)({
 		transports: [
 			new (winston.transports.Console)({
 				handleExceptions: true,
-				level: config.log.verbose ? 'verbose' : 'info'
+				level: this.config.getBool('verbose') ? 'verbose' : 'info'
 			})
 		]
 	});
@@ -49,7 +45,7 @@ function Logger(config) {
 	this.error = this.logger.error;
 
 	// Log to a file if supplied
-	if (config.log.file) {
+	if (this.config.get('file')) {
 		this.logger.add(winston.transports.File, {
 			filename: config.log.file,
 			handleExceptions: true,

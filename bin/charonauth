@@ -35,14 +35,22 @@ var pack = JSON.parse(fs.readFileSync(__dirname + '/../package.json', {
 // Parse command line options.
 options
 	.version(pack.version)
-	.option('-c, --config <path>', 'path to config file', 'charonauth.ini')
+	.option('-c, --config <path>', 'path to config file (default charonauth.ini)', 'charonauth.ini')
 	.option('-v, --verbose', 'verbose logging')
 	.parse(process.argv);
 
 // Load the configuration file into a Config.
-var config = new Config(ini.parse(fs.readFileSync(options.config, {
-	'encoding': 'utf8'
-})));
+var config;
+try {
+	config = new Config(ini.parse(fs.readFileSync(options.config, {
+		'encoding': 'utf8'
+	})));
+} catch (err) {
+	console.error();
+	console.error(" error: " + err.message);
+	console.error();
+	process.exit(1);
+}
 
 // Passing in --verbose turns on verbose logging and overrides whatever
 // we have happen to have set in the ini file.

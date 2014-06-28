@@ -20,22 +20,13 @@
 "use strict";
 
 var Promise = require('bluebird');
-var _ = require('lodash');
 
 var crypto = require('crypto');
 var Sequelize = require('sequelize');
 
+var Config = require('./config');
 var error = require('./error');
 var srp = require('../srp');
-
-var config_defaults = {
-	database: {
-		options: {
-			logging: false
-		},
-		uri: undefined
-	}
-};
 
 // DBConn
 //
@@ -46,18 +37,25 @@ var DBConn = function(config) {
 	var self = this;
 
 	return new Promise(function(resolve, reject) {
-		config = _.merge(config, config_defaults, _.defaults);
+		self.config = new Config(config, {
+			storage: undefined,
+			uri: undefined
+		});
 
-		// Turn off logging unless somebody specifically turns it on
-		config.database.options.logging = config.database.options.logging || false;
-
-		if (!config.database.uri) {
+		if (!self.config.get('uri')) {
 			reject(new Error("Missing uri in database configuration."));
 			return;
 		}
 
+		// Sequelize options
+		var options = {
+			logging: false,
+			storage: self.config.get('storage')
+		};
+
+		// Create the Sequelize instance
 		try {
-			self.db = new Sequelize(config.database.uri, config.database.options);
+			self.db = new Sequelize(self.config.get('uri'), options);
 			resolve();
 		} catch (e) {
 			reject(e);

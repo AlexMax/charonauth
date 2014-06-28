@@ -13,20 +13,16 @@ describe('DBConn', function() {
 	describe('new DBConn()', function() {
 		it("should construct correctly.", function() {
 			return new DBConn({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				}
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
 			});
 		});
 	});
 	describe('DBConn.addUser()', function() {
 		it("should correctly add a user and profile.", function() {
 			return new DBConn({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				}
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
 			}).then(function(dbconn) {
 				return dbconn.addUser('username', 'password123', 'example@example.com');
 			}).then(function(user) {
@@ -39,10 +35,8 @@ describe('DBConn', function() {
 		});
 		it("should correctly lowercase username in User table.", function() {
 			return new DBConn({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				}
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
 			}).then(function(dbconn) {
 				return dbconn.addUser('Username', 'password123', 'example@example.com');
 			}).then(function(user) {
@@ -57,10 +51,8 @@ describe('DBConn', function() {
 	describe('DBConn.findUser()', function() {
 		it("should correctly find a user in a case-insensitive manner.", function() {
 			return new DBConn({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				}
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
 			}).then(function(db) {
 				return Promise.all([db, require('./fixture/single_user')(db.User)]);
 			}).spread(function(db, _) {
@@ -71,10 +63,8 @@ describe('DBConn', function() {
 	describe('DBConn.verifyUser()', function() {
 		it("should correctly verify a user given a plaintext password.", function() {
 			return new DBConn({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				}
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
 			}).then(function(db) {
 				return Promise.all([db, require('./fixture/single_user')(db.User)]);
 			}).spread(function(db, _) {
@@ -85,10 +75,8 @@ describe('DBConn', function() {
 		});
 		it("should correctly verify a user with incorrect capitalization.", function() {
 			return new DBConn({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				}
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
 			}).then(function(db) {
 				return Promise.all([db, require('./fixture/single_user')(db.User)]);
 			}).spread(function(db, _) {
@@ -99,10 +87,8 @@ describe('DBConn', function() {
 		});
 		it("should correctly verify a user given an e-mail address.", function() {
 			return new DBConn({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				}
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
 			}).then(function(db) {
 				return Promise.all([db, require('./fixture/single_user')(db.User)]);
 			}).spread(function(db, _) {
@@ -113,10 +99,8 @@ describe('DBConn', function() {
 		});
 		it("should correctly error if a user doesn't exist.", function() {
 			return new DBConn({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				}
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
 			}).then(function(db) {
 				return Promise.all([db, require('./fixture/single_user')(db.User)]);
 			}).spread(function(db, _) {
@@ -129,10 +113,8 @@ describe('DBConn', function() {
 		});
 		it("should correctly error a user with the wrong password.", function() {
 			return new DBConn({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				}
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
 			}).then(function(db) {
 				return Promise.all([db, require('./fixture/single_user')(db.User)]);
 			}).spread(function(db, _) {
@@ -147,10 +129,8 @@ describe('DBConn', function() {
 	describe('DBConn.newSession()', function() {
 		it("should correctly create a session.", function() {
 			return new DBConn({
-				database: {
-					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" }
-				}
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
 			}).then(function(db) {
 				return Promise.all([db, require('./fixture/single_user')(db.User)]);
 			}).spread(function(db, _) {

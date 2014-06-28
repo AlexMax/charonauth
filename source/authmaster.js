@@ -21,6 +21,7 @@
 
 var cluster = require('cluster');
 
+var Config = require('./config');
 var Logger = require('./logger');
 
 function master(msg) {
@@ -29,8 +30,8 @@ function master(msg) {
 		process.exit(1);
 	}
 
-	var config = msg.config;
-	var log = new Logger(config);
+	var config = new Config(msg.config);
+	var log = new Logger(config.get('log'));
 
 	if (cluster.isMaster && process.platform !== "win32") {
 		// If this is the master, fork X children
@@ -45,7 +46,7 @@ function master(msg) {
 				process.exit(2);
 			} else {
 				log.warn('Authentication worker ' + worker.process.pid + ' died, respawning...');
-				cluster.fork().send({config: config});
+				cluster.fork().send({config: config.get()});
 			}
 		});
 
@@ -57,7 +58,7 @@ function master(msg) {
 		log.info('Forking ' + workers + ' authentication worker processes.');
 
 		for (var i = 0;i < workers;i++) {
-			cluster.fork().send({config: config});
+			cluster.fork().send({config: config.get()});
 		}
 	} else {
 		// If this is a worker, start an instance of the authapp
@@ -70,7 +71,7 @@ function master(msg) {
 
 		var AuthApp = require('./authapp');
 
-		new AuthApp(config, {logger: log}).then(function() {
+		new AuthApp(config.get(), log).then(function() {
 			log.info('Authentication worker ' + process.pid + ' started.');
 		}).catch(function(err) {
 			log.error(err.message);

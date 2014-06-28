@@ -31,45 +31,44 @@ var session = require('express-session');
 var fsSession = require('fs-session')({ session: session });
 var uuid = require('node-uuid');
 
+var Config = require('./config');
 var DBConn = require('./dbconn');
 var error = require('./error');
 var gravatar = require('./gravatar');
 var Recaptcha = require('./recaptcha');
 var webform = require('./webform');
 
-var config_defaults = {
-	web: {
-		port: 8080,
-		secret: undefined
-	}
-};
-
 // Handles user creation and administration through a web interface.
 function WebApp(config, logger) {
 	var self = this;
 
 	return new Promise(function(resolve, reject) {
-		config = _.merge(config, config_defaults, _.defaults);
+		self.config = new Config(config, {
+			web: {
+				port: 8080,
+				secret: undefined
+			}
+		});
 
-		if (!config.web.port) {
+		if (!self.config.get('web.port')) {
 			reject(new Error("Missing port in web configuration."));
 			return;
 		}
 
-		if (!config.web.secret) {
+		if (!self.config.get('web.secret')) {
 			reject(new Error("Missing secret in web configuration."));
 			return;
 		}
 
 		// If recaptcha config exists, initialize it
-		if ("recaptcha" in config) {
-			self.recaptcha = new Recaptcha(config);
+		if (self.config.get('web.recaptcha')) {
+			self.recaptcha = new Recaptcha(config.get('web.recaptcha'));
 		} else {
 			self.recaptcha = undefined;
 		}
 
 		// Create database connection
-		resolve(new DBConn(config));
+		resolve(new DBConn(self.config.get('database')));
 	}).then(function(dbconn) {
 		self.dbconn = dbconn;
 

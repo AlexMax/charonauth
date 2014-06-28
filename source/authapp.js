@@ -25,17 +25,12 @@ var _ = require('lodash');
 require('date-utils');
 var dgram = Promise.promisifyAll(require('dgram'));
 
+var Config = require('./config');
 var DBConn = require('./dbconn');
 var error = require('./error');
 var mock = require('./mock');
 var proto = require('./proto');
 var srp = Promise.promisifyAll(require('../srp'));
-
-var config_defaults = {
-	auth: {
-		port: 16666
-	}
-};
 
 // Handles user authentication over a UDP socket.  Used by the game itself.
 function AuthApp(config, logger) {
@@ -49,22 +44,26 @@ function AuthApp(config, logger) {
 	}
 
 	return new Promise(function(resolve, reject) {
-		config = _.merge(config, config_defaults, _.defaults);
+		self.config = new Config(config, {
+			auth: {
+				port: 16666
+			}
+		});
 
-		if (!config.auth.port) {
+		if (!self.config.get('auth.port')) {
 			reject(new Error("Missing port in auth configuration."));
 			return;
 		}
 
 		// Create database connection.
-		resolve(new DBConn(config));
+		resolve(new DBConn(self.config.get('database')));
 	}).then(function(dbconn) {
 		self.dbconn = dbconn;
 
 		// Start listening for UDP packets
 		self.socket = dgram.createSocket('udp4');
 		self.socket.on('message', self.message.bind(self));
-		return self.socket.bindAsync(config.authPort);
+		return self.socket.bindAsync(self.config.get('auth.port'));
 	}).then(function() {
 		return self;
 	});

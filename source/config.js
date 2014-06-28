@@ -25,6 +25,18 @@ var _ = require('lodash');
 // the actual configuration values and defaults that represent the
 // default configuration values.
 function Config(values, defaults) {
+	if (_.isUndefined(values) || _.isNull(values)) {
+		values = {};
+	} else if (!_.isObject(values)) {
+		throw new Error('Can\'t create config with defaults of type ' + typeof values);
+	}
+
+	if (_.isUndefined(defaults) || _.isNull(defaults)) {
+		defaults = {};
+	} else if (!_.isObject(defaults)) {
+		throw new Error('Can\'t create config with defaults of type ' + typeof defaults);
+	}
+
 	this.values = _.merge(values, defaults, _.defaults);
 }
 
@@ -32,6 +44,10 @@ function Config(values, defaults) {
 // period-delimited path and return that value.  If the path doesn't
 // resolve to a nested object key, return undefined.
 Config.prototype.get = function(key) {
+	if (_.isUndefined(key)) {
+		return this.values;
+	}
+
 	var nodes = key.split('.');
 	var nodesLength = nodes.length;
 
@@ -42,7 +58,27 @@ Config.prototype.get = function(key) {
 			return undefined;
 		}
 	}
+
 	return loc;
+};
+
+// A version of get that returns either boolean true or false.  Plus,
+// this function tries to tries to pick up on falsy strings like "false"
+// and "no" and return false in those instances.  Returns undefined if
+// the key doesn't exist.
+Config.prototype.getBool = function(key) {
+	var value = this.get(key);
+	if (_.isString(value)) {
+		value = value.toLowerCase().substring(0, 1);
+	}
+	if (_.isUndefined(value)) {
+		return undefined;
+	} else if (value === "f" || value === "n" || value === "0" || value === "" ||
+	           value === false || value === 0) {
+		return false;
+	} else {
+		return true;
+	}
 };
 
 // Set a specific value in the configuration, creating nested objects

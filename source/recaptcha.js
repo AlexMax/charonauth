@@ -20,30 +20,27 @@
 "use strict";
 
 var Promise = require('bluebird');
-var _ = require('lodash');
 
 var request = Promise.promisifyAll(require('request'));
 
-var config_defaults = {
-	recaptcha: {
-		privatekey: undefined,
-		publickey: undefined
-	}
-};
+var Config = require('./config');
 
 // A reCAPTCHA verifier
 function Recaptcha(config) {
-	config = _.merge(config, config_defaults, _.defaults);
+	this.config = new Config(config, {
+		privatekey: undefined,
+		publickey: undefined
+	});
 
-	if (!config.recaptcha.privatekey) {
+	if (!this.config.get('privatekey')) {
 		throw new Error("Missing privatekey in recaptcha configuration.");
 	}
-	if (!config.recaptcha.publickey) {
+	if (!this.config.get('publickey')) {
 		throw new Error("Missing publickey in recaptcha configuration.");
 	}
 
-	this.privatekey = config.recaptcha.privatekey;
-	this.publickey = config.recaptcha.publickey;
+	this.privatekey = this.config.get('privatekey');
+	this.publickey = this.config.get('publickey');
 }
 
 // Verify a ReCAPTCHA form submission

@@ -21,16 +21,17 @@
 
 var cluster = require('cluster');
 
+var Config = require('./config');
 var Logger = require('./logger');
 
 function master(msg) {
 	if (!("config" in msg)) {
 		process.stderr.write("No configuration supplied for subprocess " + process.pid + ", aborting...\n");
-		process.exit(1);
+		process.exit(2);
 	}
 
-	var config = msg.config;
-	var log = new Logger(config);
+	var config = new Config(msg.config);
+	var log = new Logger(config.get('log'));
 
 	if (cluster.isMaster) {
 		// If this is the master, fork X children
@@ -45,7 +46,7 @@ function master(msg) {
 				process.exit(2);
 			} else {
 				log.warn('Web worker ' + worker.process.pid + ' died, respawning...');
-				cluster.fork().send({config: config});
+				cluster.fork().send({config: config.get()});
 			}
 		});
 
@@ -57,7 +58,7 @@ function master(msg) {
 		log.info('Forking ' + workers + ' web worker processes.');
 
 		for (var i = 0;i < workers;i++) {
-			cluster.fork().send({config: config});
+			cluster.fork().send({config: config.get()});
 		}
 	} else {
 		// If this is a worker, start an instance of the authapp
@@ -65,7 +66,7 @@ function master(msg) {
 
 		var WebApp = require('./webapp');
 
-		new WebApp(config, {logger: log}).then(function() {
+		new WebApp(config.get(), {logger: log}).then(function() {
 			log.info('Web worker ' + process.pid + ' started.');
 		}).catch(function(err) {
 			log.error(err.message);

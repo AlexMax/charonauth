@@ -20,6 +20,7 @@
 "use strict";
 
 var Promise = require('bluebird');
+var _ = require('lodash');
 
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
@@ -28,7 +29,6 @@ var csurf = require('csurf');
 var express = require('express');
 var session = require('express-session');
 var fsSession = require('fs-session')({ session: session });
-var _ = require('lodash');
 var uuid = require('node-uuid');
 
 var DBConn = require('./dbconn');

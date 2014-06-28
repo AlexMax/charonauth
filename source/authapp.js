@@ -20,11 +20,10 @@
 "use strict";
 
 var Promise = require('bluebird');
-
-var dgram = Promise.promisifyAll(require('dgram'));
 var _ = require('lodash');
 
 require('date-utils');
+var dgram = Promise.promisifyAll(require('dgram'));
 
 var DBConn = require('./dbconn');
 var error = require('./error');

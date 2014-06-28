@@ -20,6 +20,7 @@
 "use strict";
 
 var _ = require('lodash');
+
 var winston = require('winston');
 
 var config_defaults = {

@@ -34,6 +34,7 @@ var uuid = require('node-uuid');
 var DBConn = require('./dbconn');
 var error = require('./error');
 var gravatar = require('./gravatar');
+var Recaptcha = require('./recaptcha');
 var webform = require('./webform');
 
 var config_defaults = {
@@ -43,7 +44,8 @@ var config_defaults = {
 	}
 };
 
-function WebApp(config) {
+// Handles user creation and administration through a web interface.
+function WebApp(config, deps) {
 	var self = this;
 
 	return new Promise(function(resolve, reject) {
@@ -57,6 +59,13 @@ function WebApp(config) {
 		if (!config.web.secret) {
 			reject(new Error("Missing secret in web configuration."));
 			return;
+		}
+
+		// If recaptcha config exists, initialize it
+		if ("recaptcha" in config) {
+			self.recaptcha = new Recaptcha(config);
+		} else {
+			self.recaptcha = undefined;
 		}
 
 		// Create database connection
@@ -164,7 +173,7 @@ WebApp.prototype.getRegister = function(req, res) {
 	req.body._csrf = req.csrfToken();
 	this.render(req, res, 'register', {
 		data: req.body, errors: {},
-		recaptcha_public_key: this.recaptcha ? this.recaptcha.publicKey : null
+		recaptcha_public_key: this.recaptcha ? this.recaptcha.publickey : null
 	});
 }
 
@@ -173,8 +182,7 @@ WebApp.prototype.postRegister = function(req, res) {
 	var self = this;
 
 	webform.registerForm(
-		this.dbconn, req.body, req.ip,
-		this.recaptcha ? this.recaptcha.privateKey : null
+		this.dbconn, this.recaptcha, req.body, req.ip
 	).then(function() {
 		if (false) {
 			// Do E-mail verification of new accounts
@@ -202,7 +210,7 @@ WebApp.prototype.postRegister = function(req, res) {
 		req.body._csrf = req.csrfToken();
 		self.render(req, res, 'register', {
 			data: req.body, errors: e.invalidFields,
-			recaptcha_public_key: self.recaptcha ? self.recaptcha.publicKey : null
+			recaptcha_public_key: self.recaptcha ? self.recaptcha.publickey : null
 		});
 	});
 };

@@ -23,12 +23,12 @@ var Promise = require('bluebird');
 
 var dgram = Promise.promisifyAll(require('dgram'));
 var _ = require('lodash');
-var winston = require('winston');
 
 require('date-utils');
 
 var DBConn = require('./dbconn');
 var error = require('./error');
+var mock = require('./mock');
 var proto = require('./proto');
 var srp = Promise.promisifyAll(require('../srp'));
 
@@ -38,12 +38,16 @@ var config_defaults = {
 	}
 };
 
-// AuthApp
-//
-// This object encompasses all functionality dealing with the UDP endpoint of
-// charon.  More specifically, the socket server lives here.
-function AuthApp(config) {
+// Handles user authentication over a UDP socket.  Used by the game itself.
+function AuthApp(config, deps) {
 	var self = this;
+
+	// Attach a logger if we have one.
+	if ("logger" in deps) {
+		this.log = deps.logger;
+	} else {
+		this.log = mock.logger;
+	}
 
 	return new Promise(function(resolve, reject) {
 		config = _.merge(config, config_defaults, _.defaults);
@@ -80,6 +84,11 @@ AuthApp.prototype.message = function(msg, rinfo) {
 		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
 	}).catch(error.UserNotFound, function(err) {
 		// User was not found
+		log.info(err.message, {
+			username: username,
+			rinfo: rinfo
+		});
+
 		var error = proto.userError.marshall({
 			username: username,
 			error: proto.USER_NO_EXIST
@@ -88,6 +97,11 @@ AuthApp.prototype.message = function(msg, rinfo) {
 		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.SessionNotFound, function(err) {
 		// Session was not found
+		log.info(err.message, {
+			session: session,
+			rinfo: rinfo
+		});
+
 		var error = proto.userError.marshall({
 			username: username,
 			error: proto.SESSION_NO_EXIST
@@ -96,6 +110,11 @@ AuthApp.prototype.message = function(msg, rinfo) {
 		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.SessionAuthFailed, function(err) {
 		// Session authentication failed
+		log.info(err.message, {
+			session: session,
+			rinfo: rinfo
+		});
+
 		var error = proto.userError.marshall({
 			username: username,
 			error: proto.SESSION_AUTH_FAILED
@@ -104,7 +123,9 @@ AuthApp.prototype.message = function(msg, rinfo) {
 		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.IgnorableProtocol, function(err) {
 		// Protocol error that can be ignored unless we're debugging
-		winston.debug(err.stack);
+		log.verbose(err.message, {
+			rinfo: rinfo
+		});
 	});
 }
 
@@ -142,7 +163,7 @@ AuthApp.prototype.router = function(msg, rinfo) {
 //
 // This is the initial route that creates an authentication session.
 AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
-	var self = this;
+	this.log.verbose("serverNegotiate", rinfo);
 
 	// Unmarshall the server negotiation packet
 	var packet = proto.serverNegotiate.unmarshall(msg);
@@ -168,6 +189,8 @@ AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 // back to the client.
 AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 	var self = this;
+
+	this.log.verbose("serverEphemeral", rinfo);
 
 	// Unmarshall the server negotiation packet
 	var packet = proto.serverEphemeral.unmarshall(msg);
@@ -208,6 +231,8 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 // server is who he says he is.
 AuthApp.prototype.serverProof = function(msg, rinfo) {
 	var self = this;
+
+	this.log.verbose("serverProof", rinfo);
 
 	// Unmarshall the server negotiation packet
 	var packet = proto.serverProof.unmarshall(msg);

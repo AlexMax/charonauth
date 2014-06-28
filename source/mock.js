@@ -1,4 +1,3 @@
-#!/usr/bin/env node
 /*
  *  Charon: A game authentication server
  *  Copyright (C) 2014  Alex Mayfield
@@ -20,28 +19,21 @@
 /* jshint node: true */
 "use strict";
 
-var Charonauth = require('../');
-var fs = require('fs');
-var ini = require('ini');
-var options = require('commander');
-
-var pack = JSON.parse(fs.readFileSync(__dirname + '/../package.json', {
-	'encoding': 'utf8'
-}));
-
-options
-	.version(pack.version)
-	.option('-c, --config <path>', 'path to config file', 'charonauth.ini')
-//	.option('-p, --pid <path>', 'path to pid file')
-	.option('-v, --verbose', 'verbose logging')
-	.parse(process.argv);
-
-var config = ini.parse(fs.readFileSync(options.config, {
-	'encoding': 'utf8'
-}));
-
-if (options.verbose) {
-	config.log.verbose = true;
-}
-
-new Charonauth(config);
+// A mock logger, which does nothing.
+module.exports.logger = {
+	log: function() {
+		return undefined;
+	},
+	verbose: function() {
+		return undefined;
+	},
+	info: function() {
+		return undefined;
+	},
+	warn: function() {
+		return undefined;
+	},
+	error: function() {
+		return undefined;
+	}
+};

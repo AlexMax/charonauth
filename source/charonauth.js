@@ -21,17 +21,37 @@
 
 var child_process = require('child_process');
 
-function shutdown(code, signal) {
-	process.stderr.write("Shutting down...\n");
-	process.exit(1);
-}
-
 module.exports = function(config) {
-	this.authmaster = child_process.fork(__dirname + '/authmaster');
-	this.authmaster.on('exit', shutdown);
-	this.authmaster.send({config: config});
+	var self = this;
 
+	this.authmaster = child_process.fork(__dirname + '/authmaster');
 	this.webmaster = child_process.fork(__dirname + '/webmaster');
-	this.webmaster.on('exit', shutdown);
+
+	this.authmaster.on('exit', function(code, signal) {
+		if (code === 2) {
+			// Code 2 is returned when one of the workers that the master governs
+			// fails to construct, usually due to a configuration error.
+			self.webmaster.kill();
+			process.exit(2);
+		} else {
+			process.stderr.write('Authentication master ' + worker.process.pid + ' died, respawning...');
+			self.authmaster = child_process.fork(__dirname + '/authmaster');
+			self.authmaster.send({config: config});
+		}
+	});
+	this.webmaster.on('exit', function(code, signal) {
+		if (code === 2) {
+			// Code 2 is returned when one of the workers that the master governs
+			// fails to construct, usually due to a configuration error.
+			self.authmaster.kill();
+			process.exit(2);
+		} else {
+			process.stderr.write('Web master ' + worker.process.pid + ' died, respawning...');
+			self.webmaster = child_process.fork(__dirname + '/webmaster');
+			self.webmaster.send({config: config});
+		}
+	});
+
+	this.authmaster.send({config: config});
 	this.webmaster.send({config: config});
 };

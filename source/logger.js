@@ -24,7 +24,8 @@ var winston = require('winston');
 
 var config_defaults = {
 	log: {
-		file: undefined
+		file: undefined,
+		verbose: false
 	}
 };
 
@@ -33,11 +34,15 @@ function Logger(config) {
 
 	this.logger = new (winston.Logger)({
 		transports: [
-			new (winston.transports.Console)()
+			new (winston.transports.Console)({
+				handleExceptions: true,
+				level: config.log.verbose ? 'verbose' : 'info'
+			})
 		]
 	});
 
 	this.log = this.logger.log;
+	this.verbose = this.logger.verbose;
 	this.info = this.logger.info;
 	this.warn = this.logger.warn;
 	this.error = this.logger.error;
@@ -46,6 +51,7 @@ function Logger(config) {
 	if (config.log.file) {
 		this.logger.add(winston.transports.File, {
 			filename: config.log.file,
+			handleExceptions: true,
 			json: false,
 			timestamp: true
 		});

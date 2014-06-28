@@ -20,49 +20,12 @@
 "use strict";
 
 var Promise = require('bluebird');
-var querystring = require('querystring');
-var request = require('request');
+var _ = require('lodash');
+
 var Sequelize = require('sequelize');
-var _ = require('underscore');
 var validator = require('validator');
 
 var error = require('./error');
-
-function verifyReCAPTCHA(privateKey, ip, challenge, response) {
-	return new Promise(function (resolve, reject) {
-		request.post(
-			'http://www.google.com/recaptcha/api/verify',
-			{
-				form: {
-					privatekey: privateKey,
-					remoteip: ip,
-					challenge: challenge,
-					response: response
-				}
-			},
-			function (err, response, body) {
-				if (err) {
-					reject('recaptcha-not-reachable');
-					return;
-				}
-				var res = body.split('\n');
-				if (res[0] === 'true') {
-					resolve();
-				} else {
-					switch (res[1]) {
-					case 'incorrect-captcha-sol':
-					case 'captcha-timeout':
-						reject(res[1]);
-						break;
-					default:
-						reject(null);
-						break;
-					}
-				}
-			}
-		);
-	});
-}
 
 function loginForm(dbconn, data) {
 	return new Promise(function(resolve, reject) {
@@ -88,7 +51,7 @@ function loginForm(dbconn, data) {
 	});
 }
 
-function registerForm(dbconn, data, ip, recaptchaPrivateKey) {
+function registerForm(dbconn, recaptcha, data, ip) {
 	return new Promise(function(resolve, reject) {
 		var promises = [];
 		var errors = {};
@@ -146,14 +109,14 @@ function registerForm(dbconn, data, ip, recaptchaPrivateKey) {
 		}
 
 		// Validate ReCAPTCHA if we've got a private key for it
-		if (recaptchaPrivateKey) {
+		if (recaptcha) {
 			if (!("recaptcha_challenge_field" in data) || validator.isNull(data.recaptcha_challenge_field) ||
 					!("recaptcha_response_field" in data) || validator.isNull(data.recaptcha_response_field)) {
 				errors.captcha = "CAPTCHA is required";
 			} else {
 				promises.push(new Promise(function (resolve, reject) {
-					verifyReCAPTCHA(
-						recaptchaPrivateKey, ip, data.recaptcha_challenge_field, data.recaptcha_response_field
+					recaptcha.verify(
+						ip, data.recaptcha_challenge_field, data.recaptcha_response_field
 					).then(function () {
 						resolve();
 					}).catch(function (error) {

@@ -37,9 +37,12 @@ function master(msg) {
 		process.title = 'charonauth: web master';
 
 		cluster.on('exit', function(worker, code, signal) {
-			if (code === 1) {
-				log.error('Web worker ' + worker.process.pid + ' is shutting everything down.');
-				process.exit(1);
+			if (code === 2) {
+				// Code 2 is returned when the worker fails to construct, usually
+				// due to a configuration error, which won't be fixed by simply
+				// restarting it.
+				log.error('Web worker ' + worker.process.pid + ' is shutting the entire server down.');
+				process.exit(2);
 			} else {
 				log.warn('Web worker ' + worker.process.pid + ' died, respawning...');
 				cluster.fork().send({config: config});
@@ -66,7 +69,7 @@ function master(msg) {
 			log.info('Web worker ' + process.pid + ' started.');
 		}).catch(function(err) {
 			log.error(err.message);
-			process.exit(1);
+			process.exit(2);
 		});
 	}
 }

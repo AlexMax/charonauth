@@ -45,7 +45,7 @@ var config_defaults = {
 };
 
 // Handles user creation and administration through a web interface.
-function WebApp(config, deps) {
+function WebApp(config, logger) {
 	var self = this;
 
 	return new Promise(function(resolve, reject) {
@@ -142,7 +142,7 @@ WebApp.prototype.getLogin = function(req, res) {
 	this.render(req, res, 'login', {
 		data: req.body, errors: {},
 	});
-}
+};
 
 // Process a login form
 WebApp.prototype.postLogin = function(req, res) {
@@ -175,7 +175,7 @@ WebApp.prototype.getRegister = function(req, res) {
 		data: req.body, errors: {},
 		recaptcha_public_key: this.recaptcha ? this.recaptcha.publickey : null
 	});
-}
+};
 
 // Process a registration form
 WebApp.prototype.postRegister = function(req, res) {

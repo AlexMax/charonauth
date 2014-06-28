@@ -39,12 +39,12 @@ var config_defaults = {
 };
 
 // Handles user authentication over a UDP socket.  Used by the game itself.
-function AuthApp(config, deps) {
+function AuthApp(config, logger) {
 	var self = this;
 
 	// Attach a logger if we have one.
-	if ("logger" in deps) {
-		this.log = deps.logger;
+	if (logger) {
+		this.log = logger;
 	} else {
 		this.log = mock.logger;
 	}
@@ -84,50 +84,50 @@ AuthApp.prototype.message = function(msg, rinfo) {
 		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
 	}).catch(error.UserNotFound, function(err) {
 		// User was not found
-		log.info(err.message, {
-			username: username,
+		this.log.info(err.message, {
+			username: err.username,
 			rinfo: rinfo
 		});
 
 		var error = proto.userError.marshall({
-			username: username,
+			username: err.username,
 			error: proto.USER_NO_EXIST
 		});
 
 		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.SessionNotFound, function(err) {
 		// Session was not found
-		log.info(err.message, {
-			session: session,
+		this.log.info(err.message, {
+			session: err.session,
 			rinfo: rinfo
 		});
 
 		var error = proto.userError.marshall({
-			username: username,
+			username: err.username,
 			error: proto.SESSION_NO_EXIST
 		});
 
 		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.SessionAuthFailed, function(err) {
 		// Session authentication failed
-		log.info(err.message, {
-			session: session,
+		this.log.info(err.message, {
+			session: err.session,
 			rinfo: rinfo
 		});
 
 		var error = proto.userError.marshall({
-			username: username,
+			session: err.session,
 			error: proto.SESSION_AUTH_FAILED
 		});
 
 		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.IgnorableProtocol, function(err) {
 		// Protocol error that can be ignored unless we're debugging
-		log.verbose(err.message, {
+		this.log.verbose(err.message, {
 			rinfo: rinfo
 		});
 	});
-}
+};
 
 // Router.
 //
@@ -201,7 +201,7 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 		// Find the user associated with this session
 		return Promise.all([session, session.getUser()]);
 	}).spread(function(session, user) {
-		// Generate a session key 
+		// Generate a session key
 		return Promise.all([session, user, srp.genKeyAsync(32)]);
 	}).spread(function(session, user, secret) {
 		// Try to generate the server's ephemeral value.
@@ -221,7 +221,7 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 			session: packet.session,
 			ephemeral: session.ephemeral
 		});
-	})
+	});
 };
 
 // Server Proof Route
@@ -260,7 +260,7 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 			proof = srpServer.checkM1(packet.proof);
 		} catch(e) {
 			// Authentication failed.
-			throw new error.SessionAuthFailed("Authentication failed");
+			throw new error.SessionAuthFailed("Authentication failed", packet.session);
 		}
 
 		// Write the response packet

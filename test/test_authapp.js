@@ -102,8 +102,8 @@ describe('AuthApp', function() {
 				return app.serverNegotiate(packet);
 			}).then(function() {
 				throw new Error("Did not error");
-			}).catch(error.UserNotFound, function() {
-				// Success
+			}).catch(error.UserNotFound, function(err) {
+				assert.equal(err.username, 'alice');
 			});
 		});
 	});
@@ -153,7 +153,7 @@ describe('AuthApp', function() {
 			// What the client knows.
 			var username = 'username';
 			var password = 'password123';
-			
+
 			// What the client got from a hypothetical session establishment.
 			var salt = new Buffer('615A9E29', 'hex');
 			var session = 123456;
@@ -173,8 +173,8 @@ describe('AuthApp', function() {
 				return Promise.all([srpClient, app.serverEphemeral(packet)]);
 			}).then(function() {
 				throw new Error("Did not error");
-			}).catch(error.SessionNotFound, function() {
-				// Success
+			}).catch(error.SessionNotFound, function(err) {
+				assert.equal(err.session, session);
 			});
 		});
 	});
@@ -243,8 +243,8 @@ describe('AuthApp', function() {
 				return app.serverProof(packet);
 			}).then(function(msg) {
 				throw new Error("Did not error");
-			}).catch(error.SessionAuthFailed, function() {
-				// Success
+			}).catch(error.SessionAuthFailed, function(err) {
+				assert.equal(err.session, session);
 			});
 		});
 		it("should error if the session doesn't exist.", function() {
@@ -266,8 +266,8 @@ describe('AuthApp', function() {
 				return app.serverProof(packet);
 			}).then(function(msg) {
 				throw new Error("Did not error");
-			}).catch(error.SessionNotFound, function() {
-				// Success
+			}).catch(error.SessionNotFound, function(err) {
+				assert.equal(err.session, session);
 			});
 		});
 	});

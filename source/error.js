@@ -7,9 +7,9 @@
 // not reply to the sender.
 
 function IgnorableProtocolError(message) {
-    this.message = message;
-    this.name = "IgnorableProtocolError";
-    Error.captureStackTrace(this, IgnorableProtocolError);
+	this.name = "IgnorableProtocolError";
+	this.message = message;
+	Error.captureStackTrace(this, IgnorableProtocolError);
 }
 IgnorableProtocolError.prototype = Object.create(Error.prototype);
 IgnorableProtocolError.prototype.constructor = IgnorableProtocolError;
@@ -19,10 +19,10 @@ IgnorableProtocolError.prototype.constructor = IgnorableProtocolError;
 // Thrown when a form validator cannot validate a form.
 
 function FormValidationError(message, invalidFields) {
-    this.message = message;
-    this.name = "FormValidationError";
-		this.invalidFields = invalidFields;
-    Error.captureStackTrace(this, FormValidationError);
+	this.name = "FormValidationError";
+	this.message = message;
+	this.invalidFields = invalidFields;
+	Error.captureStackTrace(this, FormValidationError);
 }
 FormValidationError.prototype = Object.create(Error.prototype);
 FormValidationError.prototype.constructor = FormValidationError;
@@ -31,10 +31,11 @@ FormValidationError.prototype.constructor = FormValidationError;
 //
 // Thrown when a user can't be found in the database
 
-function UserNotFoundError(message) {
-    this.message = message;
-    this.name = "UserNotFoundError";
-    Error.captureStackTrace(this, UserNotFoundError);
+function UserNotFoundError(message, username) {
+	this.name = "UserNotFoundError";
+	this.message = message;
+	this.username = username;
+	Error.captureStackTrace(this, UserNotFoundError);
 }
 UserNotFoundError.prototype = Object.create(Error.prototype);
 UserNotFoundError.prototype.constructor = UserNotFoundError;
@@ -43,10 +44,11 @@ UserNotFoundError.prototype.constructor = UserNotFoundError;
 //
 // Thrown when a session can't be found in the database
 
-function SessionNotFoundError(message) {
-    this.message = message;
-    this.name = "SessionNotFoundError";
-    Error.captureStackTrace(this, SessionNotFoundError);
+function SessionNotFoundError(message, session) {
+	this.name = "SessionNotFoundError";
+	this.message = message;
+	this.session = session;
+	Error.captureStackTrace(this, SessionNotFoundError);
 }
 SessionNotFoundError.prototype = Object.create(Error.prototype);
 SessionNotFoundError.prototype.constructor = SessionNotFoundError;
@@ -55,10 +57,11 @@ SessionNotFoundError.prototype.constructor = SessionNotFoundError;
 //
 // Thrown when an authentication attempt has failed
 
-function SessionAuthFailedError(message) {
-    this.message = message;
-    this.name = "SessionAuthFailedError";
-    Error.captureStackTrace(this, SessionAuthFailedError);
+function SessionAuthFailedError(message, session) {
+	this.name = "SessionAuthFailedError";
+	this.message = message;
+	this.session = session;
+	Error.captureStackTrace(this, SessionAuthFailedError);
 }
 SessionAuthFailedError.prototype = Object.create(Error.prototype);
 SessionAuthFailedError.prototype.constructor = SessionAuthFailedError;
@@ -68,9 +71,9 @@ SessionAuthFailedError.prototype.constructor = SessionAuthFailedError;
 // Thrown when an plaintext login attempt has failed
 
 function LoginAuthFailedError(message) {
-    this.message = message;
-    this.name = "LoginAuthFailedError";
-    Error.captureStackTrace(this, LoginAuthFailedError);
+	this.name = "LoginAuthFailedError";
+	this.message = message;
+	Error.captureStackTrace(this, LoginAuthFailedError);
 }
 LoginAuthFailedError.prototype = Object.create(Error.prototype);
 LoginAuthFailedError.prototype.constructor = LoginAuthFailedError;

@@ -28,7 +28,7 @@ describe('DBConn', function() {
 					options: { "storage": ":memory:" }
 				}
 			}).then(function(dbconn) {
-				return dbconn.addUser('username', 'password123', 'example@example.com')
+				return dbconn.addUser('username', 'password123', 'example@example.com');
 			}).then(function(user) {
 				assert.equal(user.username, 'username');
 
@@ -44,7 +44,7 @@ describe('DBConn', function() {
 					options: { "storage": ":memory:" }
 				}
 			}).then(function(dbconn) {
-				return dbconn.addUser('Username', 'password123', 'example@example.com')
+				return dbconn.addUser('Username', 'password123', 'example@example.com');
 			}).then(function(user) {
 				assert.equal(user.username, 'username');
 
@@ -123,8 +123,8 @@ describe('DBConn', function() {
 				return db.verifyUser('capodecima', 'password123');
 			}).then(function(user) {
 				throw new Error("Did not error");
-			}).catch(error.UserNotFound, function() {
-				// Success
+			}).catch(error.UserNotFound, function(err) {
+				assert.equal(err.username, 'capodecima');
 			});
 		});
 		it("should correctly error a user with the wrong password.", function() {

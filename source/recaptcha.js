@@ -83,6 +83,6 @@ Recaptcha.prototype.verify = function(ip, challenge, response) {
 			}
 		);
 	});
-}
+};
 
 module.exports = Recaptcha;

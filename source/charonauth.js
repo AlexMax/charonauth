@@ -34,7 +34,7 @@ module.exports = function(config) {
 			self.webmaster.kill();
 			process.exit(2);
 		} else {
-			process.stderr.write('Authentication master ' + worker.process.pid + ' died, respawning...');
+			process.stderr.write('Authentication master died, respawning...');
 			self.authmaster = child_process.fork(__dirname + '/authmaster');
 			self.authmaster.send({config: config});
 		}
@@ -46,7 +46,7 @@ module.exports = function(config) {
 			self.authmaster.kill();
 			process.exit(2);
 		} else {
-			process.stderr.write('Web master ' + worker.process.pid + ' died, respawning...');
+			process.stderr.write('Web master died, respawning...');
 			self.webmaster = child_process.fork(__dirname + '/webmaster');
 			self.webmaster.send({config: config});
 		}

@@ -33,7 +33,7 @@ var config_defaults = {
 		options: {
 			logging: false
 		},
-		url: undefined
+		uri: undefined
 	}
 };
 
@@ -51,13 +51,13 @@ var DBConn = function(config) {
 		// Turn off logging unless somebody specifically turns it on
 		config.database.options.logging = config.database.options.logging || false;
 
-		if (!config.database.url) {
-			reject(new Error("Missing url in database configuration."));
+		if (!config.database.uri) {
+			reject(new Error("Missing uri in database configuration."));
 			return;
 		}
 
 		try {
-			self.db = new Sequelize(config.database.url, config.database.options);
+			self.db = new Sequelize(config.database.uri, config.database.options);
 			resolve();
 		} catch (e) {
 			reject(e);
@@ -147,7 +147,7 @@ DBConn.prototype.findUser = function(username) {
 	return this.User.find({ where: { username: username.toLowerCase() }})
 	.then(function(data) {
 		if (data === null) {
-			throw new error.UserNotFound("User not found");
+			throw new error.UserNotFound("User not found", username);
 		} else {
 			return data;
 		}
@@ -166,7 +166,7 @@ DBConn.prototype.verifyUser = function(identity, password) {
 		)
 	}).then(function(data) {
 		if (data === null) {
-			throw new error.UserNotFound("User not found");
+			throw new error.UserNotFound("User not found", identity);
 		} else {
 			var params = srp.params['2048'];
 
@@ -201,7 +201,7 @@ DBConn.prototype.findSession = function(session, timeout) {
 	return this.Session.find({ where: { session: session }})
 	.then(function(sess) {
 		if (sess === null) {
-			throw new error.SessionNotFound("Session not found");
+			throw new error.SessionNotFound("Session not found", session);
 		}
 
 		// A session that is expired is not a valid session.

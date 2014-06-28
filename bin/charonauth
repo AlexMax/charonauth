@@ -20,28 +20,35 @@
 /* jshint node: true */
 "use strict";
 
-var Charonauth = require('../');
+var options = require('commander');
 var fs = require('fs');
 var ini = require('ini');
-var options = require('commander');
 
+var Charonauth = require('../');
+var Config = require('../source/config');
+
+// The package file supplies information like the version.
 var pack = JSON.parse(fs.readFileSync(__dirname + '/../package.json', {
 	'encoding': 'utf8'
 }));
 
+// Parse command line options.
 options
 	.version(pack.version)
 	.option('-c, --config <path>', 'path to config file', 'charonauth.ini')
-//	.option('-p, --pid <path>', 'path to pid file')
 	.option('-v, --verbose', 'verbose logging')
 	.parse(process.argv);
 
-var config = ini.parse(fs.readFileSync(options.config, {
+// Load the configuration file into a Config.
+var config = new Config(ini.parse(fs.readFileSync(options.config, {
 	'encoding': 'utf8'
-}));
+})));
 
+// Passing in --verbose turns on verbose logging and overrides whatever
+// we have happen to have set in the ini file.
 if (options.verbose) {
-	config.log.verbose = true;
+	config.set('log.verbose', true);
 }
 
+// Create a new instance of the Charonauth application.
 new Charonauth(config);

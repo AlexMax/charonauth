@@ -47,7 +47,7 @@ function Logger(config) {
 	// Log to a file if supplied
 	if (this.config.get('file')) {
 		this.logger.add(winston.transports.File, {
-			filename: config.log.file,
+			filename: this.config.get('file'),
 			handleExceptions: true,
 			json: false,
 			timestamp: true

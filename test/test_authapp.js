@@ -140,11 +140,12 @@ describe('AuthApp', function() {
 					ephemeral: ephemeral
 				});
 
-				return Promise.all([srpClient, app.serverEphemeral(packet)]);
-			}).spread(function(srpClient, msg) {
+				return Promise.all([srpClient, ephemeral, app.serverEphemeral(packet)]);
+			}).spread(function(srpClient, ephemeral, msg) {
 				var response = proto.authEphemeral.unmarshall(msg);
 
 				assert.equal(response.session, session, "Session is incorrect");
+				assert.notEqual(response.ephemeral.toString('hex'), ephemeral.toString('hex'), "Server passed back A instead of B");
 
 				srpClient.setB(response.ephemeral);
 			});

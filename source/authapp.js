@@ -82,7 +82,7 @@ AuthApp.prototype.message = function(msg, rinfo) {
 		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
 	}).catch(error.UserNotFound, function(err) {
 		// User was not found
-		this.log.info(err.message, {
+		self.log.info(err.message, {
 			username: err.username,
 			rinfo: rinfo
 		});
@@ -95,7 +95,7 @@ AuthApp.prototype.message = function(msg, rinfo) {
 		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.SessionNotFound, function(err) {
 		// Session was not found
-		this.log.info(err.message, {
+		self.log.info(err.message, {
 			session: err.session,
 			rinfo: rinfo
 		});
@@ -108,7 +108,7 @@ AuthApp.prototype.message = function(msg, rinfo) {
 		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.SessionAuthFailed, function(err) {
 		// Session authentication failed
-		this.log.info(err.message, {
+		self.log.info(err.message, {
 			session: err.session,
 			rinfo: rinfo
 		});
@@ -121,7 +121,7 @@ AuthApp.prototype.message = function(msg, rinfo) {
 		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.IgnorableProtocol, function(err) {
 		// Protocol error that can be ignored unless we're debugging
-		this.log.verbose(err.message, {
+		self.log.verbose(err.message, {
 			rinfo: rinfo
 		});
 	});

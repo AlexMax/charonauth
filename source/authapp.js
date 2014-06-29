@@ -181,7 +181,11 @@ AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 			username: user.username
 		};
 
-		self.log.verbose("authNegotiate", res);
+		self.log.verbose("authNegotiate", {
+			session: res.session,
+			salt: res.salt.toString('hex'),
+			username: res.salt.toString('hex')
+		});
 		return proto.authNegotiate.marshall(res);
 	});
 };
@@ -225,7 +229,10 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 			ephemeral: session.ephemeral
 		};
 
-		self.log.verbose("authEphemeral", res);
+		self.log.verbose("authEphemeral", {
+			session: res.session,
+			ephemeral: res.ephemeral.toString('hex')
+		});
 		return proto.authEphemeral.marshall(res);
 	});
 };
@@ -275,7 +282,10 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 			proof: proof
 		};
 
-		self.log.verbose("authProof", res);
+		self.log.verbose("authProof", {
+			session: res.session,
+			proof: res.proof.toString('hex')
+		});
 		return proto.authProof.marshall(res);
 	});
 };

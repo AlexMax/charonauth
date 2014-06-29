@@ -100,8 +100,8 @@ AuthApp.prototype.message = function(msg, rinfo) {
 			rinfo: rinfo
 		});
 
-		var error = proto.userError.marshall({
-			username: err.username,
+		var error = proto.sessionError.marshall({
+			session: err.session,
 			error: proto.SESSION_NO_EXIST
 		});
 
@@ -113,7 +113,7 @@ AuthApp.prototype.message = function(msg, rinfo) {
 			rinfo: rinfo
 		});
 
-		var error = proto.userError.marshall({
+		var error = proto.sessionError.marshall({
 			session: err.session,
 			error: proto.SESSION_AUTH_FAILED
 		});
@@ -161,6 +161,8 @@ AuthApp.prototype.router = function(msg, rinfo) {
 //
 // This is the initial route that creates an authentication session.
 AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
+	var self = this;
+
 	this.log.verbose("serverNegotiate", rinfo);
 
 	// Unmarshall the server negotiation packet
@@ -173,11 +175,14 @@ AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 		return Promise.all([session, session.getUser()]);
 	}).spread(function(session, user) {
 		// Write the response packet
-		return proto.authNegotiate.marshall({
+		var res = {
 			session: session.session,
 			salt: user.salt,
 			username: user.username
-		});
+		};
+
+		self.log.verbose("authNegotiate", res);
+		return proto.authNegotiate.marshall(res);
 	});
 };
 
@@ -215,10 +220,13 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 		return self.dbconn.setEphemeral(packet.session, packet.ephemeral, secret);
 	}).then(function(session) {
 		// Write the response packet
-		return proto.authEphemeral.marshall({
+		var res = {
 			session: packet.session,
 			ephemeral: session.ephemeral
-		});
+		};
+
+		self.log.verbose("authEphemeral", res);
+		return proto.authEphemeral.marshall(res);
 	});
 };
 
@@ -262,10 +270,13 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 		}
 
 		// Write the response packet
-		return proto.authProof.marshall({
+		var res = {
 			session: packet.session,
 			proof: proof
-		});
+		};
+
+		self.log.verbose("authProof", res);
+		return proto.authProof.marshall(res);
 	});
 };
 

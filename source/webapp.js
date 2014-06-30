@@ -93,7 +93,7 @@ function WebApp(config, logger) {
 
 		// Configuration
 		self.app.set('view engine', 'hjs');
-		self.app.set('views', __dirname + '/views');
+		self.app.set('views', __dirname + '/../views');
 
 		// Home
 		self.app.get('/', self.home.bind(self));

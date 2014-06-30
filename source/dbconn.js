@@ -76,7 +76,10 @@ var DBConn = function(config) {
 			email: Sequelize.STRING,
 			verifier: Sequelize.BLOB,
 			salt: Sequelize.BLOB,
-			access: Sequelize.ENUM('OWNER', 'MASTER', 'OP', 'USER', 'UNVERIFIED')
+			access: Sequelize.ENUM('OWNER', 'MASTER', 'OP', 'USER', 'UNVERIFIED'),
+			active: Sequelize.BOOLEAN,
+			visible_profile: Sequelize.BOOLEAN,
+			visible_auth: Sequelize.BOOLEAN
 		});
 
 		// Verify is used to store user verification attempts

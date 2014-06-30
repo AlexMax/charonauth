@@ -1,6 +1,20 @@
-{{# session.user.id }}
-<h6>Welcome back, {{ session.user.username }}</h6>
-{{/ session.user.id }}
-{{^ session.user.id }}
-<h6>Welcome guest</h6>
-{{/ session.user.id }}
+<ul>
+	<li><a href="/">Home</a></li>
+	<li><a href="/users">Users</a></li>
+	<li><a href="/events">Events</a></li>
+	<li><a href="/settings">Settings</a></li>
+</ul>
+{{#session.user.id}}
+Welcome back, {{ session.user.username }}
+<ul>
+	<li><a href="/users/me/edit">My Settings</a></li>
+	<li><a href="/logout">Logout</a></li>
+</ul>
+{{/session.user.id}}
+{{^session.user.id}}
+Welcome, guest
+<ul>
+	<li><a href="/register">Register</a></li>
+	<li><a href="/login">Login</a></li>
+</ul>
+{{/session.user.id}}

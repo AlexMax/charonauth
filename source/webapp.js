@@ -62,7 +62,7 @@ function WebApp(config, logger) {
 
 		// If recaptcha config exists, initialize it
 		if (self.config.get('web.recaptcha')) {
-			self.recaptcha = new Recaptcha(config.get('web.recaptcha'));
+			self.recaptcha = new Recaptcha(self.config.get('web.recaptcha'));
 		} else {
 			self.recaptcha = undefined;
 		}
@@ -83,7 +83,7 @@ function WebApp(config, logger) {
 		}));
 		self.app.use(cookieParser());
 		self.app.use(session({
-			secret: config.web.secret,
+			secret: self.config.get('web.secret'),
 			store: new fsSession()
 		}));
 		self.app.use(csurf());
@@ -95,20 +95,26 @@ function WebApp(config, logger) {
 		self.app.set('view engine', 'hjs');
 		self.app.set('views', __dirname + '/views');
 
-		// Top-level routes
+		// Home
 		self.app.get('/', self.home.bind(self));
+
+		// Login/logut
 		self.app.get('/login', self.getLogin.bind(self));
 		self.app.post('/login', self.postLogin.bind(self));
 		self.app.get('/logout', self.logout.bind(self));
+
+		// Password reset
+		self.app.get('/reset', self.getReset.bind(self));
+		self.app.post('/reset', self.postReset.bind(self));
+		self.app.get('/reset/:token', self.resetVerify.bind(self));
+
+		// User registration
 		self.app.get('/register', self.getRegister.bind(self));
 		self.app.post('/register', self.postRegister.bind(self));
 		self.app.get('/register/:token', self.registerVerify.bind(self));
-		self.app.all('/reset', self.reset.bind(self));
-		self.app.get('/reset/:token', self.resetVerify.bind(self));
 
 		// Users
 		self.app.get('/users', self.getUsers.bind(self));
-		self.app.all('/users/new', self.newUser.bind(self));
 		self.app.get('/users/:id', self.getUser.bind(self));
 		self.app.all('/users/:id/edit', self.editUser.bind(self));
 		self.app.all('/users/:id/destroy', self.destroyUser.bind(self));
@@ -149,7 +155,7 @@ WebApp.prototype.postLogin = function(req, res) {
 
 	webform.loginForm(this.dbconn, req.body)
 	.then(function(user) {
-		req.session.user = user;
+		req.session.user = user.toJSON();
 		res.redirect('/');
 	}).catch(error.FormValidation, function(e) {
 		req.body._csrf = req.csrfToken();
@@ -201,7 +207,7 @@ WebApp.prototype.postRegister = function(req, res) {
 			// Don't do E-mail verification of new accounts
 			return self.dbconn.addUser(req.body.username, req.body.password, req.body.email, 'USER')
 			.then(function(user) {
-				req.session.user = user;
+				req.session.user = user.toJSON();
 				self.render(req, res, 'registerSuccess');
 			});
 		}
@@ -229,7 +235,10 @@ WebApp.prototype.registerVerify = function(req, res) {
 		}
 	});
 };
-WebApp.prototype.reset = function(req, res) {
+WebApp.prototype.getReset = function(req, res) {
+
+};
+WebApp.prototype.postReset = function(req, res) {
 
 };
 WebApp.prototype.resetVerify = function(req, res) {
@@ -244,22 +253,24 @@ WebApp.prototype.getUsers = function(req, res) {
 		res.render('layout', { users: users, partials: { body: 'getUsers' }});
 	});
 };
-WebApp.prototype.newUser = function(req, res) {
-	res.render('layout', {
-		partials: { body: 'newUser' }
-	});
-};
 WebApp.prototype.getUser = function(req, res) {
-	this.dbconn.User.find({
-		include: [ this.dbconn.Profile ],
-		where: { username: req.params.id }
-	}).success(function(user) {
-		res.render('layout', {
-			user: user,
-			gravatar: gravatar.image(user.email),
-			partials: { body: 'getUser' }
+	var self = this;
+
+	if (req.params.id === "me") {
+		// "me" is a reserved word for finding your own profile
+
+	} else {
+		// Find a specific user
+		this.dbconn.findUser(req.params.id)
+		.then(error.UserNotFound, function(user) {
+			self.render(req, res, 'getUser', {
+				user: user,
+				gravatar: gravatar.image(user.email)
+			});
+		}).catch(function(err) {
+			res.send(404);
 		});
-	});
+	}
 };
 WebApp.prototype.editUser = function(req, res) {
 	res.render('layout', {

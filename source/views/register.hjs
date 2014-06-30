@@ -22,6 +22,7 @@
 			<label for="email">E-Mail</label>
 			<input name="email" id="email" value="{{ data.email }}">
 		</div>
+		{{#recaptcha_public_key}}
 		<div>
 			{{ errors.captcha }}
 			<script type="text/javascript" src="http://www.google.com/recaptcha/api/challenge?k={{ recaptcha_public_key }}"></script>
@@ -32,6 +33,12 @@
 			 <input type="hidden" name="recaptcha_response_field" value="manual_challenge">
 			</noscript>
 		</div>
+		{{/recaptcha_public_key}}
+		{{#verify}}
 		<button type="submit">Next Step</button>
+		{{/verify}}
+		{{^verify}}
+		<button type="submit">Register</button>
+		{{/verify}}
 	</fieldset>
 </form>

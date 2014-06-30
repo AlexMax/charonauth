@@ -18,4 +18,4 @@
 		<button>Sign In</button>
 	</fieldset>
 </form>
-<a href="#">I forgot my password!</a>
+<a href="/reset">I forgot my password!</a>

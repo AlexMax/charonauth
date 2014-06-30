@@ -68,9 +68,9 @@ function master(msg) {
 		if (process.platform === "win32") {
 			log.warn('Authentication forced to single process due to nodejs limitation.');
 		}
+		log.info('Authentication worker ' + process.pid + ' starting...');
 
 		var AuthApp = require('./authapp');
-
 		new AuthApp(config.get(), log).then(function() {
 			log.info('Authentication worker ' + process.pid + ' started.');
 		}).catch(function(err) {

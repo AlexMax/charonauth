@@ -63,9 +63,9 @@ function master(msg) {
 	} else {
 		// If this is a worker, start an instance of the authapp
 		process.title = 'charonauth: web worker';
+		log.info('Web worker ' + process.pid + ' starting...');
 
 		var WebApp = require('./webapp');
-
 		new WebApp(config.get(), {logger: log}).then(function() {
 			log.info('Web worker ' + process.pid + ' started.');
 		}).catch(function(err) {

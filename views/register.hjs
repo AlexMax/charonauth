@@ -1,44 +1,44 @@
 <h2>Register an Account</h2>
-<form method="post">
+<form method="post" role="form">
 	<fieldset>
 		<input type="hidden" name="_csrf" value="{{ data._csrf }}">
-		<div>
-			{{ errors.username }}
-			<label for="username">Username</label>
-			<input name="username" id="username" value="{{ data.username }}">
+		<div class="form-group {{#errors.username}}has-error{{/errors.username}}">
+			<label class="control-label" for="username">Username</label>
+			<input class="form-control" name="username" id="username" value="{{ data.username }}">
+			<span class="help-block">{{errors.username}}</span>
 		</div>
-		<div>
-			{{ errors.password }}
-			<label for="password">Password</label>
-			<input type="password" name="password" id="password" value="{{ data.password }}">
+		<div class="form-group {{#errors.password}}has-error{{/errors.password}}">
+			<label class="control-label" for="password">Password</label>
+			<input class="form-control" type="password" name="password" id="password" value="{{ data.password }}">
+			<span class="help-block">{{errors.password}}</span>
 		</div>
-		<div>
-			{{ errors.confirm }}
-			<label for="confirm">Confirm</label>
-			<input type="password" name="confirm" id="confirm" value="{{ data.confirm }}">
+		<div class="form-group {{#errors.confirm}}has-error{{/errors.confirm}}">
+			<label class="control-label" for="confirm">Confirm</label>
+			<input class="form-control" type="password" name="confirm" id="confirm" value="{{ data.confirm }}">
+			<span class="help-block">{{errors.confirm}}</span>
 		</div>
-		<div>
-			{{ errors.email }}
-			<label for="email">E-Mail</label>
-			<input name="email" id="email" value="{{ data.email }}">
+		<div class="form-group {{#errors.email}}has-error{{/errors.email}}">
+			<label class="control-label" for="email">E-Mail</label>
+			<input class="form-control" name="email" id="email" value="{{ data.email }}">
+			<span class="help-block">{{errors.email}}</span>
 		</div>
 		{{#recaptcha_public_key}}
-		<div>
-			{{ errors.captcha }}
+		<div class="form-group {{#errors.captcha}}has-error{{/errors.captcha}}">
+			<label class="control-label">CAPTCHA</label>
 			<script type="text/javascript" src="http://www.google.com/recaptcha/api/challenge?k={{ recaptcha_public_key }}"></script>
 			<noscript>
-			 <iframe src="http://www.google.com/recaptcha/api/noscript?k={{ recaptcha_public_key }}" height="300" width="500" frameborder="0"></iframe><br>
-			 <textarea name="recaptcha_challenge_field" rows="3" cols="40">
-			 </textarea>
-			 <input type="hidden" name="recaptcha_response_field" value="manual_challenge">
+				<iframe src="http://www.google.com/recaptcha/api/noscript?k={{ recaptcha_public_key }}" height="300" width="500" frameborder="0"></iframe><br>
+				<textarea name="recaptcha_challenge_field" rows="3" cols="40"></textarea>
+				<input type="hidden" name="recaptcha_response_field" value="manual_challenge">
 			</noscript>
+			<span class="help-block">{{errors.captcha}}</span>
 		</div>
 		{{/recaptcha_public_key}}
 		{{#verify}}
-		<button type="submit">Next Step</button>
+		<button class="btn btn-primary" type="submit">Next Step</button>
 		{{/verify}}
 		{{^verify}}
-		<button type="submit">Register</button>
+		<button class="btn btn-primary" type="submit">Register</button>
 		{{/verify}}
 	</fieldset>
 </form>

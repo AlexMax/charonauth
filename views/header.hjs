@@ -1,20 +1,24 @@
-<ul>
-	<li><a href="/">Home</a></li>
-	<li><a href="/users">Users</a></li>
-	<li><a href="/events">Events</a></li>
-	<li><a href="/settings">Settings</a></li>
-</ul>
-{{#session.user.id}}
-Welcome back, {{ session.user.username }}
-<ul>
-	<li><a href="/users/me/edit">My Settings</a></li>
-	<li><a href="/logout">Logout</a></li>
-</ul>
-{{/session.user.id}}
-{{^session.user.id}}
-Welcome, guest
-<ul>
-	<li><a href="/register">Register</a></li>
-	<li><a href="/login">Login</a></li>
-</ul>
-{{/session.user.id}}
+<nav class="navbar navbar-default" role="navigation">
+	<div class="container-fluid">
+		<ul class="nav navbar-nav">
+			<li><a href="/">Home</a></li>
+			<li><a href="/users">Users</a></li>
+			<li><a href="/events">Events</a></li>
+			<li><a href="/settings">Settings</a></li>
+		</ul>
+		{{#session.user.id}}
+		<ul class="nav navbar-nav navbar-right">
+			<li><a href="/users/me/edit">My Settings</a></li>
+			<li><a href="/logout">Logout</a></li>
+		</ul>
+		<p class="navbar-text navbar-right">Welcome back, {{session.user.username}}</p>
+		{{/session.user.id}}
+		{{^session.user.id}}
+		<ul class="nav navbar-nav navbar-right">
+			<li><a href="/register">Register</a></li>
+			<li><a href="/login">Login</a></li>
+		</ul>
+		<p class="navbar-text navbar-right">Welcome, guest</p>
+		{{/session.user.id}}
+	</div>
+</nav>

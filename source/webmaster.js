@@ -66,10 +66,10 @@ function master(msg) {
 		log.info('Web worker ' + process.pid + ' starting...');
 
 		var WebApp = require('./webapp');
-		new WebApp(config.get(), {logger: log}).then(function() {
+		new WebApp(config.get(), log).then(function() {
 			log.info('Web worker ' + process.pid + ' started.');
 		}).catch(function(err) {
-			log.error(err.message);
+			log.error(err.stack);
 			process.exit(2);
 		});
 	}

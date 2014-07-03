@@ -35,6 +35,7 @@ var Config = require('./config');
 var DBConn = require('./dbconn');
 var error = require('./error');
 var gravatar = require('./gravatar');
+var mock = require('./mock');
 var Recaptcha = require('./recaptcha');
 var webform = require('./webform');
 
@@ -43,6 +44,13 @@ function WebApp(config, logger) {
 	var self = this;
 
 	return new Promise(function(resolve, reject) {
+		// Attach a logger if we have one.
+		if (logger) {
+			self.log = logger;
+		} else {
+			self.log = mock.logger;
+		}
+
 		self.config = new Config(config, {
 			web: {
 				port: 8080,
@@ -77,6 +85,13 @@ function WebApp(config, logger) {
 		self.app.listenAsync = Promise.promisify(self.app.listen);
 
 		// Middleware
+		self.app.use(function(req, res, next) {
+			// Write pageviews with the logger instance
+			self.log.info(req.method + " " + req.originalUrl, {
+				ip: req.ip,
+			});
+			next();
+		});
 		self.app.use(express.static(__dirname + '/../public'));
 		self.app.use(bodyParser.urlencoded({
 			extended: true
@@ -118,6 +133,36 @@ function WebApp(config, logger) {
 		self.app.get('/users/:id', self.getUser.bind(self));
 		self.app.all('/users/:id/edit', self.editUser.bind(self));
 		self.app.all('/users/:id/destroy', self.destroyUser.bind(self));
+
+		// Handle 404's
+		self.app.use(function(req, res, next) {
+			throw new error.NotFound('Page not found');
+		});
+
+		// Error Middleware
+		self.app.use(function(err, req, res, next) {
+			if (err.name === 'NotFoundError') {
+				// Handle 404 errors
+				res.statusCode = 404;
+				res.render('error', {
+					message: err.message,
+					stack: err.stack
+				});
+			} else {
+				// An exception we didn't throw - must be our fault
+				res.statusCode = 500;
+				res.render('error', {
+					message: err.message,
+					stack: err.stack
+				});
+				next(err);
+			}
+		});
+		self.app.use(function(err, req, res, next) {
+			// Log any error we come across to disk
+			self.log.warn(err.stack);
+			next();
+		});
 
 		// Start listening for connections
 		return self.app.listenAsync(config.web.port);

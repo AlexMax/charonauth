@@ -32,6 +32,7 @@ function Logger(config) {
 	this.logger = new (winston.Logger)({
 		transports: [
 			new (winston.transports.Console)({
+				colorize: true,
 				handleExceptions: true,
 				level: this.config.getBool('verbose') ? 'verbose' : 'info'
 			})
@@ -50,7 +51,9 @@ function Logger(config) {
 			filename: this.config.get('file'),
 			handleExceptions: true,
 			json: false,
-			timestamp: true
+			timestamp: function() {
+				return new Date().toISOString() + ' [' + process.pid + ']';
+			}
 		});
 	}
 }

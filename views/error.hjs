@@ -1,0 +1,15 @@
+<!doctype html>
+<html>
+<head>
+	<title></title>
+	<meta charset="utf-8">
+	<meta name="viewport" content="initial-scale=1">
+	<link rel="stylesheet" type="text/css" href="/assets/css/site.css">
+</head>
+<body>
+	<h1>{{message}}</h1>
+	{{#stack}}
+	<pre>{{stack}}</pre>
+	{{/stack}}
+</body>
+</html>

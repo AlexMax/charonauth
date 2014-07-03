@@ -36,14 +36,14 @@ var srp = Promise.promisifyAll(require('../srp'));
 function AuthApp(config, logger) {
 	var self = this;
 
-	// Attach a logger if we have one.
-	if (logger) {
-		this.log = logger;
-	} else {
-		this.log = mock.logger;
-	}
-
 	return new Promise(function(resolve, reject) {
+		// Attach a logger if we have one.
+		if (logger) {
+			self.log = logger;
+		} else {
+			self.log = mock.logger;
+		}
+
 		self.config = new Config(config, {
 			auth: {
 				port: 16666

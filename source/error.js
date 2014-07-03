@@ -1,6 +1,18 @@
 /* jshint node: true */
 "use strict";
 
+// NotFoundError
+//
+// Thrown when the webserver can't find a webpage.
+
+function NotFoundError(message) {
+	this.name = "NotFoundError";
+	this.message = message;
+	Error.captureStackTrace(this, NotFoundError);
+}
+NotFoundError.prototype = Object.create(Error.prototype);
+NotFoundError.prototype.constructor = NotFoundError;
+
 // IgnorableProtocolError
 //
 // Thrown when the server cannot decode an incoming message and should
@@ -78,6 +90,7 @@ function LoginAuthFailedError(message) {
 LoginAuthFailedError.prototype = Object.create(Error.prototype);
 LoginAuthFailedError.prototype.constructor = LoginAuthFailedError;
 
+module.exports.NotFound = NotFoundError;
 module.exports.IgnorableProtocol = IgnorableProtocolError;
 module.exports.FormValidation = FormValidationError;
 module.exports.UserNotFound = UserNotFoundError;

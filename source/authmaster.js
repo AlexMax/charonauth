@@ -74,7 +74,7 @@ function master(msg) {
 		new AuthApp(config.get(), log).then(function() {
 			log.info('Authentication worker ' + process.pid + ' started.');
 		}).catch(function(err) {
-			log.error(err.message);
+			log.error(err.stack);
 			process.exit(2);
 		});
 	}

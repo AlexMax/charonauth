@@ -80,6 +80,13 @@ var DBConn = function(config) {
 			active: Sequelize.BOOLEAN,
 			visible_profile: Sequelize.BOOLEAN,
 			visible_auth: Sequelize.BOOLEAN
+		}, {
+			instanceMethods: {
+				getGravatar: function() {
+					var md5 = crypto.createHash('md5');
+					return md5.update(this.email.toLowerCase(), 'ascii').digest('hex');
+				}
+			}
 		});
 
 		// Verify is used to store user verification attempts

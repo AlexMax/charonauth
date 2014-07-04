@@ -34,7 +34,6 @@ var uuid = require('node-uuid');
 var Config = require('./config');
 var DBConn = require('./dbconn');
 var error = require('./error');
-var gravatar = require('./gravatar');
 var mock = require('./mock');
 var Recaptcha = require('./recaptcha');
 var webform = require('./webform');
@@ -195,7 +194,7 @@ WebApp.prototype.getLogin = function(req, res) {
 };
 
 // Process a login form
-WebApp.prototype.postLogin = function(req, res) {
+WebApp.prototype.postLogin = function(req, res, next) {
 	var self = this;
 
 	webform.loginForm(this.dbconn, req.body)
@@ -207,15 +206,13 @@ WebApp.prototype.postLogin = function(req, res) {
 		self.render(req, res, 'login', {
 			data: req.body, errors: e.invalidFields
 		});
-	});
+	}).catch(next);
 };
 
 WebApp.prototype.logout = function(req, res) {
 	delete req.session.user;
 
-	res.render('layout', {
-		partials: { body: 'logout' }
-	});
+	this.render('logout');
 };
 
 // Render a registration form
@@ -228,7 +225,7 @@ WebApp.prototype.getRegister = function(req, res) {
 };
 
 // Process a registration form
-WebApp.prototype.postRegister = function(req, res) {
+WebApp.prototype.postRegister = function(req, res, next) {
 	var self = this;
 
 	webform.registerForm(
@@ -262,7 +259,7 @@ WebApp.prototype.postRegister = function(req, res) {
 			data: req.body, errors: e.invalidFields,
 			recaptcha_public_key: self.recaptcha ? self.recaptcha.publickey : null
 		});
-	});
+	}).catch(next);
 };
 
 WebApp.prototype.registerVerify = function(req, res) {
@@ -276,7 +273,7 @@ WebApp.prototype.registerVerify = function(req, res) {
 		if (data) {
 			self.render(req, res, 'registerVerify');
 		} else {
-			res.send(404);
+			throw error.NotFound();
 		}
 	});
 };
@@ -292,7 +289,7 @@ WebApp.prototype.resetVerify = function(req, res) {
 
 // Users controllers
 
-WebApp.prototype.getUsers = function(req, res) {
+WebApp.prototype.getUsers = function(req, res, next) {
 	var self = this;
 
 	this.dbconn.User.findAll({
@@ -300,11 +297,11 @@ WebApp.prototype.getUsers = function(req, res) {
 		include: [this.dbconn.Profile]
 	}).then(function(users) {
 		self.render(req, res, 'getUsers', {
-			users: users.toJSON()
+			users: users
 		});
-	});
+	}).catch(next);
 };
-WebApp.prototype.getUser = function(req, res) {
+WebApp.prototype.getUser = function(req, res, next) {
 	var self = this;
 
 	if (req.params.id === "me") {
@@ -313,14 +310,13 @@ WebApp.prototype.getUser = function(req, res) {
 	} else {
 		// Find a specific user
 		this.dbconn.findUser(req.params.id)
-		.then(error.UserNotFound, function(user) {
+		.then(function(user) {
 			self.render(req, res, 'getUser', {
-				user: user,
-				gravatar: gravatar.image(user.email)
+				user: user
 			});
-		}).catch(function(err) {
-			res.send(404);
-		});
+		}).catch(error.UserNotFound, function() {
+			next(new error.NotFound('User not found'));
+		}).catch(next);
 	}
 };
 WebApp.prototype.editUser = function(req, res) {

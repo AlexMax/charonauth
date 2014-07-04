@@ -2,19 +2,20 @@
 <table class="table">
 	<thead>
 		<tr>
-			<th>Country</th>
-			<th>User</th>
+			<th>Gravatar</th>
 			<th>Clan</th>
+			<th>Username</th>
+			<th>Country</th>
 			<th>Last Seen</th>
-		</tr>
 	</thead>
 	<tbody>
 		{{#users}}
 		<tr>
-			<td>{{profile.country}}</td>
-			<td>{{profile.username}}</td>
+			<td><img src="http://www.gravatar.com/avatar/{{getGravatar}}?d=identicon"></td>
 			<td>{{profile.clan}}</td>
-			<td>{{seen}}
+			<td>{{profile.username}}</td>
+			<td>{{profile.country}}</td>
+			<td>{{seen}}</td>
 		</tr>
 		{{/users}}
 	</tbody>

@@ -80,8 +80,8 @@ function registerForm(dbconn, recaptcha, data, ip) {
 			errors.password = "Password must be plain ASCII characters";
 		} else if (!validator.isLength(data.password, 8, 1024)) {
 			errors.password = "Password must be between 8 and 1,024 characters";
-		} else if (validator.matches(data.password, /^([A-Za-z ]+|[0-9]+)$/) && !validator.isLength(data.password, 20)) {
-			errors.password = '"' +  data.password + '" is a really bad password, try another one';
+		} else if (validator.matches(data.password, /^([A-Za-z ]+|[0-9 ]+)$/) && !validator.isLength(data.password, 20)) {
+			errors.password = "Password must contain more than just letters or just numbers, unless your password is more than 20 characters";
 		}
 
 		// Validate password confirmation

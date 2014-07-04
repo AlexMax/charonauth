@@ -293,9 +293,15 @@ WebApp.prototype.resetVerify = function(req, res) {
 // Users controllers
 
 WebApp.prototype.getUsers = function(req, res) {
-	this.dbconn.User.findAll()
-	.success(function(users) {
-		res.render('layout', { users: users, partials: { body: 'getUsers' }});
+	var self = this;
+
+	this.dbconn.User.findAll({
+		active: true,
+		include: [this.dbconn.Profile]
+	}).then(function(users) {
+		self.render(req, res, 'getUsers', {
+			users: users.toJSON()
+		});
 	});
 };
 WebApp.prototype.getUser = function(req, res) {

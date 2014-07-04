@@ -1,21 +1,21 @@
-<div class="pure-u-1">
-	<h2>User Directory</h2>
-	<table class="pure-table">
-		<thead>
-			<tr>
-				<th>Country</th>
-				<th>User</th>
-				<th>Last Seen</th>
-			</tr>
-		</thead>
-		<tbody>
-			{{#users}}
-			<tr>
-				<td>{{ country }}</td>
-				<td>{{ username }}</td>
-				<td>{{ seen }}</td>
-			</tr>
-			{{/users}}
-		</tbody>
-	</table>
-</div>
+<h2>User Directory</h2>
+<table class="table">
+	<thead>
+		<tr>
+			<th>Country</th>
+			<th>User</th>
+			<th>Clan</th>
+			<th>Last Seen</th>
+		</tr>
+	</thead>
+	<tbody>
+		{{#users}}
+		<tr>
+			<td>{{profile.country}}</td>
+			<td>{{profile.username}}</td>
+			<td>{{profile.clan}}</td>
+			<td>{{seen}}
+		</tr>
+		{{/users}}
+	</tbody>
+</table>

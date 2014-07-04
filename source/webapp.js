@@ -199,7 +199,14 @@ WebApp.prototype.postLogin = function(req, res, next) {
 
 	webform.loginForm(this.dbconn, req.body)
 	.then(function(user) {
-		req.session.user = user.toJSON();
+		return Promise.all([user, user.getProfile()]);
+	}).spread(function(user, profile) {
+		req.session.user = {
+			id: user.id,
+			username: profile.username,
+			gravatar: user.getGravatar()
+		};
+
 		res.redirect('/');
 	}).catch(error.FormValidation, function(e) {
 		req.body._csrf = req.csrfToken();
@@ -212,7 +219,7 @@ WebApp.prototype.postLogin = function(req, res, next) {
 WebApp.prototype.logout = function(req, res) {
 	delete req.session.user;
 
-	this.render('logout');
+	this.render(req, res, 'logout');
 };
 
 // Render a registration form
@@ -249,7 +256,14 @@ WebApp.prototype.postRegister = function(req, res, next) {
 			// Don't do E-mail verification of new accounts
 			return self.dbconn.addUser(req.body.username, req.body.password, req.body.email, 'USER')
 			.then(function(user) {
-				req.session.user = user.toJSON();
+				return Promise.all([user, user.getProfile()]);
+			}).spread(function(user, profile) {
+				req.session.user = {
+					id: user.id,
+					username: profile.username,
+					gravatar: user.getGravatar()
+				};
+
 				self.render(req, res, 'registerSuccess');
 			});
 		}

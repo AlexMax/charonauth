@@ -203,7 +203,8 @@ WebApp.prototype.postLogin = function(req, res, next) {
 	}).spread(function(user, profile) {
 		req.session.user = {
 			id: user.id,
-			username: profile.username,
+			username: user.username,
+			profile_username: profile.username,
 			gravatar: user.getGravatar()
 		};
 
@@ -260,7 +261,8 @@ WebApp.prototype.postRegister = function(req, res, next) {
 			}).spread(function(user, profile) {
 				req.session.user = {
 					id: user.id,
-					username: profile.username,
+					username: user.username,
+					profile_username: profile.username,
 					gravatar: user.getGravatar()
 				};
 
@@ -301,13 +303,13 @@ WebApp.prototype.resetVerify = function(req, res) {
 
 };
 
-// Users controllers
-
+// Get a list of all users
 WebApp.prototype.getUsers = function(req, res, next) {
 	var self = this;
 
 	this.dbconn.User.findAll({
 		active: true,
+		visible_profile: true,
 		include: [this.dbconn.Profile]
 	}).then(function(users) {
 		self.render(req, res, 'getUsers', {
@@ -315,29 +317,32 @@ WebApp.prototype.getUsers = function(req, res, next) {
 		});
 	}).catch(next);
 };
+
+// Get information on a specific user
 WebApp.prototype.getUser = function(req, res, next) {
 	var self = this;
 
-	if (req.params.id === "me") {
-		// "me" is a reserved word for finding your own profile
-
-	} else {
-		// Find a specific user
-		this.dbconn.findUser(req.params.id)
-		.then(function(user) {
-			self.render(req, res, 'getUser', {
-				user: user
-			});
-		}).catch(error.UserNotFound, function() {
-			next(new error.NotFound('User not found'));
-		}).catch(next);
-	}
+	this.dbconn.findUser(req.params.id)
+	.then(function(user) {
+		return Promise.all([user, user.getProfile()]);
+	}).spread(function(user, profile) {
+		self.render(req, res, 'getUser', {
+			user: user,
+			profile: profile
+		});
+	}).catch(error.UserNotFound, function() {
+		next(new error.NotFound('User not found'));
+	}).catch(next);
 };
+
+// Edit a specific user
 WebApp.prototype.editUser = function(req, res) {
 	res.render('layout', {
 		partials: { body: 'editUser' }
 	});
 };
+
+// Delete a specific user
 WebApp.prototype.destroyUser = function(req, res) {
 	res.render('layout', {
 		partials: { body: 'destroyUser' }

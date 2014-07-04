@@ -8,10 +8,9 @@
 		</ul>
 		{{#session.user.id}}
 		<ul class="nav navbar-nav navbar-right">
-			<li><a href="/users/me/edit">My Settings</a></li>
 			<li><a href="/logout">Logout</a></li>
 		</ul>
-		<p class="navbar-text navbar-right">Welcome back, {{session.user.username}}</p>
+		<p class="navbar-text navbar-right">Welcome back, <a href="/users/{{session.user.username}}">{{session.user.profile_username}}</a></p>
 		{{/session.user.id}}
 		{{^session.user.id}}
 		<ul class="nav navbar-nav navbar-right">

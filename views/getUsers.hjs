@@ -11,9 +11,9 @@
 	<tbody>
 		{{#users}}
 		<tr>
-			<td><img src="http://www.gravatar.com/avatar/{{getGravatar}}?d=identicon"></td>
+			<td><img src="//www.gravatar.com/avatar/{{getGravatar}}?d=identicon"></td>
 			<td>{{profile.clan}}</td>
-			<td>{{profile.username}}</td>
+			<td><a href="/users/{{username}}">{{profile.username}}</a></td>
 			<td>{{profile.country}}</td>
 			<td>{{seen}}</td>
 		</tr>

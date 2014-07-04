@@ -38,7 +38,7 @@ var DBConn = function(config) {
 
 	return new Promise(function(resolve, reject) {
 		self.config = new Config(config, {
-			storage: undefined,
+			storage: 'charonauth.db',
 			uri: undefined
 		});
 

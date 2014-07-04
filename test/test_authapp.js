@@ -17,7 +17,7 @@ describe('AuthApp', function() {
 			return new AuthApp({
 				database: {
 					uri: "sqlite://charonauth/",
-					options: { "storage": ":memory:" },
+					storage: ":memory:"
 				},
 				auth: {
 					port: 16666
@@ -36,7 +36,7 @@ describe('AuthApp', function() {
 		var config = {
 			database: {
 				uri: "sqlite://charonauth/",
-				options: { "storage": ":memory:" }
+				storage: ":memory:"
 			},
 			auth: {
 				port: 16666
@@ -67,7 +67,7 @@ describe('AuthApp', function() {
 		var config = {
 			database: {
 				uri: "sqlite://charonauth/",
-				options: { "storage": ":memory:" }
+				storage: ":memory:"
 			},
 			auth: {
 				port: 16666
@@ -111,7 +111,7 @@ describe('AuthApp', function() {
 		var config = {
 			database: {
 				uri: "sqlite://charonauth/",
-				options: { "storage": ":memory:" }
+				storage: ":memory:"
 			},
 			auth: {
 				port: 16666
@@ -183,7 +183,7 @@ describe('AuthApp', function() {
 		var config = {
 			database: {
 				uri: "sqlite://charonauth/",
-				options: { "storage": ":memory:" }
+				storage: ":memory:"
 			},
 			auth: {
 				port: 16666

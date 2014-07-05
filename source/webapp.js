@@ -147,6 +147,7 @@ function WebApp(config, logger) {
 					message: err.message,
 					stack: err.stack
 				});
+				next();
 			} else {
 				// An exception we didn't throw - must be our fault
 				res.statusCode = 500;
@@ -205,7 +206,8 @@ WebApp.prototype.postLogin = function(req, res, next) {
 			id: user.id,
 			username: user.username,
 			profile_username: profile.username,
-			gravatar: user.getGravatar()
+			gravatar: user.getGravatar(),
+			access: user.access
 		};
 
 		res.redirect('/');
@@ -263,7 +265,8 @@ WebApp.prototype.postRegister = function(req, res, next) {
 					id: user.id,
 					username: user.username,
 					profile_username: profile.username,
-					gravatar: user.getGravatar()
+					gravatar: user.getGravatar(),
+					access: user.access
 				};
 
 				self.render(req, res, 'registerSuccess');
@@ -308,8 +311,7 @@ WebApp.prototype.getUsers = function(req, res, next) {
 	var self = this;
 
 	this.dbconn.User.findAll({
-		active: true,
-		visible_profile: true,
+		where: {active: true, visible_profile: true},
 		include: [this.dbconn.Profile]
 	}).then(function(users) {
 		self.render(req, res, 'getUsers', {
@@ -322,16 +324,45 @@ WebApp.prototype.getUsers = function(req, res, next) {
 WebApp.prototype.getUser = function(req, res, next) {
 	var self = this;
 
-	this.dbconn.findUser(req.params.id)
-	.then(function(user) {
+	this.dbconn.User.find({
+		where: {username: req.params.id.toLowerCase()}
+	}).then(function(user) {
+		if (_.isNull(user)) {
+			throw new error.NotFound('User not found');
+		}
+
+		// Profile visibility is affected by two factors, if the profile is
+		// active and if it is set to be visible
+		if (user.active === false || user.visible_profile === false) {
+			if (!("user" in req.session)) {
+				throw new error.NotFound('Can not view profile as anonymous user');
+			} else if (user.id === req.session.user.id && user.active === false) {
+				throw new error.NotFound('Can not view profile as your account is not active');
+			} else if (user.id !== req.session.user.id && _.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
+				throw new error.NotFound('Can not view profile with given access');
+			}
+		}
+
+		// User is allowed to see the profile, so obtain the profile.
 		return Promise.all([user, user.getProfile()]);
 	}).spread(function(user, profile) {
+		// Some kinds of users can edit a given profile
+		var can_edit = false;
+		if ("user" in req.session) {
+			if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
+				// Operators can always edit profiles
+				can_edit = true;
+			} else if (user.id === req.session.user.id) {
+				// Users can always edit their own profiles
+				can_edit = true;
+			}
+		}
+
 		self.render(req, res, 'getUser', {
 			user: user,
-			profile: profile
+			profile: profile,
+			can_edit: can_edit
 		});
-	}).catch(error.UserNotFound, function() {
-		next(new error.NotFound('User not found'));
 	}).catch(next);
 };
 

@@ -76,9 +76,18 @@ var DBConn = function(config) {
 			email: Sequelize.STRING,
 			verifier: Sequelize.BLOB,
 			salt: Sequelize.BLOB,
+			// OWNER, MASTER and OP can see server logs, edit user profiles and
+			// can verify users.
+			// OWNER and MASTER can give or remove OP access to any user.
+			// OWNER can give or remove OWNER or MASTER status to any user.
 			access: Sequelize.ENUM('OWNER', 'MASTER', 'OP', 'USER', 'UNVERIFIED'),
+			// A setting that an administrator can set that governs if a user
+			// shows up on the site and can log in or not.
 			active: Sequelize.BOOLEAN,
+			// A setting that a user can set that governs if their profile is visible.
 			visible_profile: Sequelize.BOOLEAN,
+			// A setting that a user can set that governs if their authentications
+			// should be publicly visible or not.
 			visible_auth: Sequelize.BOOLEAN
 		}, {
 			instanceMethods: {
@@ -140,7 +149,11 @@ DBConn.prototype.addUser = function(username, password, email, access) {
 			verifier: verifier,
 			salt: salt,
 			email: email,
-			access: access || 'UNVERIFIED'
+			access: access || 'UNVERIFIED',
+			// New user is only active if they're not unverified
+			active: ((access || 'UNVERIFIED') === 'UNVERIFIED') ? false : true,
+			visible_profile: true,
+			visible_auth: true
 		}),
 		this.Profile.create({
 			username: username

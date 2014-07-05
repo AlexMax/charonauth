@@ -12,3 +12,6 @@
 	<dt>Contact Info</dt>
 	<dd>{{profile.contactinfo}}</dd>
 </dl>
+{{#can_edit}}
+<a class="btn btn-primary" href="/users/{{user.username}}/edit">Edit Profile</a>
+{{/can_edit}}

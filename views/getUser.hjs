@@ -7,10 +7,10 @@
 	<dd>{{profile.country}}</dd>
 	<dt>Location</dt>
 	<dd>{{profile.location}}</dd>
-	<dt>Message</dt>
-	<dd>{{profile.message}}</dd>
 	<dt>Contact Info</dt>
 	<dd>{{profile.contactinfo}}</dd>
+	<dt>Message</dt>
+	<dd>{{profile.message}}</dd>
 </dl>
 {{#can_edit}}
 <a class="btn btn-primary" href="/users/{{user.username}}/edit">Edit Profile</a>

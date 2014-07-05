@@ -368,8 +368,18 @@ WebApp.prototype.getUser = function(req, res, next) {
 
 // Edit a specific user
 WebApp.prototype.editUser = function(req, res) {
-	res.render('layout', {
-		partials: { body: 'editUser' }
+	var self = this;
+
+	this.dbconn.User.find({
+		where: {username: req.params.id.toLowerCase()}
+	}).then(function(user) {
+		// User is allowed to edit the profile, so obtain the profile.
+		return Promise.all([user, user.getProfile()]);
+	}).spread(function(user, profile) {
+		self.render(req, res, 'editUser', {
+			user: user,
+			profile: profile
+		});
 	});
 };
 

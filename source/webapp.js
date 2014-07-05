@@ -377,8 +377,10 @@ WebApp.prototype.editUser = function(req, res) {
 		return Promise.all([user, user.getProfile()]);
 	}).spread(function(user, profile) {
 		self.render(req, res, 'editUser', {
-			user: user,
-			profile: profile
+			data: {
+				user: user,
+				profile: profile
+			}
 		});
 	});
 };

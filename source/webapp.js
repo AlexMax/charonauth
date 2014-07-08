@@ -26,6 +26,7 @@ var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
 var consolidate = require('consolidate');
 var csurf = require('csurf');
+var domain = require('domain');
 var express = require('express');
 var session = require('express-session');
 var fsSession = require('fs-session')({ session: session });
@@ -84,6 +85,17 @@ function WebApp(config, logger) {
 		self.app.listenAsync = Promise.promisify(self.app.listen);
 
 		// Middleware
+		self.app.use(function(req, res, next) {
+			// Wrap every request in a domain, so any asynchronous
+			// errors are properly taken care of.
+			var appdomain = domain.create();
+
+			appdomain.on('error', next);
+			appdomain.add(req);
+			appdomain.add(res);
+
+			appdomain.run(next);
+		});
 		self.app.use(function(req, res, next) {
 			// Write pageviews with the logger instance
 			self.log.info(req.method + " " + req.originalUrl, {
@@ -195,7 +207,7 @@ WebApp.prototype.getLogin = function(req, res) {
 };
 
 // Process a login form
-WebApp.prototype.postLogin = function(req, res, next) {
+WebApp.prototype.postLogin = function(req, res) {
 	var self = this;
 
 	webform.loginForm(this.dbconn, req.body)
@@ -216,7 +228,7 @@ WebApp.prototype.postLogin = function(req, res, next) {
 		self.render(req, res, 'login', {
 			data: req.body, errors: e.invalidFields
 		});
-	}).catch(next);
+	}).done();
 };
 
 WebApp.prototype.logout = function(req, res) {
@@ -235,7 +247,7 @@ WebApp.prototype.getRegister = function(req, res) {
 };
 
 // Process a registration form
-WebApp.prototype.postRegister = function(req, res, next) {
+WebApp.prototype.postRegister = function(req, res) {
 	var self = this;
 
 	webform.registerForm(
@@ -278,7 +290,7 @@ WebApp.prototype.postRegister = function(req, res, next) {
 			data: req.body, errors: e.invalidFields,
 			recaptcha_public_key: self.recaptcha ? self.recaptcha.publickey : null
 		});
-	}).catch(next);
+	}).done();
 };
 
 WebApp.prototype.registerVerify = function(req, res) {
@@ -307,7 +319,7 @@ WebApp.prototype.resetVerify = function(req, res) {
 };
 
 // Get a list of all users
-WebApp.prototype.getUsers = function(req, res, next) {
+WebApp.prototype.getUsers = function(req, res) {
 	var self = this;
 
 	this.dbconn.User.findAll({
@@ -317,11 +329,11 @@ WebApp.prototype.getUsers = function(req, res, next) {
 		self.render(req, res, 'getUsers', {
 			users: users
 		});
-	}).catch(next);
+	}).done();
 };
 
 // Get information on a specific user
-WebApp.prototype.getUser = function(req, res, next) {
+WebApp.prototype.getUser = function(req, res) {
 	var self = this;
 
 	this.dbconn.User.find({
@@ -363,7 +375,7 @@ WebApp.prototype.getUser = function(req, res, next) {
 			profile: profile,
 			can_edit: can_edit
 		});
-	}).catch(next);
+	}).done();
 };
 
 // Edit a specific user
@@ -373,6 +385,10 @@ WebApp.prototype.editUser = function(req, res) {
 	this.dbconn.User.find({
 		where: {username: req.params.id.toLowerCase()}
 	}).then(function(user) {
+		if (_.isNull(user)) {
+			throw new error.NotFound('User not found');
+		}
+
 		// User is allowed to edit the profile, so obtain the profile.
 		return Promise.all([user, user.getProfile()]);
 	}).spread(function(user, profile) {
@@ -382,7 +398,7 @@ WebApp.prototype.editUser = function(req, res) {
 				profile: profile
 			}
 		});
-	});
+	}).done();
 };
 
 // Delete a specific user

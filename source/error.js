@@ -13,6 +13,18 @@ function NotFoundError(message) {
 NotFoundError.prototype = Object.create(Error.prototype);
 NotFoundError.prototype.constructor = NotFoundError;
 
+// ForbiddenError
+//
+// Thrown when the webserver can't show a webpage.
+
+function ForbiddenError(message) {
+	this.name = "ForbiddenError";
+	this.message = message;
+	Error.captureStackTrace(this, ForbiddenError);
+}
+ForbiddenError.prototype = Object.create(Error.prototype);
+ForbiddenError.prototype.constructor = ForbiddenError;
+
 // IgnorableProtocolError
 //
 // Thrown when the server cannot decode an incoming message and should
@@ -91,6 +103,7 @@ LoginAuthFailedError.prototype = Object.create(Error.prototype);
 LoginAuthFailedError.prototype.constructor = LoginAuthFailedError;
 
 module.exports.NotFound = NotFoundError;
+module.exports.Forbidden = ForbiddenError;
 module.exports.IgnorableProtocol = IgnorableProtocolError;
 module.exports.FormValidation = FormValidationError;
 module.exports.UserNotFound = UserNotFoundError;

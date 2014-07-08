@@ -160,6 +160,14 @@ function WebApp(config, logger) {
 					stack: err.stack
 				});
 				next();
+			} else if (err.name === 'ForbiddenError') {
+				// Handle 403 errors
+				res.statusCode = 403;
+				res.render('error', {
+					message: err.message,
+					stack: err.stack
+				});
+				next();
 			} else {
 				// An exception we didn't throw - must be our fault
 				res.statusCode = 500;
@@ -347,27 +355,26 @@ WebApp.prototype.getUser = function(req, res) {
 		// active and if it is set to be visible
 		if (user.active === false || user.visible_profile === false) {
 			if (!("user" in req.session)) {
-				throw new error.NotFound('Can not view profile as anonymous user');
+				throw new error.Forbidden('Can not view profile as anonymous user');
 			} else if (user.id === req.session.user.id && user.active === false) {
-				throw new error.NotFound('Can not view profile as your account is not active');
+				throw new error.Forbidden('Can not view profile as your account is not active');
 			} else if (user.id !== req.session.user.id && _.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-				throw new error.NotFound('Can not view profile with given access');
+				throw new error.Forbidden('Can not view profile with given access');
 			}
 		}
 
 		// User is allowed to see the profile, so obtain the profile.
 		return Promise.all([user, user.getProfile()]);
 	}).spread(function(user, profile) {
-		// Some kinds of users can edit a given profile
 		var can_edit = false;
-		if ("user" in req.session) {
-			if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-				// Operators can always edit profiles
-				can_edit = true;
-			} else if (user.id === req.session.user.id) {
-				// Users can always edit their own profiles
-				can_edit = true;
-			}
+		if (!("user" in req.session)) {
+			// Anonymous users can never edit a profile
+		} else if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
+			// Operators can always edit profiles
+			can_edit = true;
+		} else if (user.id === req.session.user.id) {
+			// Users can always edit their own profiles
+			can_edit = true;
 		}
 
 		self.render(req, res, 'getUser', {
@@ -389,17 +396,44 @@ WebApp.prototype.editUser = function(req, res) {
 			throw new error.NotFound('User not found');
 		}
 
+		var can_edit_admin = false;
+		if (!("user" in req.session)) {
+			throw new error.Forbidden('Can not edit profile as anonymous user');
+		} else if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
+			// Operators can always edit profiles, and can modify their access
+			// level and visibility too.
+			can_edit_admin = true;
+		} else if (user.id === req.session.user.id) {
+			// Users can always edit the own profiles
+		} else {
+			throw new error.Forbidden('Can not edit profile as current user');
+		}
+
 		// User is allowed to edit the profile, so obtain the profile.
-		return Promise.all([user, user.getProfile()]);
-	}).spread(function(user, profile) {
+		return Promise.all([user, user.getProfile(), can_edit_admin]);
+	}).spread(function(user, profile, can_edit_admin) {
 		self.render(req, res, 'editUser', {
 			data: {
 				user: user,
 				profile: profile
-			}
+			},
+			can_edit_admin: can_edit_admin
 		});
 	}).done();
 };
+
+// Process an edit user submission
+WebApp.prototype.postEditUser = function(req, res) {
+	var self = this;
+
+	new Promise(function(resolve, reject) {
+		resolve();
+	}).then(function() {
+		return webform.userForm(this.dbconn, req.body);
+	}).catch(error.FormValidation, function(e) {
+		req.body._csrf = req.csrfToken();
+	});
+}
 
 // Delete a specific user
 WebApp.prototype.destroyUser = function(req, res) {

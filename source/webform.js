@@ -155,5 +155,44 @@ function registerForm(dbconn, recaptcha, data, ip) {
 	});
 }
 
+function userForm(dbconn, data) {
+	return new Promise(function(resolve, reject) {
+		var profile_errors = {};
+
+		if (!validator.isLength(data.profile.clan, 0, 100)) {
+			profile_errors.clan = "Clan must be 100 characters or less";
+		}
+
+		if (!validator.isLength(data.profile.clantag, 0, 6)) {
+			profile_errors.clan = "Clan tag must be 6 characters or less";
+		}
+
+		if (!validator.isLength(data.profile.contactinfo, 0, 1000)) {
+			profile_errors.clan = "Clan tag must be 1,000 characters or less";
+		}
+
+		if (!validator.isLength(data.profile.location, 0, 100)) {
+			profile_errors.clan = "Clan must be 100 characters or less";
+		}
+
+		if (!validator.isLength(data.profile.message, 0, 1000)) {
+			profile_errors.clan = "Clan tag must be 1,000 characters or less";
+		}
+
+/*      clan: Sequelize.STRING,
+      clantag: Sequelize.STRING,
+      contactinfo: Sequelize.STRING,
+      country: Sequelize.STRING,
+      gravatar: Sequelize.ENUM(null, 'identicon', 'monsterid', 'wavatar', 'retro
+      location: Sequelize.STRING,
+      message: Sequelize.STRING,
+      username: Sequelize.STRING*/
+		reject(new error.FormValidation("Form validation failed", {
+			profile: profile_errors
+		}));
+	});
+}
+
 module.exports.loginForm = loginForm;
 module.exports.registerForm = registerForm;
+module.exports.userForm = userForm;

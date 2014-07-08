@@ -142,8 +142,9 @@ function WebApp(config, logger) {
 		// Users
 		self.app.get('/users', self.getUsers.bind(self));
 		self.app.get('/users/:id', self.getUser.bind(self));
-		self.app.all('/users/:id/edit', self.editUser.bind(self));
-		self.app.all('/users/:id/destroy', self.destroyUser.bind(self));
+		self.app.use('/users/:id/edit', self.accessEditUser.bind(self));
+		self.app.get('/users/:id/edit', self.getEditUser.bind(self));
+		self.app.post('/users/:id/edit', self.postEditUser.bind(self));
 
 		// Handle 404's
 		self.app.use(function(req, res, next) {
@@ -385,8 +386,8 @@ WebApp.prototype.getUser = function(req, res) {
 	}).done();
 };
 
-// Edit a specific user
-WebApp.prototype.editUser = function(req, res) {
+// Govern access to the user edit page
+WebApp.prototype.accessEditUser = function(req, res, next) {
 	var self = this;
 
 	this.dbconn.User.find({
@@ -396,29 +397,43 @@ WebApp.prototype.editUser = function(req, res) {
 			throw new error.NotFound('User not found');
 		}
 
-		var can_edit_admin = false;
 		if (!("user" in req.session)) {
 			throw new error.Forbidden('Can not edit profile as anonymous user');
 		} else if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-			// Operators can always edit profiles, and can modify their access
-			// level and visibility too.
-			can_edit_admin = true;
+			// Operators can always edit profiles
 		} else if (user.id === req.session.user.id) {
 			// Users can always edit the own profiles
 		} else {
 			throw new error.Forbidden('Can not edit profile as current user');
 		}
 
-		// User is allowed to edit the profile, so obtain the profile.
-		return Promise.all([user, user.getProfile(), can_edit_admin]);
-	}).spread(function(user, profile, can_edit_admin) {
-		self.render(req, res, 'editUser', {
-			data: {
-				user: user,
-				profile: profile
-			},
-			can_edit_admin: can_edit_admin
-		});
+		// User is allowed to edit the profile, so continue
+		next();
+	}).done();
+}
+
+// Edit a specific user
+WebApp.prototype.getEditUser = function(req, res) {
+	var self = this;
+
+	this.dbconn.User.find({
+		where: {username: req.params.id.toLowerCase()},
+		include: [this.dbconn.Profile]
+	}).then(function(user) {
+		req.body._csrf = req.csrfToken();
+		req.body.user = user.toJSON();
+		req.body.profile = user.profile.toJSON();
+
+		// Admin has a different form than a user
+		if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
+			self.render(req, res, 'adminEditUser', {
+				data: req.body, errors: {}
+			});
+		} else {
+			self.render(req, res, 'editUser', {
+				data: req.body, errors: {}
+			});
+		}
 	}).done();
 };
 
@@ -426,20 +441,27 @@ WebApp.prototype.editUser = function(req, res) {
 WebApp.prototype.postEditUser = function(req, res) {
 	var self = this;
 
-	new Promise(function(resolve, reject) {
-		resolve();
-	}).then(function() {
-		return webform.userForm(this.dbconn, req.body);
-	}).catch(error.FormValidation, function(e) {
-		req.body._csrf = req.csrfToken();
-	});
-}
+	console.log(req.body);
 
-// Delete a specific user
-WebApp.prototype.destroyUser = function(req, res) {
-	res.render('layout', {
-		partials: { body: 'destroyUser' }
-	});
-};
+	if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
+		// Admin form submussion
+		webform.userForm(self.dbconn, req.body)
+		.catch(error.FormValidation, function(e) {
+			req.body._csrf = req.csrfToken();
+			self.render(req, res, 'adminEditUser', {
+				data: req.body, errors: e.invalidFields,
+			});
+		}).done();
+	} else {
+		// User form submission
+		webform.userForm(self.dbconn, req.body)
+		.catch(error.FormValidation, function(e) {
+			req.body._csrf = req.csrfToken();
+			self.render(req, res, 'editUser', {
+				data: req.body, errors: e.invalidFields,
+			});
+		}).done();
+	}
+}
 
 module.exports = WebApp;

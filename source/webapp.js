@@ -109,6 +109,8 @@ function WebApp(config, logger) {
 		}));
 		self.app.use(cookieParser());
 		self.app.use(session({
+			resave: false,
+			saveUninitialized: false,
 			secret: self.config.get('web.secret'),
 			store: new fsSession()
 		}));

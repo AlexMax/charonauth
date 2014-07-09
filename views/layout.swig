@@ -8,6 +8,8 @@
 </head>
 <body>
 	{% include 'header.swig' %}
-	{% block body %}{% endblock %}
+	<div class="container">
+		{% block body %}{% endblock %}
+	</div>
 </body>
 </html>

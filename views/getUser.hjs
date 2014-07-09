@@ -1,16 +1,16 @@
-<h2>{{profile.clantag}}{{profile.username}}</h2>
+<h2>{{ profile.clantag }}{{ profile.username }}</h2>
 <img src="//www.gravatar.com/avatar/{{user.getGravatar}}">
 <dl>
 	<dt>Clan</dt>
-	<dd>{{profile.clan}}</dd>
+	<dd>{{ profile.clan }}</dd>
 	<dt>Country</dt>
-	<dd>{{profile.country}}</dd>
+	<dd>{{ profile.country }}</dd>
 	<dt>Location</dt>
-	<dd>{{profile.location}}</dd>
+	<dd>{{ profile.location }}</dd>
 	<dt>Contact Info</dt>
-	<dd>{{profile.contactinfo}}</dd>
+	<dd>{{ profile.contactinfo }}</dd>
 	<dt>Message</dt>
-	<dd>{{profile.message}}</dd>
+	<dd>{{ profile.message }}</dd>
 </dl>
 {{#can_edit}}
 <a class="btn btn-primary" href="/users/{{user.username}}/edit">Edit Profile</a>

@@ -20,6 +20,7 @@
 "use strict";
 
 var Promise = require('bluebird');
+var _ = require('lodash');
 
 var crypto = require('crypto');
 var Sequelize = require('sequelize');
@@ -91,6 +92,9 @@ var DBConn = function(config) {
 			visible_auth: Sequelize.BOOLEAN
 		}, {
 			instanceMethods: {
+				isOperator: function() {
+					return _.contains(['OWNER', 'MASTER', 'OP'], this.access);
+				},
 				getGravatar: function() {
 					var md5 = crypto.createHash('md5');
 					return md5.update(this.email.toLowerCase(), 'ascii').digest('hex');

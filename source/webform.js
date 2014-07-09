@@ -164,19 +164,19 @@ function userForm(dbconn, data) {
 		}
 
 		if (!validator.isLength(data.profile.clantag, 0, 6)) {
-			profile_errors.clan = "Clan tag must be 6 characters or less";
+			profile_errors.clantag = "Clan tag must be 6 characters or less";
 		}
 
 		if (!validator.isLength(data.profile.contactinfo, 0, 1000)) {
-			profile_errors.clan = "Clan tag must be 1,000 characters or less";
+			profile_errors.contactinfo = "Contact Information must be 1,000 characters or less";
 		}
 
 		if (!validator.isLength(data.profile.location, 0, 100)) {
-			profile_errors.clan = "Clan must be 100 characters or less";
+			profile_errors.location = "Location must be 100 characters or less";
 		}
 
 		if (!validator.isLength(data.profile.message, 0, 1000)) {
-			profile_errors.clan = "Clan tag must be 1,000 characters or less";
+			profile_errors.message = "Message must be 1,000 characters or less";
 		}
 
 /*      clan: Sequelize.STRING,

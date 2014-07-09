@@ -375,21 +375,9 @@ WebApp.prototype.getUser = function(req, res) {
 		// User is allowed to see the profile, so obtain the profile.
 		return Promise.all([user, user.getProfile()]);
 	}).spread(function(user, profile) {
-		var can_edit = false;
-		if (!("user" in req.session)) {
-			// Anonymous users can never edit a profile
-		} else if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-			// Operators can always edit profiles
-			can_edit = true;
-		} else if (user.id === req.session.user.id) {
-			// Users can always edit their own profiles
-			can_edit = true;
-		}
-
-		self.render(req, res, 'getUser', {
+		res.render('getUser.swig', {
 			user: user,
-			profile: profile,
-			can_edit: can_edit
+			profile: profile
 		});
 	}).done();
 };
@@ -448,6 +436,8 @@ WebApp.prototype.getEditUser = function(req, res) {
 // Process an edit user submission
 WebApp.prototype.postEditUser = function(req, res) {
 	var self = this;
+
+	console.log(req.body);
 
 	if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
 		// Admin form submussion

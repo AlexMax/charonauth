@@ -2,6 +2,15 @@
 <form method="post" role="form">
 	<fieldset>
 		<input type="hidden" name="_csrf" value="{{data._csrf}}">
+		<div class="form-group {{#errors.profile.gravatar}}has-error{{/errors.profile.gravatar}}">
+			<label class="control-label" for="gravatar">Gravatar Style</label>
+			<select class="form-control" name="profile[gravatar]" id="gravatar">
+				{{#gravatars}}
+				<option value="{{value}}" {{#selected}}selected{{/selected}}>{{name}}</option>
+				{{/gravatars}}
+			</select>
+			<span class="help-block">{{errors.profile.gravatar}}</span>
+		</div>
 		<div class="form-group {{#errors.profile.username}}has-error{{/errors.profile.username}}">
 			<label class="control-label" for="username">Username</label>
 			<input class="form-control" name="profile[username]" id="username" value="{{data.profile.username}}">

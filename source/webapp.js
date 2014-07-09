@@ -424,14 +424,30 @@ WebApp.prototype.getEditUser = function(req, res) {
 		req.body.user = user.toJSON();
 		req.body.profile = user.profile.toJSON();
 
+		// Ensure that we have tha proper gravatar selected
+		var gravatars = [
+			{value: "", name: "Use Gravatar"},
+			{value: "identicon", name: "Identicon"},
+			{value: "monsterid", name: "MonsterID"},
+			{value: "wavatar", name: "WAvatar"},
+			{value: "retro", name: "Retro"}
+		];
+		for (var i = 0;i < gravatars.length;i++) {
+			if (req.body.profile.gravatar === gravatars[i]['value']) {
+				gravatars[i]['selected'] = true;
+			}
+		}
+
 		// Admin has a different form than a user
 		if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
 			self.render(req, res, 'adminEditUser', {
-				data: req.body, errors: {}
+				data: req.body, errors: {},
+				gravatars: gravatars
 			});
 		} else {
 			self.render(req, res, 'editUser', {
-				data: req.body, errors: {}
+				data: req.body, errors: {},
+				gravatars: gravatars
 			});
 		}
 	}).done();
@@ -441,7 +457,19 @@ WebApp.prototype.getEditUser = function(req, res) {
 WebApp.prototype.postEditUser = function(req, res) {
 	var self = this;
 
-	console.log(req.body);
+	// Ensure that we have tha proper gravatar selected
+	var gravatars = [
+		{value: "", name: "Use Gravatar"},
+		{value: "identicon", name: "Identicon"},
+		{value: "monsterid", name: "MonsterID"},
+		{value: "wavatar", name: "WAvatar"},
+		{value: "retro", name: "Retro"}
+	];
+	for (var i = 0;i < gravatars.length;i++) {
+		if (req.body.profile.gravatar === gravatars[i]['value']) {
+			gravatars[i]['selected'] = true;
+		}
+	}
 
 	if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
 		// Admin form submussion
@@ -450,6 +478,7 @@ WebApp.prototype.postEditUser = function(req, res) {
 			req.body._csrf = req.csrfToken();
 			self.render(req, res, 'adminEditUser', {
 				data: req.body, errors: e.invalidFields,
+				gravatars: gravatars
 			});
 		}).done();
 	} else {
@@ -459,6 +488,7 @@ WebApp.prototype.postEditUser = function(req, res) {
 			req.body._csrf = req.csrfToken();
 			self.render(req, res, 'editUser', {
 				data: req.body, errors: e.invalidFields,
+				gravatars: gravatars
 			});
 		}).done();
 	}

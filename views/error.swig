@@ -7,9 +7,9 @@
 	<link rel="stylesheet" type="text/css" href="/assets/css/site.css">
 </head>
 <body>
-	<h1>{{message}}</h1>
-	{{#stack}}
-	<pre>{{stack}}</pre>
-	{{/stack}}
+	<h1>{{status}}: {{ message }}</h1>
+	{% if stack %}
+	<pre>{{ stack }}</pre>
+	{% endif %}
 </body>
 </html>

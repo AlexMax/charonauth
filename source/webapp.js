@@ -164,23 +164,24 @@ function WebApp(config, logger) {
 			if (err.name === 'NotFoundError') {
 				// Handle 404 errors
 				res.statusCode = 404;
-				res.render('error.hjs', {
+				res.render('error.swig', {
+					status: res.statusCode,
 					message: err.message,
 					stack: err.stack
 				});
-				next();
 			} else if (err.name === 'ForbiddenError') {
 				// Handle 403 errors
 				res.statusCode = 403;
-				res.render('error.hjs', {
+				res.render('error.swig', {
+					status: res.statusCode,
 					message: err.message,
 					stack: err.stack
 				});
-				next();
 			} else {
 				// An exception we didn't throw - must be our fault
 				res.statusCode = 500;
-				res.render('error.hjs', {
+				res.render('error.swig', {
+					status: res.statusCode,
 					message: err.message,
 					stack: err.stack
 				});

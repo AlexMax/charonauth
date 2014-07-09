@@ -24,6 +24,7 @@ var _ = require('lodash');
 
 var express = require('express');
 
+var countries = require('./countries');
 var error = require('./error');
 var webform = require('./webform');
 
@@ -111,11 +112,13 @@ module.exports = function(dbconn) {
 			// Admin has a different form than a user.
 			if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
 				res.render('adminEditUser.swig', {
-					data: req.body, errors: {}
+					data: req.body, errors: {},
+					countries: countries.countries
 				});
 			} else {
 				res.render('editUser.swig', {
-					data: req.body, errors: {}
+					data: req.body, errors: {},
+					countries: countries.countries
 				});
 			}
 		}).done();
@@ -131,7 +134,8 @@ module.exports = function(dbconn) {
 			.catch(error.FormValidation, function(e) {
 				req.body._csrf = req.csrfToken();
 				res.render('adminEditUser.swig', {
-					data: req.body, errors: e.invalidFields
+					data: req.body, errors: e.invalidFields,
+					countries: countries.countries
 				});
 			}).done();
 		} else {
@@ -140,7 +144,8 @@ module.exports = function(dbconn) {
 			.catch(error.FormValidation, function(e) {
 				req.body._csrf = req.csrfToken();
 				res.render('editUser.swig', {
-					data: req.body, errors: e.invalidFields
+					data: req.body, errors: e.invalidFields,
+					countries: countries.countries
 				});
 			}).done();
 		}

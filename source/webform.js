@@ -25,6 +25,7 @@ var _ = require('lodash');
 var Sequelize = require('sequelize');
 var validator = require('validator');
 
+var countries = require('./countries');
 var error = require('./error');
 
 function loginForm(dbconn, data) {
@@ -157,39 +158,38 @@ function registerForm(dbconn, recaptcha, data, ip) {
 
 function userForm(dbconn, data) {
 	return new Promise(function(resolve, reject) {
-		var profile_errors = {};
+		var errors = {};
 
-		if (!validator.isLength(data.profile.clan, 0, 100)) {
-			profile_errors.clan = "Clan must be 100 characters or less";
+		if (!validator.isLength(data.clan, 0, 100)) {
+			errors.clan = "Clan must be 100 characters or less";
 		}
 
-		if (!validator.isLength(data.profile.clantag, 0, 6)) {
-			profile_errors.clantag = "Clan tag must be 6 characters or less";
+		if (!validator.isLength(data.clantag, 0, 6)) {
+			errors.clantag = "Clan tag must be 6 characters or less";
 		}
 
-		if (!validator.isLength(data.profile.contactinfo, 0, 1000)) {
-			profile_errors.contactinfo = "Contact Information must be 1,000 characters or less";
+		if (!validator.isLength(data.contactinfo, 0, 1000)) {
+			errors.contactinfo = "Contact Information must be 1,000 characters or less";
 		}
 
-		if (!validator.isLength(data.profile.location, 0, 100)) {
-			profile_errors.location = "Location must be 100 characters or less";
+		if (!validator.isNull(data.country) && !countries.isCountryCode(data.country)) {
+			errors.country = "Country must be valid selection";
 		}
 
-		if (!validator.isLength(data.profile.message, 0, 1000)) {
-			profile_errors.message = "Message must be 1,000 characters or less";
+		if (!validator.isIn(data.gravatar, ['', 'identicon', 'monsterid', 'wavatar', 'retro'])) {
+			errors.gravatar = "Gravatar must be valid selection";
 		}
 
-/*      clan: Sequelize.STRING,
-      clantag: Sequelize.STRING,
-      contactinfo: Sequelize.STRING,
-      country: Sequelize.STRING,
-      gravatar: Sequelize.ENUM(null, 'identicon', 'monsterid', 'wavatar', 'retro
-      location: Sequelize.STRING,
-      message: Sequelize.STRING,
-      username: Sequelize.STRING*/
-		reject(new error.FormValidation("Form validation failed", {
-			profile: profile_errors
-		}));
+		if (!validator.isLength(data.location, 0, 100)) {
+			errors.location = "Location must be 100 characters or less";
+		}
+
+		if (!validator.isLength(data.message, 0, 1000)) {
+			errors.message = "Message must be 1,000 characters or less";
+		}
+
+		// TODO: Check to see if the username is simply mixed-case
+		reject(new error.FormValidation("Form validation failed", errors));
 	});
 }
 

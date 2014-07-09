@@ -31,7 +31,8 @@
     "lodash": "~2.4.1",
     "ini": "^1.2.1",
     "commander": "^2.2.0",
-    "swig": "^1.4.1"
+    "swig": "^1.4.1",
+    "world-countries": "~1.4.1"
   },
   "devDependencies": {
     "mocha": ">1.18.0",

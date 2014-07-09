@@ -2,13 +2,13 @@
 
 {% block body %}
 
-{% set gravatars = {
-	"": "My Gravatar",
-	"identicon": "Identicon",
-	"monsterid": "MonsterID",
-	"wavatar": "WAvatar",
-	"retro": "Retro"
-} %}
+{% set gravatars = [
+	{"value": "", "name": "My Gravatar"},
+	{"value": "identicon", "name": "Identicon"},
+	{"value": "monsterid", "name": "MonsterID"},
+	{"value": "wavatar", "name": "WAvatar"},
+	{"value": "retro", "name": "Retro"}
+] %}
 
 <h2>Edit User</h2>
 <form method="post" role="form">
@@ -17,11 +17,11 @@
 		<div class="form-group {% if errors.profile.gravatar %}has-error{% endif %}">
 			<label class="control-label" for="gravatar">Gravatar Style</label>
 			<select class="form-control" name="profile[gravatar]" id="gravatar">
-				{% for value, name in gravatars %}
-				{% if data.profile.gravatar === value %}
-				<option value="{{ value }}" selected>{{ name }}</option>
+				{% for gravatar in gravatars %}
+				{% if data.profile.gravatar === gravatar.value %}
+				<option value="{{ gravatar.value }}" selected>{{ gravatar.name }}</option>
 				{% else %}
-				<option value="{{ value }}">{{ name }}</option>
+				<option value="{{ gravatar.value }}">{{ gravatar.name }}</option>
 				{% endif %}
 				{% endfor %}
 			</select>
@@ -45,9 +45,14 @@
 		<div class="form-group {% if errors.profile.country %}has-error{% endif %}">
 			<label class="control-label" for="country">Country</label>
 			<select class="form-control" name="profile[country]" id="country">
-				<option>No Country</option>
-				<option>United States</option>
-				<option>Commieland</option>
+				<option value="">No Country Selected</option>
+				{% for country in countries %}
+				{% if data.profile.country === country.cca2 %}
+				<option value="{{ country.cca2 }}" selected>{{ country.name }}</option>
+				{% else %}
+				<option value="{{ country.cca2 }}">{{ country.name }}</option>
+				{% endif %}
+				{% endfor %}
 			</select>
 			<span class="help-block">{{ errors.profile.country }}</span>
 		</div>

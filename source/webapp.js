@@ -24,7 +24,6 @@ var _ = require('lodash');
 
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
-var consolidate = require('consolidate');
 var csurf = require('csurf');
 var domain = require('domain');
 var express = require('express');
@@ -123,7 +122,6 @@ function WebApp(config, logger) {
 		});
 
 		// Template engine
-		self.app.engine('hjs', consolidate.hogan);
 		self.app.engine('swig', swig.renderFile);
 
 		// Configuration
@@ -201,25 +199,15 @@ function WebApp(config, logger) {
 	});
 }
 
-WebApp.prototype.render = function(req, res, layout, options) {
-	res.render('layout.hjs', _.extend(options || {}, {
-		session: req.session,
-		partials: {
-			body: layout,
-			header: 'header'
-		}
-	}));
-};
-
 // Top level controllers
 WebApp.prototype.home = function(req, res) {
-	this.render(req, res, 'home');
+	res.render('home.swig');
 };
 
 // Render a login form
 WebApp.prototype.getLogin = function(req, res) {
 	req.body._csrf = req.csrfToken();
-	this.render(req, res, 'login', {
+	res.render('login.swig', {
 		data: req.body, errors: {},
 	});
 };
@@ -243,7 +231,7 @@ WebApp.prototype.postLogin = function(req, res) {
 		res.redirect('/');
 	}).catch(error.FormValidation, function(e) {
 		req.body._csrf = req.csrfToken();
-		self.render(req, res, 'login', {
+		res.render('login.swig', {
 			data: req.body, errors: e.invalidFields
 		});
 	}).done();
@@ -252,13 +240,13 @@ WebApp.prototype.postLogin = function(req, res) {
 WebApp.prototype.logout = function(req, res) {
 	delete req.session.user;
 
-	this.render(req, res, 'logout');
+	res.render('logout.swig');
 };
 
 // Render a registration form
 WebApp.prototype.getRegister = function(req, res) {
 	req.body._csrf = req.csrfToken();
-	this.render(req, res, 'register', {
+	res.render('register.swig', {
 		data: req.body, errors: {},
 		recaptcha_public_key: this.recaptcha ? this.recaptcha.publickey : null
 	});
@@ -281,7 +269,7 @@ WebApp.prototype.postRegister = function(req, res) {
 			]).spread(function(user, verify) {
 				return Promise.all([user, user.setVerify(verify)]);
 			}).spread(function(user, _) {
-				self.render(req, res, 'registerNotify', {
+				res.render('registerNotify.swig', {
 					user: user
 				});
 			});
@@ -299,12 +287,12 @@ WebApp.prototype.postRegister = function(req, res) {
 					access: user.access
 				};
 
-				self.render(req, res, 'registerSuccess');
+				res.render('registerSuccess.swig');
 			});
 		}
 	}).catch(error.FormValidation, function(e) {
 		req.body._csrf = req.csrfToken();
-		self.render(req, res, 'register', {
+		res.render('register.swig', {
 			data: req.body, errors: e.invalidFields,
 			recaptcha_public_key: self.recaptcha ? self.recaptcha.publickey : null
 		});
@@ -320,7 +308,7 @@ WebApp.prototype.registerVerify = function(req, res) {
 		}
 	}).success(function(data) {
 		if (data) {
-			self.render(req, res, 'registerVerify');
+			res.render('registerVerify.swig');
 		} else {
 			throw error.NotFound();
 		}
@@ -344,7 +332,7 @@ WebApp.prototype.getUsers = function(req, res) {
 		where: {active: true, visible_profile: true},
 		include: [this.dbconn.Profile]
 	}).then(function(users) {
-		self.render(req, res, 'getUsers', {
+		res.render('getUsers.swig', {
 			users: users
 		});
 	}).done();

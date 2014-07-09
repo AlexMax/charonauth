@@ -20,7 +20,6 @@
 "use strict";
 
 var Promise = require('bluebird');
-var _ = require('lodash');
 
 var bodyParser = require('body-parser');
 var cookieParser = require('cookie-parser');
@@ -28,9 +27,9 @@ var csurf = require('csurf');
 var domain = require('domain');
 var express = require('express');
 var session = require('express-session');
-var swig = require('swig');
 var fsSession = require('fs-session')({ session: session });
 var uuid = require('node-uuid');
+var swig = require('swig');
 
 var Config = require('./config');
 var DBConn = require('./dbconn');
@@ -123,9 +122,8 @@ function WebApp(config, logger) {
 
 		// Template engine
 		self.app.engine('swig', swig.renderFile);
-
-		// Configuration
 		self.app.set('views', __dirname + '/../views');
+		self.app.set('view cache', false);
 
 		// Home
 		self.app.get('/', self.home.bind(self));
@@ -146,11 +144,7 @@ function WebApp(config, logger) {
 		self.app.get('/register/:token', self.registerVerify.bind(self));
 
 		// Users
-		self.app.get('/users', self.getUsers.bind(self));
-		self.app.get('/users/:id', self.getUser.bind(self));
-		self.app.use('/users/:id/edit', self.accessEditUser.bind(self));
-		self.app.get('/users/:id/edit', self.getEditUser.bind(self));
-		self.app.post('/users/:id/edit', self.postEditUser.bind(self));
+		self.app.use('/users', require('./webusers')(self.dbconn));
 
 		// Handle 404's
 		self.app.use(function(req, res, next) {
@@ -189,7 +183,6 @@ function WebApp(config, logger) {
 		self.app.use(function(err, req, res, next) {
 			// Log any error we come across to disk
 			self.log.warn(err.stack);
-			next();
 		});
 
 		// Start listening for connections
@@ -323,130 +316,5 @@ WebApp.prototype.postReset = function(req, res) {
 WebApp.prototype.resetVerify = function(req, res) {
 
 };
-
-// Get a list of all users
-WebApp.prototype.getUsers = function(req, res) {
-	var self = this;
-
-	this.dbconn.User.findAll({
-		where: {active: true, visible_profile: true},
-		include: [this.dbconn.Profile]
-	}).then(function(users) {
-		res.render('getUsers.swig', {
-			users: users
-		});
-	}).done();
-};
-
-// Get information on a specific user
-WebApp.prototype.getUser = function(req, res) {
-	var self = this;
-
-	this.dbconn.User.find({
-		where: {username: req.params.id.toLowerCase()}
-	}).then(function(user) {
-		if (_.isNull(user)) {
-			throw new error.NotFound('User not found');
-		}
-
-		// Profile visibility is affected by two factors, if the profile is
-		// active and if it is set to be visible
-		if (user.active === false || user.visible_profile === false) {
-			if (!("user" in req.session)) {
-				throw new error.Forbidden('Can not view profile as anonymous user');
-			} else if (user.id === req.session.user.id && user.active === false) {
-				throw new error.Forbidden('Can not view profile as your account is not active');
-			} else if (user.id !== req.session.user.id && _.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-				throw new error.Forbidden('Can not view profile with given access');
-			}
-		}
-
-		// User is allowed to see the profile, so obtain the profile.
-		return Promise.all([user, user.getProfile()]);
-	}).spread(function(user, profile) {
-		res.render('getUser.swig', {
-			user: user,
-			profile: profile
-		});
-	}).done();
-};
-
-// Govern access to the user edit page
-WebApp.prototype.accessEditUser = function(req, res, next) {
-	var self = this;
-
-	this.dbconn.User.find({
-		where: {username: req.params.id.toLowerCase()}
-	}).then(function(user) {
-		if (_.isNull(user)) {
-			throw new error.NotFound('User not found');
-		}
-
-		if (!("user" in req.session)) {
-			throw new error.Forbidden('Can not edit profile as anonymous user');
-		} else if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-			// Operators can always edit profiles
-		} else if (user.id === req.session.user.id) {
-			// Users can always edit the own profiles
-		} else {
-			throw new error.Forbidden('Can not edit profile as current user');
-		}
-
-		// User is allowed to edit the profile, so continue
-		next();
-	}).done();
-}
-
-// Edit a specific user
-WebApp.prototype.getEditUser = function(req, res) {
-	var self = this;
-
-	this.dbconn.User.find({
-		where: {username: req.params.id.toLowerCase()},
-		include: [this.dbconn.Profile]
-	}).then(function(user) {
-		req.body._csrf = req.csrfToken();
-		req.body.user = user.toJSON();
-		req.body.profile = user.profile.toJSON();
-
-		// Admin has a different form than a user
-		if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-			res.render('adminEditUser.swig', {
-				data: req.body, errors: {}
-			});
-		} else {
-			res.render('editUser.swig', {
-				data: req.body, errors: {}
-			});
-		}
-	}).done();
-};
-
-// Process an edit user submission
-WebApp.prototype.postEditUser = function(req, res) {
-	var self = this;
-
-	console.log(req.body);
-
-	if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-		// Admin form submussion
-		webform.userForm(self.dbconn, req.body)
-		.catch(error.FormValidation, function(e) {
-			req.body._csrf = req.csrfToken();
-			res.render('adminEditUser.swig', {
-				data: req.body, errors: e.invalidFields
-			});
-		}).done();
-	} else {
-		// User form submission
-		webform.userForm(self.dbconn, req.body)
-		.catch(error.FormValidation, function(e) {
-			req.body._csrf = req.csrfToken();
-			res.render('editUser.swig', {
-				data: req.body, errors: e.invalidFields
-			});
-		}).done();
-	}
-}
 
 module.exports = WebApp;

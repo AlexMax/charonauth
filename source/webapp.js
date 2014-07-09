@@ -29,6 +29,7 @@ var csurf = require('csurf');
 var domain = require('domain');
 var express = require('express');
 var session = require('express-session');
+var swig = require('swig');
 var fsSession = require('fs-session')({ session: session });
 var uuid = require('node-uuid');
 
@@ -115,12 +116,17 @@ function WebApp(config, logger) {
 			store: new fsSession()
 		}));
 		self.app.use(csurf());
+		self.app.use(function(req, res, next) {
+			// Allways supply session data to the template
+			self.app.locals.session = req.session;
+			next();
+		});
 
 		// Template engine
 		self.app.engine('hjs', consolidate.hogan);
+		self.app.engine('swig', swig.renderFile);
 
 		// Configuration
-		self.app.set('view engine', 'hjs');
 		self.app.set('views', __dirname + '/../views');
 
 		// Home
@@ -158,7 +164,7 @@ function WebApp(config, logger) {
 			if (err.name === 'NotFoundError') {
 				// Handle 404 errors
 				res.statusCode = 404;
-				res.render('error', {
+				res.render('error.hjs', {
 					message: err.message,
 					stack: err.stack
 				});
@@ -166,7 +172,7 @@ function WebApp(config, logger) {
 			} else if (err.name === 'ForbiddenError') {
 				// Handle 403 errors
 				res.statusCode = 403;
-				res.render('error', {
+				res.render('error.hjs', {
 					message: err.message,
 					stack: err.stack
 				});
@@ -174,7 +180,7 @@ function WebApp(config, logger) {
 			} else {
 				// An exception we didn't throw - must be our fault
 				res.statusCode = 500;
-				res.render('error', {
+				res.render('error.hjs', {
 					message: err.message,
 					stack: err.stack
 				});
@@ -195,7 +201,7 @@ function WebApp(config, logger) {
 }
 
 WebApp.prototype.render = function(req, res, layout, options) {
-	res.render('layout', _.extend(options || {}, {
+	res.render('layout.hjs', _.extend(options || {}, {
 		session: req.session,
 		partials: {
 			body: layout,
@@ -426,30 +432,14 @@ WebApp.prototype.getEditUser = function(req, res) {
 		req.body.user = user.toJSON();
 		req.body.profile = user.profile.toJSON();
 
-		// Ensure that we have tha proper gravatar selected
-		var gravatars = [
-			{value: "", name: "Use Gravatar"},
-			{value: "identicon", name: "Identicon"},
-			{value: "monsterid", name: "MonsterID"},
-			{value: "wavatar", name: "WAvatar"},
-			{value: "retro", name: "Retro"}
-		];
-		for (var i = 0;i < gravatars.length;i++) {
-			if (req.body.profile.gravatar === gravatars[i]['value']) {
-				gravatars[i]['selected'] = true;
-			}
-		}
-
 		// Admin has a different form than a user
 		if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-			self.render(req, res, 'adminEditUser', {
-				data: req.body, errors: {},
-				gravatars: gravatars
+			res.render('adminEditUser.swig', {
+				data: req.body, errors: {}
 			});
 		} else {
-			self.render(req, res, 'editUser', {
-				data: req.body, errors: {},
-				gravatars: gravatars
+			res.render('editUser.swig', {
+				data: req.body, errors: {}
 			});
 		}
 	}).done();
@@ -459,28 +449,13 @@ WebApp.prototype.getEditUser = function(req, res) {
 WebApp.prototype.postEditUser = function(req, res) {
 	var self = this;
 
-	// Ensure that we have tha proper gravatar selected
-	var gravatars = [
-		{value: "", name: "Use Gravatar"},
-		{value: "identicon", name: "Identicon"},
-		{value: "monsterid", name: "MonsterID"},
-		{value: "wavatar", name: "WAvatar"},
-		{value: "retro", name: "Retro"}
-	];
-	for (var i = 0;i < gravatars.length;i++) {
-		if (req.body.profile.gravatar === gravatars[i]['value']) {
-			gravatars[i]['selected'] = true;
-		}
-	}
-
 	if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
 		// Admin form submussion
 		webform.userForm(self.dbconn, req.body)
 		.catch(error.FormValidation, function(e) {
 			req.body._csrf = req.csrfToken();
-			self.render(req, res, 'adminEditUser', {
-				data: req.body, errors: e.invalidFields,
-				gravatars: gravatars
+			res.render('adminEditUser.swig', {
+				data: req.body, errors: e.invalidFields
 			});
 		}).done();
 	} else {
@@ -488,9 +463,8 @@ WebApp.prototype.postEditUser = function(req, res) {
 		webform.userForm(self.dbconn, req.body)
 		.catch(error.FormValidation, function(e) {
 			req.body._csrf = req.csrfToken();
-			self.render(req, res, 'editUser', {
-				data: req.body, errors: e.invalidFields,
-				gravatars: gravatars
+			res.render('editUser.swig', {
+				data: req.body, errors: e.invalidFields
 			});
 		}).done();
 	}

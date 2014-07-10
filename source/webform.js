@@ -28,7 +28,7 @@ var validator = require('validator');
 var countries = require('./countries');
 var error = require('./error');
 
-function loginForm(dbconn, data) {
+module.exports.loginForm = function(dbconn, data) {
 	return new Promise(function(resolve, reject) {
 		var errors = {};
 
@@ -50,9 +50,9 @@ function loginForm(dbconn, data) {
 			});
 		}
 	});
-}
+};
 
-function registerForm(dbconn, recaptcha, data, ip) {
+module.exports.registerForm = function(dbconn, recaptcha, data, ip) {
 	return new Promise(function(resolve, reject) {
 		var promises = [];
 		var errors = {};
@@ -154,9 +154,43 @@ function registerForm(dbconn, recaptcha, data, ip) {
 			reject(new error.FormValidation("Form validation failed", errors));
 		}
 	});
-}
+};
 
-function userForm(dbconn, data) {
+module.exports.userForm = function(dbconn, data) {
+	return new Promise(function(resolve, reject) {
+		var errors = {};
+
+		// Validate password, if set
+		if ("password" in data && !validator.isNull(data.password)) {
+			if (!validator.isAscii(data.password)) {
+				errors.password = "Password must be plain ASCII characters";
+			} else if (!validator.isLength(data.password, 8, 1024)) {
+				errors.password = "Password must be between 8 and 1,024 characters";
+			} else if (validator.matches(data.password, /^([A-Za-z ]+|[0-9 ]+)$/) && !validator.isLength(data.password, 20)) {
+				errors.password = "Password must contain more than just letters or just numbers, unless your password is more than 20 characters";
+			}
+
+			if (!("confirm" in data) || validator.isNull(data.confirm)) {
+				errors.confirm = "Password Confirmation is required";
+			}
+		}
+
+		// Validate password confirmation, if set
+		if ("confirm" in data && !validator.isNull(data.confirm)) {
+			if (!("password" in data) || validator.isNull(data.password)) {
+				errors.password = "Password is required";
+			}
+
+			if (data.password !== data.confirm) {
+				errors.confirm = "Password Confirmation does not match";
+			}
+		}
+
+		reject(new error.FormValidation("Form validation failed", errors));
+	});
+};
+
+module.exports.profileForm = function(dbconn, data) {
 	return new Promise(function(resolve, reject) {
 		var errors = {};
 
@@ -191,8 +225,4 @@ function userForm(dbconn, data) {
 		// TODO: Check to see if the username is simply mixed-case
 		reject(new error.FormValidation("Form validation failed", errors));
 	});
-}
-
-module.exports.loginForm = loginForm;
-module.exports.registerForm = registerForm;
-module.exports.userForm = userForm;
+};

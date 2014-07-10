@@ -22,6 +22,7 @@
 var Promise = require('bluebird');
 var _ = require('lodash');
 
+var domain = require('domain');
 var express = require('express');
 
 var countries = require('./countries');
@@ -33,7 +34,7 @@ module.exports = function(dbconn) {
 	var routes = express.Router();
 
 	// Get a list of all users.
-	routes.get('/', function(req, res) {
+	routes.get('/', function(req, res, next) {
 		dbconn.User.findAll({
 			where: {active: true, visible_profile: true},
 			include: [dbconn.Profile]
@@ -41,11 +42,11 @@ module.exports = function(dbconn) {
 			res.render('getUsers.swig', {
 				users: users
 			});
-		}).done();
+		}).catch(next);
 	});
 
 	// Get information on a specific user.
-	routes.get('/:id', function(req, res) {
+	routes.get('/:id', function(req, res, next) {
 		dbconn.User.find({
 			where: {username: req.params.id.toLowerCase()}
 		}).then(function(user) {
@@ -72,7 +73,7 @@ module.exports = function(dbconn) {
 				user: user,
 				profile: profile
 			});
-		}).done();
+		}).catch(next);
 	});
 
 	// Govern access to the user edit page.
@@ -96,11 +97,11 @@ module.exports = function(dbconn) {
 
 			// User is allowed to edit the profile, so continue.
 			next();
-		}).done();
+		}).catch(next);
 	});
 
 	// Edit a specific user.
-	routes.get('/:id/edit', function(req, res) {
+	routes.get('/:id/edit', function(req, res, next) {
 		dbconn.User.find({
 			where: {username: req.params.id.toLowerCase()},
 			include: [dbconn.Profile]
@@ -121,33 +122,51 @@ module.exports = function(dbconn) {
 					countries: countries.countries
 				});
 			}
-		}).done();
+		}).catch(next);
 	});
 
 	// Process an edit user submission.
-	routes.post('/:id/edit', function(req, res) {
-		console.log(req.body);
-
+	routes.post('/:id/edit', function(req, res, next) {
 		if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
 			// Admin form submussion.
-			webform.userForm(dbconn, req.body)
+			webform.adminUserForm(dbconn, req.body)
 			.catch(error.FormValidation, function(e) {
 				req.body._csrf = req.csrfToken();
 				res.render('adminEditUser.swig', {
 					data: req.body, errors: e.invalidFields,
 					countries: countries.countries
 				});
-			}).done();
+			}).catch(next);
 		} else {
-			// User form submission.
-			webform.userForm(dbconn, req.body)
-			.catch(error.FormValidation, function(e) {
-				req.body._csrf = req.csrfToken();
-				res.render('editUser.swig', {
-					data: req.body, errors: e.invalidFields,
-					countries: countries.countries
-				});
-			}).done();
+			if (req.body.form === 'user') {
+				// User submitted "user" form
+				webform.userForm(dbconn, req.body.user)
+				.catch(error.FormValidation, function(e) {
+					// Fetch profile data again
+					return Promise.all([
+						dbconn.User.find({
+							where: {username: req.params.id.toLowerCase()},
+							include: [dbconn.Profile]
+						}), e]);
+				}).spread(function(user, e) {
+					req.body._csrf = req.csrfToken();
+					req.body.profile = user.profile;
+					res.render('editUser.swig', {
+						data: req.body, errors: {user: e.invalidFields},
+						countries: countries.countries
+					});
+				}).catch(next);
+			} else {
+				// User submitted "profile" form
+				webform.profileForm(dbconn, req.body.profile)
+				.catch(error.FormValidation, function(e) {
+					req.body._csrf = req.csrfToken();
+					res.render('editUser.swig', {
+						data: req.body, errors: {profile: e.invalidFields},
+						countries: countries.countries
+					});
+				}).catch(next);
+			}
 		}
 	});
 

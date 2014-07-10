@@ -81,20 +81,8 @@ function WebApp(config, logger) {
 
 		// Create the express app
 		self.app = express();
-		self.app.listenAsync = Promise.promisify(self.app.listen);
 
 		// Middleware
-		self.app.use(function(req, res, next) {
-			// Wrap every request in a domain, so any asynchronous
-			// errors are properly taken care of.
-			var appdomain = domain.create();
-
-			appdomain.on('error', next);
-			appdomain.add(req);
-			appdomain.add(res);
-
-			appdomain.run(next);
-		});
 		self.app.use(function(req, res, next) {
 			// Write pageviews with the logger instance
 			self.log.info(req.method + " " + req.originalUrl, {
@@ -170,24 +158,33 @@ function WebApp(config, logger) {
 					stack: err.stack
 				});
 			} else {
-				// An exception we didn't throw - must be our fault
+				// An exception we didn't throw on purpose.
 				res.statusCode = 500;
 				res.render('error.swig', {
 					status: res.statusCode,
 					message: err.message,
 					stack: err.stack
 				});
-				next(err);
+
+				// Log an error.
+				self.log.error(err.stack);
+
+				// Killing the webserver will kill the worker process.  Unexpected
+				// exceptions leave the server in an inconsistent state, so we must
+				// shut the server down or else we risk undefined behavior and memory
+				// leaks.
+				self.http.close();
 			}
 		});
-		self.app.use(function(err, req, res, next) {
-			// Log any error we come across to disk
-			self.log.warn(err.stack);
+
+		// Start listening for connections.
+		self.http = self.app.listen(config.web.port);
+
+		// If the webserver dies, restart the worker process.
+		self.http.on('close', function() {
+			process.exit(1);
 		});
 
-		// Start listening for connections
-		return self.app.listenAsync(config.web.port);
-	}).then(function() {
 		return self;
 	});
 }
@@ -206,7 +203,7 @@ WebApp.prototype.getLogin = function(req, res) {
 };
 
 // Process a login form
-WebApp.prototype.postLogin = function(req, res) {
+WebApp.prototype.postLogin = function(req, res, next) {
 	var self = this;
 
 	webform.loginForm(this.dbconn, req.body)
@@ -227,7 +224,7 @@ WebApp.prototype.postLogin = function(req, res) {
 		res.render('login.swig', {
 			data: req.body, errors: e.invalidFields
 		});
-	}).done();
+	}).catch(next);
 };
 
 WebApp.prototype.logout = function(req, res) {
@@ -246,7 +243,7 @@ WebApp.prototype.getRegister = function(req, res) {
 };
 
 // Process a registration form
-WebApp.prototype.postRegister = function(req, res) {
+WebApp.prototype.postRegister = function(req, res, next) {
 	var self = this;
 
 	webform.registerForm(
@@ -289,7 +286,7 @@ WebApp.prototype.postRegister = function(req, res) {
 			data: req.body, errors: e.invalidFields,
 			recaptcha_public_key: self.recaptcha ? self.recaptcha.publickey : null
 		});
-	}).done();
+	}).catch(next);
 };
 
 WebApp.prototype.registerVerify = function(req, res) {

@@ -2,7 +2,7 @@
 
 {% block body %}
 <h2>{{ profile.clantag }}{{ profile.username }}</h2>
-<img src="//www.gravatar.com/avatar/{{ user.getGravatar() }}">
+<img src="//www.gravatar.com/avatar/{{ user.getGravatar() }}" alt="{{ profile.username }}">
 <dl>
 	{% if profile.clan %}
 	<dt>Clan</dt>
@@ -10,7 +10,7 @@
 	{% endif %}
 	{% if profile.country %}
 	<dt>Country</dt>
-	<dd>{{ profile.country }}</dd>
+	<dd>{{ profile.getCountry() }}</dd>
 	{% endif %}
 	{% if profile.location %}
 	<dt>Location</dt>

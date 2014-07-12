@@ -21,6 +21,14 @@
 
 module.exports = function(grunt) {
 	grunt.initConfig({
+		copy: {
+			files: {
+				expand: true,
+				flatten: true,
+				src: 'node_modules/world-countries/data/*.svg',
+				dest: 'public/assets/svg'
+			}
+		},
 		less: {
 			files: {
 				expand: true,
@@ -32,5 +40,6 @@ module.exports = function(grunt) {
 		}
 	});
 
+	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-less');
 };

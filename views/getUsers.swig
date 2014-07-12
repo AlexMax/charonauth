@@ -6,19 +6,19 @@
 <table class="table">
 	<thead>
 		<tr>
-			<th>Gravatar</th>
-			<th>Clan</th>
-			<th>Username</th>
 			<th>Country</th>
+			<th>Gravatar</th>
+			<th>Username</th>
+			<th>Clan</th>
 			<th>Last Seen</th>
 	</thead>
 	<tbody>
 		{% for user in users %}
 		<tr>
-			<td><img src="//www.gravatar.com/avatar/{{ user.getGravatar() }}?d=identicon"></td>
-			<td>{{ user.profile.clan }}</td>
+			<td><img height="80" src="/assets/svg/{{ user.profile.getFlag() }}.svg" alt="{{ user.profile.getCountry() }}"></td>
+			<td><img src="//www.gravatar.com/avatar/{{ user.getGravatar() }}?d=identicon" alt="{{ user.profile.username }}"></td>
 			<td><a href="/users/{{ user.username }}">{{ user.profile.username }}</a></td>
-			<td>{{ user.profile.country }}</td>
+			<td>{{ user.profile.clan }}</td>
 			<td>{{ user.seen }}</td>
 		</tr>
 		{% endfor %}

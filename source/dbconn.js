@@ -26,6 +26,7 @@ var crypto = require('crypto');
 var Sequelize = require('sequelize');
 
 var Config = require('./config');
+var countries = require('./countries');
 var error = require('./error');
 var srp = require('../srp');
 
@@ -122,7 +123,25 @@ var DBConn = function(config) {
 			location: Sequelize.STRING,
 			message: Sequelize.STRING,
 			username: Sequelize.STRING
-		}, { timestamps: false });
+		}, {
+			timestamps: false,
+			instanceMethods: {
+				getCountry: function() {
+					if (_.isNull(this.country)) {
+						return null;
+					} else {
+						return countries.getData(this.country).name;
+					}
+				},
+				getFlag: function() {
+					if (_.isNull(this.country)) {
+						return 'no-country';
+					} else {
+						return countries.getData(this.country).cca3.toLowerCase();
+					}
+				}
+			}
+		});
 
 		self.User.hasMany(self.Session);
 		self.Session.belongsTo(self.User);

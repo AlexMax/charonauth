@@ -42,4 +42,14 @@ module.exports.isCountryCode = function(str) {
 	}
 }
 
+// Gets country data by cca2
+module.exports.getData = function(str) {
+	var code = str.toUpperCase();
+	if (code in cca2hash) {
+		return cca2hash[code];
+	} else {
+		return null;
+	}
+}
+
 module.exports.countries = countries;

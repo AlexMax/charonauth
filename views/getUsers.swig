@@ -1,3 +1,4 @@
+{% import './macros.swig' as macros %}
 {% extends 'layout.swig' %}
 
 {% block body %}
@@ -16,7 +17,7 @@
 		{% for user in users %}
 		<tr>
 			<td><img height="80" src="/assets/svg/{{ user.profile.getFlag() }}.svg" alt="{{ user.profile.getCountry() }}"></td>
-			<td><img src="//www.gravatar.com/avatar/{{ user.getGravatar() }}?d=identicon" alt="{{ user.profile.username }}"></td>
+			<td><img src="{{ macros.gravatar(user.getGravatar(), user.profile.gravatar, 'identicon') }}" alt="{{ user.profile.username }}"></td>
 			<td><a href="/users/{{ user.username }}">{{ user.profile.username }}</a></td>
 			<td>{{ user.profile.clan }}</td>
 			<td>{{ user.seen }}</td>

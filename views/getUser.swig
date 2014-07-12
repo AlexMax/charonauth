@@ -1,8 +1,9 @@
+{% import './macros.swig' as macros %}
 {% extends 'layout.swig' %}
 
 {% block body %}
 <h2>{{ profile.clantag }}{{ profile.username }}</h2>
-<img src="//www.gravatar.com/avatar/{{ user.getGravatar() }}" alt="{{ profile.username }}">
+<img src="{{ macros.gravatar(user.getGravatar(), profile.gravatar, 'identicon') }}" alt="{{ profile.username }}">
 <dl>
 	{% if profile.clan %}
 	<dt>Clan</dt>

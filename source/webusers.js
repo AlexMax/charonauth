@@ -107,7 +107,6 @@ module.exports = function(dbconn) {
 			include: [dbconn.Profile]
 		}).then(function(user) {
 			req.body._csrf = req.csrfToken();
-			req.body.user = user;
 			req.body.profile = user.profile;
 
 			// Admin has a different form than a user.
@@ -140,22 +139,39 @@ module.exports = function(dbconn) {
 		} else {
 			if (req.body.form === 'user') {
 				// User submitted "user" form
-				webform.userForm(dbconn, req.body.user)
-				.catch(error.FormValidation, function(e) {
-					// Fetch profile data again
-					return Promise.all([
-						dbconn.User.find({
-							where: {username: req.params.id.toLowerCase()},
-							include: [dbconn.Profile]
-						}), e]);
-				}).spread(function(user, e) {
+				webform.userForm(dbconn, req.body.user, req.session.user.username)
+				.then(function() {
+					// Fetch profile data again for displaying the form
+					return dbconn.User.find({
+						where: {username: req.params.id.toLowerCase()},
+						include: [dbconn.Profile]
+					});
+				}).then(function(user) {
+					// Remove user form data, since we don't need it anymore
+					delete req.body.user;
+
+					// Render the form
 					req.body._csrf = req.csrfToken();
 					req.body.profile = user.profile;
 					res.render('editUser.swig', {
-						data: req.body, errors: {user: e.invalidFields},
+						data: req.body, errors: {},
 						countries: countries.countries
 					});
-				}).catch(next);
+				}).catch(error.FormValidation, function(e) {
+					// Fetch profile data again
+					return dbconn.User.find({
+						where: {username: req.params.id.toLowerCase()},
+						include: [dbconn.Profile]
+					}).then(function(user) {
+						// Render the form
+						req.body._csrf = req.csrfToken();
+						req.body.profile = user.profile;
+						res.render('editUser.swig', {
+							data: req.body, errors: {user: e.invalidFields},
+							countries: countries.countries
+						});
+					}).catch(next);
+				});
 			} else {
 				// User submitted "profile" form
 				webform.profileForm(dbconn, req.body.profile)

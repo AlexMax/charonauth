@@ -156,9 +156,28 @@ module.exports.registerForm = function(dbconn, recaptcha, data, ip) {
 	});
 };
 
-module.exports.userForm = function(dbconn, data) {
+module.exports.userForm = function(dbconn, data, username) {
 	return new Promise(function(resolve, reject) {
+		var promises = [];
 		var errors = {};
+
+		// Validate current password
+		if (!("current_password" in data) || validator.isNull(data.current_password)) {
+			errors.current_password = "Current Password is required";
+		} else if (validator.isNull(username)) {
+			errors.current_password = "Current Password is missing session data";
+		} else {
+			promises.push(new Promise(function(resolve, reject) {
+				dbconn.verifyUser(username, data.current_password)
+				.then(function() {
+					resolve();
+				}).catch(function(e) {
+					errors.current_password = "Current Password is incorrect";
+					resolve();
+				});
+			}));
+		}
+
 
 		// Validate password, if set
 		if ("password" in data && !validator.isNull(data.password)) {
@@ -186,7 +205,35 @@ module.exports.userForm = function(dbconn, data) {
 			}
 		}
 
-		reject(new error.FormValidation("Form validation failed", errors));
+		// Validate E-Mail address, if set
+		if ("email" in data && !validator.isNull(data.email)) {
+			if (!validator.isEmail(data.email)) {
+				errors.email = "E-Mail must be valid";
+			} else {
+				promises.push(new Promise(function (resolve, reject) {
+					dbconn.User.find({ where: { email: data.email.toLowerCase() }})
+					.success(function(data) {
+						if (data) {
+							errors.email = "E-Mail is already associated with a user";
+						}
+						resolve();
+					});
+				}));
+			}
+		}
+
+		if (!_.isEmpty(promises)) {
+			Promise.all(promises).then(function() {
+				if (_.isEmpty(errors)) {
+					resolve();
+				} else {
+					reject(new error.FormValidation("Form validation failed", errors));
+				}
+			});
+		} else {
+			// We can't get to this point without at least one error.
+			reject(new error.FormValidation("Form validation failed", errors));
+		}
 	});
 };
 

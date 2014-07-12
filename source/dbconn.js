@@ -93,12 +93,23 @@ var DBConn = function(config) {
 			visible_auth: Sequelize.BOOLEAN
 		}, {
 			instanceMethods: {
+				// Returns true if the user is an operator, otherwise false
 				isOperator: function() {
 					return _.contains(['OWNER', 'MASTER', 'OP'], this.access);
 				},
+				// Get the gravatar hash of the user
 				getGravatar: function() {
 					var md5 = crypto.createHash('md5');
 					return md5.update(this.email.toLowerCase(), 'ascii').digest('hex');
+				},
+				// Set a password on an existing account
+				setPassword: function(password) {
+					var usernameBuffer = new Buffer(this.username.toLowerCase(), 'ascii');
+					var passwordBuffer = new Buffer(password, 'ascii');
+
+					var params = srp.params['2048'];
+					this.salt = crypto.randomBytes(4);
+					this.verifier = srp.computeVerifier(params, this.salt, usernameBuffer, passwordBuffer);
 				}
 			}
 		});

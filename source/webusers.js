@@ -144,7 +144,19 @@ module.exports = function(dbconn) {
 			} else if (req.body.form === 'user') {
 				// User submitted "user" form
 				webform.userForm(dbconn, req.body.user, user.username)
-				.then(function(user) {
+				.then(function() {
+					// If we have a new password, persist it
+					if ('password' in req.body.user && !_.isEmpty(req.body.user.password)) {
+						user.setPassword(req.body.user.password);
+					}
+
+					// If we have a new e-mail address, persist it
+					if ('email' in req.body.user && !_.isEmpty(req.body.user.email)) {
+						user.email = req.body.user.email;
+					}
+
+					return user.save();
+				}).then(function() {
 					// Remove user form data, since we don't need it anymore
 					delete req.body.user;
 
@@ -168,6 +180,19 @@ module.exports = function(dbconn) {
 				// User submitted "profile" form
 				webform.profileForm(dbconn, req.body.profile, user.username)
 				.then(function() {
+					// Persist all data
+					user.profile.updateAttributes({
+						gravatar: _.isEmpty(req.body.profile.gravatar) ? null : req.body.profile.gravatar,
+						username: req.body.profile.username,
+						clan: req.body.profile.clan,
+						clantag: req.body.profile.clantag,
+						country: req.body.profile.country,
+						location: req.body.profile.location,
+						contactinfo: req.body.profile.contactinfo,
+						message: req.body.profile.message
+					});
+					return user.profile.save();
+				}).then(function() {
 					// Render the page
 					req.body._csrf = req.csrfToken();
 					res.render('editUser.swig', {

@@ -60,6 +60,8 @@ module.exports.registerForm = function(dbconn, recaptcha, data, ip) {
 		// Validate Username
 		if (!("username" in data) || validator.isNull(data.username)) {
 			errors.username = "Username is required";
+		} else if (!validator.isLength(data.username, 2, 12)) {
+			errors.username = "Username must be between 2 and 12 characters";
 		} else if (!validator.isAlphanumeric(data.username)) {
 			errors.username = "Username must be Alphanumeric (A-Z, 0-9)";
 		} else {
@@ -77,10 +79,10 @@ module.exports.registerForm = function(dbconn, recaptcha, data, ip) {
 		// Validate Password
 		if (!("password" in data) || validator.isNull(data.password)) {
 			errors.password = "Password is required";
+		} else if (!validator.isLength(data.password, 8, 1000)) {
+			errors.password = "Password must be between 8 and 1,000 characters";
 		} else if (!validator.isAscii(data.password)) {
 			errors.password = "Password must be plain ASCII characters";
-		} else if (!validator.isLength(data.password, 8, 1024)) {
-			errors.password = "Password must be between 8 and 1,024 characters";
 		} else if (validator.matches(data.password, /^([A-Za-z ]+|[0-9 ]+)$/) && !validator.isLength(data.password, 20)) {
 			errors.password = "Password must contain more than just letters or just numbers, unless your password is more than 20 characters";
 		}
@@ -183,8 +185,8 @@ module.exports.userForm = function(dbconn, data, username) {
 		if ("password" in data && !validator.isNull(data.password)) {
 			if (!validator.isAscii(data.password)) {
 				errors.password = "Password must be plain ASCII characters";
-			} else if (!validator.isLength(data.password, 8, 1024)) {
-				errors.password = "Password must be between 8 and 1,024 characters";
+			} else if (!validator.isLength(data.password, 8, 1000)) {
+				errors.password = "Password must be between 8 and 1,000 characters";
 			} else if (validator.matches(data.password, /^([A-Za-z ]+|[0-9 ]+)$/) && !validator.isLength(data.password, 20)) {
 				errors.password = "Password must contain more than just letters or just numbers, unless your password is more than 20 characters";
 			}
@@ -237,39 +239,67 @@ module.exports.userForm = function(dbconn, data, username) {
 	});
 };
 
-module.exports.profileForm = function(dbconn, data) {
+module.exports.profileForm = function(dbconn, data, username) {
 	return new Promise(function(resolve, reject) {
 		var errors = {};
 
-		if (!validator.isLength(data.clan, 0, 100)) {
+		// All of the profile validations are optional, but the actual
+		// object properties must actually exist or else something else
+		// might break elsewhere.  This is only an issue if a malicious
+		// user attempts to mess with form submission.
+
+		if (!("clan" in data)) {
+			errors.clan = "Clan is required";
+		} else if (!validator.isLength(data.clan, 0, 100)) {
 			errors.clan = "Clan must be 100 characters or less";
 		}
 
-		if (!validator.isLength(data.clantag, 0, 6)) {
+		if (!("clantag" in data)) {
+			errors.clantag = "Clan tag is required";
+		} else if (!validator.isLength(data.clantag, 0, 6)) {
 			errors.clantag = "Clan tag must be 6 characters or less";
 		}
 
-		if (!validator.isLength(data.contactinfo, 0, 1000)) {
+		if (!("contactinfo" in data)) {
+			errors.contactinfo = "Contact Information is required";
+		} else if (!validator.isLength(data.contactinfo, 0, 1000)) {
 			errors.contactinfo = "Contact Information must be 1,000 characters or less";
 		}
 
-		if (!validator.isNull(data.country) && !countries.isCountryCode(data.country)) {
+		if (!("country" in data)) {
+			errors.country = "Country is required";
+		} else if (!validator.isNull(data.country) && !countries.isCountryCode(data.country)) {
 			errors.country = "Country must be valid selection";
 		}
 
-		if (!validator.isIn(data.gravatar, ['', 'identicon', 'monsterid', 'wavatar', 'retro'])) {
+		if (!("gravatar" in data)) {
+			errors.gravatar = "Gravatar is required";
+		} else if (!validator.isIn(data.gravatar, ['', 'identicon', 'monsterid', 'wavatar', 'retro'])) {
 			errors.gravatar = "Gravatar must be valid selection";
 		}
 
-		if (!validator.isLength(data.location, 0, 100)) {
+		if (!("location" in data)) {
+			errors.location = "Location is required";
+		} else if (!validator.isLength(data.location, 0, 100)) {
 			errors.location = "Location must be 100 characters or less";
 		}
 
-		if (!validator.isLength(data.message, 0, 1000)) {
+		if (!("message" in data)) {
+			errors.message = "Message is required";
+		} else if (!validator.isLength(data.message, 0, 1000)) {
 			errors.message = "Message must be 1,000 characters or less";
 		}
 
-		// TODO: Check to see if the username is simply mixed-case
-		reject(new error.FormValidation("Form validation failed", errors));
+		if (!("username" in data)) {
+			errors.username = "Username is required";
+		} else if (!validator.equals(username, data.username.toLowerCase())) {
+			errors.username = "You may only change the letter case of your username";
+		}
+
+		if (_.isEmpty(errors)) {
+			resolve();
+		} else {
+			reject(new error.FormValidation("Form validation failed", errors));
+		}
 	});
 };

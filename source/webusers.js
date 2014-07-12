@@ -126,31 +126,29 @@ module.exports = function(dbconn) {
 
 	// Process an edit user submission.
 	routes.post('/:id/edit', function(req, res, next) {
-		if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-			// Admin form submussion.
-			webform.adminUserForm(dbconn, req.body)
-			.catch(error.FormValidation, function(e) {
-				req.body._csrf = req.csrfToken();
-				res.render('adminEditUser.swig', {
-					data: req.body, errors: e.invalidFields,
-					countries: countries.countries
-				});
-			}).catch(next);
-		} else {
-			if (req.body.form === 'user') {
-				// User submitted "user" form
-				webform.userForm(dbconn, req.body.user, req.session.user.username)
-				.then(function() {
-					// Fetch profile data again for displaying the form
-					return dbconn.User.find({
-						where: {username: req.params.id.toLowerCase()},
-						include: [dbconn.Profile]
+		// For all code paths we use, we need the user and their profile
+		dbconn.User.find({
+			where: {username: req.params.id.toLowerCase()},
+			include: [dbconn.Profile]
+		}).then(function(user) {
+			if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
+				// Admin submitted form
+				webform.adminUserForm(dbconn, req.body)
+				.catch(error.FormValidation, function(e) {
+					req.body._csrf = req.csrfToken();
+					res.render('adminEditUser.swig', {
+						data: req.body, errors: e.invalidFields,
+						countries: countries.countries
 					});
-				}).then(function(user) {
+				}).catch(next);
+			} else if (req.body.form === 'user') {
+				// User submitted "user" form
+				webform.userForm(dbconn, req.body.user, user.username)
+				.then(function(user) {
 					// Remove user form data, since we don't need it anymore
 					delete req.body.user;
 
-					// Render the form
+					// Render the page
 					req.body._csrf = req.csrfToken();
 					req.body.profile = user.profile;
 					res.render('editUser.swig', {
@@ -158,24 +156,26 @@ module.exports = function(dbconn) {
 						countries: countries.countries
 					});
 				}).catch(error.FormValidation, function(e) {
-					// Fetch profile data again
-					return dbconn.User.find({
-						where: {username: req.params.id.toLowerCase()},
-						include: [dbconn.Profile]
-					}).then(function(user) {
-						// Render the form
-						req.body._csrf = req.csrfToken();
-						req.body.profile = user.profile;
-						res.render('editUser.swig', {
-							data: req.body, errors: {user: e.invalidFields},
-							countries: countries.countries
-						});
-					}).catch(next);
-				});
+					// Render the page with errors
+					req.body._csrf = req.csrfToken();
+					req.body.profile = user.profile;
+					res.render('editUser.swig', {
+						data: req.body, errors: {user: e.invalidFields},
+						countries: countries.countries
+					});
+				}).catch(next);
 			} else {
 				// User submitted "profile" form
-				webform.profileForm(dbconn, req.body.profile)
-				.catch(error.FormValidation, function(e) {
+				webform.profileForm(dbconn, req.body.profile, user.username)
+				.then(function() {
+					// Render the page
+					req.body._csrf = req.csrfToken();
+					res.render('editUser.swig', {
+						data: req.body, errors: {},
+						countries: countries.countries
+					});
+				}).catch(error.FormValidation, function(e) {
+					// Render the page with errors
 					req.body._csrf = req.csrfToken();
 					res.render('editUser.swig', {
 						data: req.body, errors: {profile: e.invalidFields},
@@ -183,7 +183,7 @@ module.exports = function(dbconn) {
 					});
 				}).catch(next);
 			}
-		}
+		});
 	});
 
 	return routes;

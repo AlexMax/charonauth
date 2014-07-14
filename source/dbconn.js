@@ -65,13 +65,6 @@ var DBConn = function(config) {
 	}).then(function() {
 		return self.db.authenticate();
 	}).then(function() {
-		// Session is used for authentication sessions
-		self.Session = self.db.define('Session', {
-			session: Sequelize.INTEGER,
-			ephemeral: Sequelize.BLOB,
-			secret: Sequelize.BLOB
-		});
-
 		// User is used for user information vital for a functioning user
 		self.User = self.db.define('User', {
 			username: Sequelize.STRING,
@@ -114,15 +107,45 @@ var DBConn = function(config) {
 			}
 		});
 
+		// Session is used for authentication sessions
+		self.Session = self.db.define('Session', {
+			session: Sequelize.INTEGER,
+			ephemeral: Sequelize.BLOB,
+			secret: Sequelize.BLOB
+		});
+
+		self.User.hasMany(self.Session);
+		self.Session.belongsTo(self.User);
+
 		// Verify is used to store user verification attempts
 		self.Verify = self.db.define('Verify', {
 			token: Sequelize.STRING
 		});
 
+		self.User.hasOne(self.Verify);
+		self.Verify.belongsTo(self.User);
+
 		// Reset is used to store password reset attempts
 		self.Reset = self.db.define('Reset', {
 			token: Sequelize.STRING
 		});
+
+		self.User.hasOne(self.Reset);
+		self.Reset.belongsTo(self.User);
+
+		// Action is used to store actions of every user in the system
+		self.Action = self.db.define('Action', {
+			type: Sequelize.ENUM('auth', 'login', 'logout', 'edit', 'create'),
+			ip: Sequelize.BLOB,
+			before: Sequelize.STRING,
+			after: Sequelize.STRING
+		}, {
+			updatedAt: false
+		});
+
+		self.User.hasMany(self.Action);
+		self.User.hasMany(self.Action, {as: 'Whom', foreignKey: 'WhomId'});
+		self.Action.belongsTo(self.User);
 
 		// Profile is used for incidental user information.
 		self.Profile = self.db.define('Profile', {
@@ -135,7 +158,6 @@ var DBConn = function(config) {
 			message: Sequelize.STRING,
 			username: Sequelize.STRING
 		}, {
-			timestamps: false,
 			instanceMethods: {
 				getCountry: function() {
 					if (_.isNull(this.country)) {
@@ -153,12 +175,6 @@ var DBConn = function(config) {
 				}
 			}
 		});
-
-		self.User.hasMany(self.Session);
-		self.Session.belongsTo(self.User);
-
-		self.User.hasOne(self.Verify);
-		self.Verify.belongsTo(self.User);
 
 		self.User.hasOne(self.Profile);
 		self.Profile.belongsTo(self.User);

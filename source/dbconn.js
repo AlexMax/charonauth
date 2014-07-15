@@ -160,16 +160,16 @@ var DBConn = function(config) {
 		}, {
 			instanceMethods: {
 				getCountry: function() {
-					if (_.isNull(this.country)) {
+					if (_.isNull(this.country) || _.isEmpty(this.country)) {
 						return null;
 					} else {
 						return countries.getData(this.country).name;
 					}
 				},
 				getFlag: function() {
-					if (_.isNull(this.country)) {
+					if (_.isNull(this.country) || _.isEmpty(this.country)) {
 						return 'no-country';
-					} else {
+					} else if (countries.getData(this.country)) {
 						return countries.getData(this.country).cca3.toLowerCase();
 					}
 				}

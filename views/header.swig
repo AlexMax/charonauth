@@ -3,8 +3,6 @@
 		<ul class="nav navbar-nav">
 			<li><a href="/">Home</a></li>
 			<li><a href="/users">Users</a></li>
-			<li><a href="/events">Events</a></li>
-			<li><a href="/settings">Settings</a></li>
 		</ul>
 		{% if session.user.id %}
 		<ul class="nav navbar-nav navbar-right">

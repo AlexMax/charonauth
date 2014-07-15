@@ -3,3 +3,27 @@
  # reflect the user's desired gravatar style.
  #}
 {% macro gravatar(hash, override, def) %}//www.gravatar.com/avatar/{% if override %}{{ hash }}?d={{ override }}&f=y{% else %}{{ hash }}?d={{ def }}{% endif %}{% endmacro %}
+
+{#
+ # Display a tab navigation for the user page
+ #}
+{% macro usernav(username, tab) %}
+{% if username == session.user.username or session.user.is_operator %}
+<ul class="nav nav-tabs" role="tablist">
+	<li class="{% if tab == 'view' %}active{% endif %}">
+		<a href="/users/{{ username }}">View Profile</a>
+	</li>
+	<li class="{% if tab == 'edit' %}active{% endif %}">
+		<a href="/users/{{ username }}/edit">Edit Profile</a>
+	</li>
+	<li class="{% if tab == 'settings' %}active{% endif %}">
+		<a href="/users/{{ username }}/settings">Settings</a>
+	</li>
+	{% if session.user.is_operator %}
+	<li class="{% if tab == 'actions' %}active{% endif %}">
+		<a href="/users/{{ username }}/actions">Actions</a>
+	</li>
+	{% endif %}
+</ul>
+{% endif %}
+{% endmacro %}

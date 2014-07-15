@@ -36,8 +36,10 @@ module.exports = function(dbconn) {
 	// Get a list of all users.
 	routes.get('/', function(req, res, next) {
 		dbconn.User.findAll({
-			where: {active: true, visible_profile: true},
-			include: [dbconn.Profile]
+			where: {active: true},
+			include: [
+				{model: dbconn.Profile, where: {visible: true}}
+			]
 		}).then(function(users) {
 			res.render('getUsers.swig', {
 				users: users
@@ -48,7 +50,8 @@ module.exports = function(dbconn) {
 	// Get information on a specific user.
 	routes.get('/:id', function(req, res, next) {
 		dbconn.User.find({
-			where: {username: req.params.id.toLowerCase()}
+			where: {username: req.params.id.toLowerCase()},
+			include: [dbconn.Profile]
 		}).then(function(user) {
 			if (_.isNull(user)) {
 				throw new error.NotFound('User not found');
@@ -56,7 +59,7 @@ module.exports = function(dbconn) {
 
 			// Profile visibility is affected by two factors, if the profile is
 			// active and if it is set to be visible.
-			if (user.active === false || user.visible_profile === false) {
+			if (user.active === false || user.profile.visible === false) {
 				if (!("user" in req.session)) {
 					throw new error.Forbidden('Can not view profile as anonymous user');
 				} else if (user.id === req.session.user.id && user.active === false) {
@@ -66,12 +69,8 @@ module.exports = function(dbconn) {
 				}
 			}
 
-			// User is allowed to see the profile, so obtain the profile.
-			return Promise.all([user, user.getProfile()]);
-		}).spread(function(user, profile) {
 			res.render('getUser.swig', {
-				user: user,
-				profile: profile
+				user: user
 			});
 		}).catch(next);
 	});
@@ -100,7 +99,7 @@ module.exports = function(dbconn) {
 		}).catch(next);
 	});
 
-	// Edit a specific user.
+	// Edit a user's profile
 	routes.get('/:id/edit', function(req, res, next) {
 		dbconn.User.find({
 			where: {username: req.params.id.toLowerCase()},
@@ -109,106 +108,110 @@ module.exports = function(dbconn) {
 			req.body._csrf = req.csrfToken();
 			req.body.profile = user.profile;
 
-			// Admin has a different form than a user.
-			if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-				res.render('adminEditUser.swig', {
-					data: req.body, errors: {},
-					countries: countries.countries
-				});
-			} else {
-				res.render('editUser.swig', {
-					data: req.body, errors: {},
-					countries: countries.countries
-				});
-			}
+			res.render('editUser.swig', {
+				data: req.body, user: user, errors: {},
+				countries: countries.countries
+			});
 		}).catch(next);
 	});
 
-	// Process an edit user submission.
+	// Process a profile edit submission
 	routes.post('/:id/edit', function(req, res, next) {
-		// For all code paths we use, we need the user and their profile
 		dbconn.User.find({
 			where: {username: req.params.id.toLowerCase()},
 			include: [dbconn.Profile]
 		}).then(function(user) {
-			if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-				// Admin submitted form
-				webform.adminUserForm(dbconn, req.body)
-				.catch(error.FormValidation, function(e) {
-					req.body._csrf = req.csrfToken();
-					res.render('adminEditUser.swig', {
-						data: req.body, errors: e.invalidFields,
-						countries: countries.countries
-					});
-				}).catch(next);
-			} else if (req.body.form === 'user') {
-				// User submitted "user" form
-				webform.userForm(dbconn, req.body.user, user.username)
-				.then(function() {
-					// If we have a new password, persist it
-					if ('password' in req.body.user && !_.isEmpty(req.body.user.password)) {
-						user.setPassword(req.body.user.password);
-					}
+			// User submitted "profile" form
+			return webform.profileForm(dbconn, req.body.profile, user.username)
+			.then(function() {
+				// Persist all profile data
+				user.profile.updateAttributes({
+					visible: "visible" in req.body.profile ? true : false,
+					visible_lastseen: "visible_lastseen" in req.body.profile ? true : false,
+					gravatar: _.isEmpty(req.body.profile.gravatar) ? null : req.body.profile.gravatar,
+					username: req.body.profile.username,
+					clan: req.body.profile.clan,
+					clantag: req.body.profile.clantag,
+					country: req.body.profile.country,
+					location: req.body.profile.location,
+					contactinfo: req.body.profile.contactinfo,
+					message: req.body.profile.message
+				});
+				return user.profile.save();
+			}).then(function(profile) {
+				// Render the page
+				req.body._csrf = req.csrfToken();
+				res.render('editUser.swig', {
+					data: req.body, user: user, errors: {},
+					countries: countries.countries
+				});
+			}).catch(error.FormValidation, function(e) {
+				// Render the page with errors
+				req.body._csrf = req.csrfToken();
+				res.render('editUser.swig', {
+					data: req.body, user: user,
+					errors: {profile: e.invalidFields},
+					countries: countries.countries
+				});
+			});
+		}).catch(next);
+	});
 
-					// If we have a new e-mail address, persist it
-					if ('email' in req.body.user && !_.isEmpty(req.body.user.email)) {
-						user.email = req.body.user.email;
-					}
+	// Edit a user's settings
+	routes.get('/:id/settings', function(req, res, next) {
+		dbconn.User.find({
+			where: {username: req.params.id.toLowerCase()}
+		}).then(function(user) {
+			req.body._csrf = req.csrfToken();
+			res.render('editSettings.swig', {
+				data: req.body, user: user, errors: {},
+				countries: countries.countries
+			});
+		}).catch(next);
+	});
 
-					return user.save();
-				}).then(function() {
-					// Remove user form data, since we don't need it anymore
-					delete req.body.user;
+	// Process a user settings submission
+	routes.post('/:id/settings', function(req, res, next) {
+		dbconn.User.find({
+			where: {username: req.params.id.toLowerCase()},
+			include: [dbconn.Profile]
+		}).then(function(user) {
+			// User submitted "user" form
+			return webform.userForm(dbconn, req.body.user, user.username)
+			.then(function() {
+				// If we have a new password, persist it
+				if ('password' in req.body.user && !_.isEmpty(req.body.user.password)) {
+					user.setPassword(req.body.user.password);
+				}
 
-					// Render the page
-					req.body._csrf = req.csrfToken();
-					req.body.profile = user.profile;
-					res.render('editUser.swig', {
-						data: req.body, errors: {},
-						countries: countries.countries
-					});
-				}).catch(error.FormValidation, function(e) {
-					// Render the page with errors
-					req.body._csrf = req.csrfToken();
-					req.body.profile = user.profile;
-					res.render('editUser.swig', {
-						data: req.body, errors: {user: e.invalidFields},
-						countries: countries.countries
-					});
-				}).catch(next);
-			} else {
-				// User submitted "profile" form
-				webform.profileForm(dbconn, req.body.profile, user.username)
-				.then(function() {
-					// Persist all data
-					user.profile.updateAttributes({
-						gravatar: _.isEmpty(req.body.profile.gravatar) ? null : req.body.profile.gravatar,
-						username: req.body.profile.username,
-						clan: req.body.profile.clan,
-						clantag: req.body.profile.clantag,
-						country: req.body.profile.country,
-						location: req.body.profile.location,
-						contactinfo: req.body.profile.contactinfo,
-						message: req.body.profile.message
-					});
-					return user.profile.save();
-				}).then(function() {
-					// Render the page
-					req.body._csrf = req.csrfToken();
-					res.render('editUser.swig', {
-						data: req.body, errors: {},
-						countries: countries.countries
-					});
-				}).catch(error.FormValidation, function(e) {
-					// Render the page with errors
-					req.body._csrf = req.csrfToken();
-					res.render('editUser.swig', {
-						data: req.body, errors: {profile: e.invalidFields},
-						countries: countries.countries
-					});
-				}).catch(next);
-			}
-		});
+				// If we have a new e-mail address, persist it
+				if ('email' in req.body.user && !_.isEmpty(req.body.user.email)) {
+					user.email = req.body.user.email;
+				}
+
+				return user.save();
+			}).then(function() {
+				// Remove user form data, since we don't need it anymore
+				delete req.body.user;
+
+				// Render the page
+				req.body._csrf = req.csrfToken();
+				req.body.profile = user.profile;
+				res.render('editSettings.swig', {
+					data: req.body, user: user, errors: {},
+					countries: countries.countries
+				});
+			}).catch(error.FormValidation, function(e) {
+				// Render the page with errors
+				req.body._csrf = req.csrfToken();
+				req.body.profile = user.profile;
+				res.render('editSettings.swig', {
+					data: req.body, user: user,
+					errors: {user: e.invalidFields},
+					countries: countries.countries
+				});
+			});
+		}).catch(next);
 	});
 
 	return routes;

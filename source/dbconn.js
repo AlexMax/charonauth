@@ -78,12 +78,7 @@ var DBConn = function(config) {
 			access: Sequelize.ENUM('OWNER', 'MASTER', 'OP', 'USER', 'UNVERIFIED'),
 			// A setting that an administrator can set that governs if a user
 			// shows up on the site and can log in or not.
-			active: Sequelize.BOOLEAN,
-			// A setting that a user can set that governs if their profile is visible.
-			visible_profile: Sequelize.BOOLEAN,
-			// A setting that a user can set that governs if their authentications
-			// should be publicly visible or not.
-			visible_auth: Sequelize.BOOLEAN
+			active: Sequelize.BOOLEAN
 		}, {
 			instanceMethods: {
 				// Returns true if the user is an operator, otherwise false
@@ -156,7 +151,12 @@ var DBConn = function(config) {
 			gravatar: Sequelize.ENUM(null, 'identicon', 'monsterid', 'wavatar', 'retro'),
 			location: Sequelize.STRING,
 			message: Sequelize.STRING,
-			username: Sequelize.STRING
+			username: Sequelize.STRING,
+			// A setting that a user can set that governs if their profile is visible.
+			visible: {type: Sequelize.BOOLEAN, defaultValue: true},
+			// A setting that a user can set that governs if their authentications
+			// should be publicly visible or not.
+			visible_lastseen: {type: Sequelize.BOOLEAN, defaultValue: true}
 		}, {
 			instanceMethods: {
 				getCountry: function() {
@@ -202,9 +202,7 @@ DBConn.prototype.addUser = function(username, password, email, access) {
 			email: email,
 			access: access || 'UNVERIFIED',
 			// New user is only active if they're not unverified
-			active: ((access || 'UNVERIFIED') === 'UNVERIFIED') ? false : true,
-			visible_profile: true,
-			visible_auth: true
+			active: ((access || 'UNVERIFIED') === 'UNVERIFIED') ? false : true
 		}),
 		this.Profile.create({
 			username: username

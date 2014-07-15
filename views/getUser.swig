@@ -2,31 +2,29 @@
 {% extends 'layout.swig' %}
 
 {% block body %}
-<h2>{{ profile.clantag }}{{ profile.username }}</h2>
-<img src="{{ macros.gravatar(user.getGravatar(), profile.gravatar, 'identicon') }}" alt="{{ profile.username }}">
+{{ macros.usernav(user.username, 'view') }}
+<h2>{{ user.profile.clantag }}{{ user.profile.username }}</h2>
+<img src="{{ macros.gravatar(user.getGravatar(), user.profile.gravatar, 'identicon') }}" alt="{{ user.profile.username }}">
 <dl>
-	{% if profile.clan %}
+	{% if user.profile.clan %}
 	<dt>Clan</dt>
-	<dd>{{ profile.clan }}</dd>
+	<dd>{{ user.profile.clan }}</dd>
 	{% endif %}
-	{% if profile.country %}
+	{% if user.profile.country %}
 	<dt>Country</dt>
-	<dd>{{ profile.getCountry() }}</dd>
+	<dd>{{ user.profile.getCountry() }}</dd>
 	{% endif %}
-	{% if profile.location %}
+	{% if user.profile.location %}
 	<dt>Location</dt>
-	<dd>{{ profile.location }}</dd>
+	<dd>{{ user.profile.location }}</dd>
 	{% endif %}
-	{% if profile.contactinfo %}
+	{% if user.profile.contactinfo %}
 	<dt>Contact Info</dt>
-	<dd>{{ profile.contactinfo }}</dd>
+	<dd>{{ user.profile.contactinfo }}</dd>
 	{% endif %}
-	{% if profile.message %}
+	{% if user.profile.message %}
 	<dt>Message</dt>
-	<dd>{{ profile.message }}</dd>
+	<dd>{{ user.profile.message }}</dd>
 	{% endif %}
 </dl>
-{% if user.isOperator() or user.id === session.user.id %}
-<a class="btn btn-primary" href="/users/{{ user.username }}/edit">Edit Profile</a>
-{% endif %}
 {% endblock %}

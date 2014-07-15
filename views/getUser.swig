@@ -3,28 +3,42 @@
 
 {% block body %}
 {{ macros.usernav(user.username, 'view') }}
-<h2>{{ user.profile.clantag }}{{ user.profile.username }}</h2>
-<img src="{{ macros.gravatar(user.getGravatar(), user.profile.gravatar, 'identicon') }}" alt="{{ user.profile.username }}">
-<dl>
-	{% if user.profile.clan %}
-	<dt>Clan</dt>
-	<dd>{{ user.profile.clan }}</dd>
-	{% endif %}
-	{% if user.profile.country %}
-	<dt>Country</dt>
-	<dd>{{ user.profile.getCountry() }}</dd>
-	{% endif %}
-	{% if user.profile.location %}
-	<dt>Location</dt>
-	<dd>{{ user.profile.location }}</dd>
-	{% endif %}
-	{% if user.profile.contactinfo %}
-	<dt>Contact Info</dt>
-	<dd>{{ user.profile.contactinfo }}</dd>
-	{% endif %}
-	{% if user.profile.message %}
-	<dt>Message</dt>
-	<dd>{{ user.profile.message }}</dd>
-	{% endif %}
-</dl>
+<h1>
+	{{ user.profile.clantag }}{{ user.profile.username }}
+</h1>
+<div class="row">
+	<div class="col-md-2">
+		<img style="width:100%;max-width:150px" src="{{ macros.gravatar(user.getGravatar(), user.profile.gravatar, 'identicon') }}" alt="{{ user.profile.username }}">
+		<dl>
+			{% if user.profile.clan %}
+			<dt>Clan</dt>
+			<dd>{{ user.profile.clan }}</dd>
+			{% endif %}
+			{% if user.profile.country %}
+			<dt>Country</dt>
+			<dd>
+			{{ user.profile.getCountry() }}
+			</dd>
+			{% endif %}
+			{% if user.profile.location %}
+			<dt>Location</dt>
+			<dd>{{ user.profile.location }}</dd>
+			{% endif %}
+		</dl>
+	</div>
+	<div class="col-md-10">
+		{% if user.profile.message or user.profile.contactinfo %}
+		{% if user.profile.message %}
+		<h4>Message</h4>
+		<p>{{ user.profile.message }}</p>
+		{% endif %}
+		{% if user.profile.contactinfo %}
+		<h4>Contact Info</h4>
+		<p>{{ user.profile.contactinfo }}</p>
+		{% endif %}
+		{% else %}
+		<p>User has no Message or Contact Info</p>
+		{% endif %}
+	</div>
+</div>
 {% endblock %}

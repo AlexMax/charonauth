@@ -25,6 +25,7 @@ var _ = require('lodash');
 var domain = require('domain');
 var express = require('express');
 
+var access = require('./access');
 var countries = require('./countries');
 var error = require('./error');
 var webform = require('./webform');
@@ -57,26 +58,28 @@ module.exports = function(dbconn) {
 				throw new error.NotFound('User not found');
 			}
 
-			// Profile visibility is affected by two factors, if the profile is
-			// active and if it is set to be visible.
+			// Check for profile visibility
 			if (user.active === false || user.profile.visible === false) {
 				if (!("user" in req.session)) {
 					throw new error.Forbidden('Can not view profile as anonymous user');
-				} else if (user.id === req.session.user.id && user.active === false) {
-					throw new error.Forbidden('Can not view profile as your account is not active');
-				} else if (user.id !== req.session.user.id && _.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-					throw new error.Forbidden('Can not view profile with given access');
+				} else if (user.active === false &&
+				           !access.canViewUserInactive(req.session.user.access, user.access)) {
+					throw new error.Forbidden('Can not view inactive profile with given access');
+				} else if (user.profile.visible === false && req.session.user.id !== user.id &&
+				           !access.canViewUserInvisible(req.session.user.access, user.access)) {
+					throw new error.Forbidden('Can not view invisible profile with given access');
 				}
 			}
 
 			res.render('getUser.swig', {
+				can_administer: access.canAdministerUser(req.session.user.access, user.access),
 				user: user
 			});
 		}).catch(next);
 	});
 
-	// Govern access to the user edit page.
-	routes.use('/:id/edit', function(req, res, next) {
+	// Govern access to the user modification and action log pages.
+	routes.use('/:id/:verb(edit|settings|actions)', function(req, res, next) {
 		dbconn.User.find({
 			where: {username: req.params.id.toLowerCase()}
 		}).then(function(user) {
@@ -86,10 +89,10 @@ module.exports = function(dbconn) {
 
 			if (!("user" in req.session)) {
 				throw new error.Forbidden('Can not edit profile as anonymous user');
-			} else if (_.contains(['OWNER', 'MASTER', 'OP'], req.session.user.access)) {
-				// Operators can always edit profiles.
+			} else if (access.canAdministerUser(req.session.user.access, user.access)) {
+				// Operators might be able to administer a user.
 			} else if (user.id === req.session.user.id) {
-				// Users can always edit the own profiles.
+				// Users can always administer themselves.
 			} else {
 				throw new error.Forbidden('Can not edit profile as current user');
 			}
@@ -139,10 +142,15 @@ module.exports = function(dbconn) {
 				});
 				return user.profile.save();
 			}).then(function(profile) {
+				// If we're modifying our own data, update the session
+				if (user.id === req.session.user.id) {
+					req.session.user.profile_username = user.profile.username;
+				}
+
 				// Render the page
 				req.body._csrf = req.csrfToken();
 				res.render('editUser.swig', {
-					data: req.body, user: user, errors: {},
+					data: req.body, user: user, success: true, errors: {},
 					countries: countries.countries
 				});
 			}).catch(error.FormValidation, function(e) {
@@ -160,13 +168,28 @@ module.exports = function(dbconn) {
 	// Edit a user's settings
 	routes.get('/:id/settings', function(req, res, next) {
 		dbconn.User.find({
-			where: {username: req.params.id.toLowerCase()}
+			where: {username: req.params.id.toLowerCase()},
+			include: [dbconn.Profile]
 		}).then(function(user) {
-			req.body._csrf = req.csrfToken();
-			res.render('editSettings.swig', {
-				data: req.body, user: user, errors: {},
-				countries: countries.countries
-			});
+			if (access.canAdministerUser(req.session.user.access, user.access)) {
+				req.body._csrf = req.csrfToken();
+				req.body.user = {
+					active: user.active,
+					username: user.profile.username,
+					email: user.email,
+					access: user.access
+				};
+
+				res.render('editSettingsAdmin.swig', {
+					data: req.body, user: user, errors: {},
+					accesses: access.validLevelSet(req.session.user.access, user.access)
+				});
+			} else {
+				req.body._csrf = req.csrfToken();
+				res.render('editSettings.swig', {
+					data: req.body, user: user, errors: {}
+				});
+			}
 		}).catch(next);
 	});
 
@@ -176,41 +199,98 @@ module.exports = function(dbconn) {
 			where: {username: req.params.id.toLowerCase()},
 			include: [dbconn.Profile]
 		}).then(function(user) {
-			// User submitted "user" form
-			return webform.userForm(dbconn, req.body.user, user.username)
-			.then(function() {
-				// If we have a new password, persist it
-				if ('password' in req.body.user && !_.isEmpty(req.body.user.password)) {
-					user.setPassword(req.body.user.password);
-				}
+			if (access.canAdministerUser(req.session.user.access, user.access)) {
+				// User submitted admin "user" form
+				return webform.userAdminForm(dbconn, req.body.user, user.username, user.email, req.session.user.access, user.access)
+				.then(function() {
+					// If we have a new password, persist it
+					if ('password' in req.body.user && !_.isEmpty(req.body.user.password)) {
+						user.setPassword(req.body.user.password);
+					}
 
-				// If we have a new e-mail address, persist it
-				if ('email' in req.body.user && !_.isEmpty(req.body.user.email)) {
-					user.email = req.body.user.email;
-				}
+					// Persist all of our other settings
+					user.updateAttributes({
+						active: "active" in req.body.user ? true : false,
+						username: req.body.user.username.toLowerCase(),
+						email: req.body.user.email,
+						access: req.body.user.access
+					});
 
-				return user.save();
-			}).then(function() {
-				// Remove user form data, since we don't need it anymore
-				delete req.body.user;
+					return user.save();
+				}).then(function() {
+					// Grab the profile so we can save the new cased username
+					return user.getProfile();
+				}).then(function(profile) {
+					// Persist the new cased username
+					profile.username = req.body.user.username;
+					return profile.save();
+				}).then(function(profile) {
+					// Delete the password, since we don't need it anymore.
+					delete req.body.user.password;
 
-				// Render the page
-				req.body._csrf = req.csrfToken();
-				req.body.profile = user.profile;
-				res.render('editSettings.swig', {
-					data: req.body, user: user, errors: {},
-					countries: countries.countries
+					// If we're modifying our own data, update the session
+					if (user.id === req.session.user.id) {
+						req.session.user.username = user.username;
+						req.session.user.profile_username = profile.username;
+						req.session.user.gravatar = user.getGravatar();
+						req.session.user.access = user.access;
+					}
+
+					// Render the page
+					req.body._csrf = req.csrfToken();
+					res.render('editSettingsAdmin.swig', {
+						data: req.body, user: user, success: true, errors: {},
+						accesses: access.validLevelSet(req.session.user.access, user.access)
+					});
+				}).catch(error.FormValidation, function(e) {
+					// Render the page with errors
+					req.body._csrf = req.csrfToken();
+					res.render('editSettingsAdmin.swig', {
+						data: req.body, user: user,
+						errors: {user: e.invalidFields},
+						accesses: access.validLevelSet(req.session.user.access, user.access)
+					});
 				});
-			}).catch(error.FormValidation, function(e) {
-				// Render the page with errors
-				req.body._csrf = req.csrfToken();
-				req.body.profile = user.profile;
-				res.render('editSettings.swig', {
-					data: req.body, user: user,
-					errors: {user: e.invalidFields},
-					countries: countries.countries
+			} else {
+				// User submitted "user" form
+				return webform.userForm(dbconn, req.body.user, user.username)
+				.then(function() {
+					// If we have a new password, persist it
+					if ('password' in req.body.user && !_.isEmpty(req.body.user.password)) {
+						user.setPassword(req.body.user.password);
+					}
+
+					// If we have a new e-mail address, persist it
+					if ('email' in req.body.user && !_.isEmpty(req.body.user.email)) {
+						user.email = req.body.user.email;
+					}
+
+					return user.save();
+				}).then(function() {
+					// Remove user form data, since we don't need it anymore
+					delete req.body.user;
+
+					// If we're modifying our own data, update the session
+					if (user.id === req.session.user.id) {
+						req.session.user.gravatar = user.getGravatar();
+					}
+
+					// Render the page
+					req.body._csrf = req.csrfToken();
+					req.body.profile = user.profile;
+					res.render('editSettings.swig', {
+						data: req.body, user: user, success: true, errors: {}
+					});
+				}).catch(error.FormValidation, function(e) {
+					// Render the page with errors
+					req.body._csrf = req.csrfToken();
+					req.body.profile = user.profile;
+					res.render('editSettings.swig', {
+						data: req.body, user: user,
+						errors: {user: e.invalidFields}
+					});
 				});
-			});
+			}
 		}).catch(next);
 	});
 

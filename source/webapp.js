@@ -215,8 +215,7 @@ WebApp.prototype.postLogin = function(req, res, next) {
 			username: user.username,
 			profile_username: profile.username,
 			gravatar: user.getGravatar(),
-			access: user.access,
-			is_operator: user.isOperator()
+			access: user.access
 		};
 
 		res.redirect('/');
@@ -275,8 +274,7 @@ WebApp.prototype.postRegister = function(req, res, next) {
 					username: user.username,
 					profile_username: profile.username,
 					gravatar: user.getGravatar(),
-					access: user.access,
-					is_operator: user.isOperator()
+					access: user.access
 				};
 
 				res.render('registerSuccess.swig');

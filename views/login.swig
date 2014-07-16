@@ -1,13 +1,12 @@
+{% import './macros.swig' as macros %}
 {% extends 'layout.swig' %}
 
 {% block body %}
+{% if errors.form %}
+{{ macros.alert('danger', 'Login failed') }}
+{% endif %}
 <h2>Login</h2>
 <form method="post" role="form">
-	{% if errors.form %}
-	<p class="bg-danger">
-		{{ errors.form }}
-	</p>
-	{% endif %}
 	<fieldset>
 		<input type="hidden" name="_csrf" value="{{ data._csrf }}">
 		<div class="form-group {% if errors.login %}has-error{% endif %}">

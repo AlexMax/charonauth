@@ -25,6 +25,7 @@ var _ = require('lodash');
 var Sequelize = require('sequelize');
 var validator = require('validator');
 
+var access = require('./access');
 var countries = require('./countries');
 var error = require('./error');
 
@@ -235,6 +236,85 @@ module.exports.userForm = function(dbconn, data, username) {
 		} else {
 			// We can't get to this point without at least one error.
 			reject(new error.FormValidation("Form validation failed", errors));
+		}
+	});
+};
+
+module.exports.userAdminForm = function(dbconn, data, username, email, userAccess, targetAccess) {
+	return new Promise(function(resolve, reject) {
+		var promises = [];
+		var errors = {};
+
+		// Validate Username
+		if (!("username" in data) || validator.isNull(data.username)) {
+			errors.username = "Username is required";
+		} else if (!validator.isLength(data.username, 2, 12)) {
+			errors.username = "Username must be between 2 and 12 characters";
+		} else if (!validator.isAlphanumeric(data.username)) {
+			errors.username = "Username must be Alphanumeric (A-Z, 0-9)";
+		} else if (data.username.toLowerCase() !== username) {
+			promises.push(new Promise(function (resolve, reject) {
+				dbconn.User.find({ where: { username: data.username.toLowerCase() }})
+				.success(function (data) {
+					if (data) {
+						errors.username = "Username is taken";
+					}
+					resolve();
+				});
+			}));
+		}
+
+		// Validate password, if set
+		if ("password" in data && !validator.isNull(data.password)) {
+			if (!validator.isAscii(data.password)) {
+				errors.password = "Password must be plain ASCII characters";
+			} else if (!validator.isLength(data.password, 8, 1000)) {
+				errors.password = "Password must be between 8 and 1,000 characters";
+			} else if (validator.matches(data.password, /^([A-Za-z ]+|[0-9 ]+)$/) && !validator.isLength(data.password, 20)) {
+				errors.password = "Password must contain more than just letters or just numbers, unless your password is more than 20 characters";
+			}
+		} else if (data.username.toLowerCase() !== username) {
+			errors.password = "A new password must be set if the username is changed";
+		}
+
+		// Validate E-Mail address
+		if (!("email" in data) || validator.isNull(data.email)) {
+			errors.email = "E-Mail is required";
+		} else if (!validator.isEmail(data.email)) {
+			errors.email = "E-Mail must be valid";
+		} else if (data.email.toLowerCase() !== email) {
+			promises.push(new Promise(function (resolve, reject) {
+				dbconn.User.find({ where: { email: data.email.toLowerCase() }})
+				.success(function (data) {
+					if (data) {
+						errors.email = "E-Mail is already associated with a user";
+					}
+					resolve();
+				});
+			}));
+		}
+
+		// Validate access level change
+		if (!("access" in data) || validator.isNull(data.access)) {
+			errors.access = "Access is required";
+		} else if (!validator.isIn(data.access, access.validLevelSet(userAccess, targetAccess))) {
+			errors.access = "Access must be valid selection";
+		}
+
+		if (!_.isEmpty(promises)) {
+			Promise.all(promises).then(function() {
+				if (_.isEmpty(errors)) {
+					resolve();
+				} else {
+					reject(new error.FormValidation("Form validation failed", errors));
+				}
+			});
+		} else {
+			if (_.isEmpty(errors)) {
+					resolve();
+			} else {
+				reject(new error.FormValidation("Form validation failed", errors));
+			}
 		}
 	});
 };

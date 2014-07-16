@@ -81,10 +81,6 @@ var DBConn = function(config) {
 			active: Sequelize.BOOLEAN
 		}, {
 			instanceMethods: {
-				// Returns true if the user is an operator, otherwise false
-				isOperator: function() {
-					return _.contains(['OWNER', 'MASTER', 'OP'], this.access);
-				},
 				// Get the gravatar hash of the user
 				getGravatar: function() {
 					var md5 = crypto.createHash('md5');

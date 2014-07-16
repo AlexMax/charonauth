@@ -2,6 +2,9 @@
 {% extends 'layout.swig' %}
 
 {% block body %}
+{% if success %}
+{{ macros.alert('success', 'Settings updated successfully!') }}
+{% endif %}
 {{ macros.usernav(user.username, 'settings') }}
 <p>
 	Updating your password or e-mail address requires entering your current

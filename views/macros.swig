@@ -5,10 +5,19 @@
 {% macro gravatar(hash, override, def) %}//www.gravatar.com/avatar/{% if override %}{{ hash }}?d={{ override }}&f=y{% else %}{{ hash }}?d={{ def }}{% endif %}{% endmacro %}
 
 {#
+ # Returns an alert box
+ #}
+{% macro alert(type, message) %}
+<div class="alert alert-{{ type }}" role="alert">
+	{{ message }}
+</div>
+{% endmacro %}
+
+{#
  # Display a tab navigation for the user page
  #}
 {% macro usernav(username, tab) %}
-{% if username == session.user.username or session.user.is_operator %}
+{% if username == session.user.username or can_administer %}
 <ul class="nav nav-tabs" role="tablist">
 	<li class="{% if tab == 'view' %}active{% endif %}">
 		<a href="/users/{{ username }}">View Profile</a>

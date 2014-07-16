@@ -11,6 +11,9 @@
 	{"value": "retro", "name": "Retro"}
 ] %}
 
+{% if success %}
+{{ macros.alert('success', 'Profile updated successfully!') }}
+{% endif %}
 {{ macros.usernav(user.username, 'edit') }}
 <form method="post" role="form">
 	<fieldset>

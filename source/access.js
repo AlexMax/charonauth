@@ -21,6 +21,15 @@
 
 var _ = require('lodash');
 
+// A list of valid access levels
+var levels = ['OWNER', 'MASTER', 'OP', 'USER', 'UNVERIFIED'];
+module.exports.levels = levels;
+
+// Determine if a level is valid or not
+module.exports.validLevel = function(level) {
+	return _.contains(levels, level.toUpperCase());
+}
+
 // Determine what levels a user can set a target to
 module.exports.validLevelSet = function(userAccess, targetAccess) {
 	var levels = ['USER'];

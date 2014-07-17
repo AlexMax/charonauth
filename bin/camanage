@@ -1,0 +1,82 @@
+#!/usr/bin/env node
+/*
+ *  Charon: A game authentication server
+ *  Copyright (C) 2014  Alex Mayfield
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+/* jshint node: true */
+"use strict";
+
+var Promise = require('bluebird');
+
+var program = require('commander');
+var fs = Promise.promisifyAll(require('fs'));
+var ini = require('ini');
+
+var access = require('../source/access');
+var Config = require('../source/config');
+var DBConn = require('../source/dbconn');
+
+// The package file supplies information like the version.
+var pack = JSON.parse(fs.readFileSync(__dirname + '/../package.json', {
+	'encoding': 'utf8'
+}));
+
+// Parse command line options.
+program
+	.version(pack.version)
+	.option('-c, --config <path>', 'path to config file (default charonauth.ini)', 'charonauth.ini');
+
+program
+	.command('userlevel <user> <level>')
+	.description('Modify an existing user\'s access level')
+	.action(userlevel);
+
+program.parse(process.argv);
+if (program.args.length === 0) {
+	program.help();
+}
+
+function fatalError(message) {
+	console.error("\n error: " + message + "\n");
+	process.exit(1);
+}
+
+// User level subcommand
+function userlevel(user, level) {
+	return new Promise(function(resolve, reject) {
+		if (!access.validLevel(level)) {
+			reject(new Error("\"" + level + "\" is not a valid level"));
+		} else {
+			resolve(fs.readFileAsync(program.config, {'encoding': 'utf8'}));
+		}
+	}).then(function(file) {
+		return new Config(ini.parse(file));
+	}).then(function(config) {
+		return new DBConn(config.get('database'));
+	}).then(function(dbconn) {
+		return dbconn.User.find({
+			where: {username: user.toLowerCase()}
+		});
+	}).then(function(user) {
+		user.access = level.toUpperCase();
+		return user.save();
+	}).then(function(user) {
+		process.stdout.write('success: ' + user.username + ' is now ' + user.access  + '\n');
+	}).catch(function(e) {
+		fatalError(e.message);
+	});
+}

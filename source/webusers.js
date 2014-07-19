@@ -71,8 +71,15 @@ module.exports = function(dbconn) {
 				}
 			}
 
+			// Designate if we can see the full admin toolbar
+			var can_administer = false;
+			if ("user" in req.session &&
+			    access.canAdministerUser(req.session.user.access, user.access)) {
+				can_administer = true;
+			}
+
 			res.render('getUser.swig', {
-				can_administer: access.canAdministerUser(req.session.user.access, user.access),
+				can_administer: can_administer,
 				user: user
 			});
 		}).catch(next);

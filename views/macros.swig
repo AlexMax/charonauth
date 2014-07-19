@@ -16,8 +16,8 @@
 {#
  # Display a tab navigation for the user page
  #}
-{% macro usernav(username, tab) %}
-{% if username == session.user.username or can_administer %}
+{% macro usernav(username, tab, force) %}
+{% if username == session.user.username or force %}
 <ul class="nav nav-tabs" role="tablist">
 	<li class="{% if tab == 'view' %}active{% endif %}">
 		<a href="/users/{{ username }}">View Profile</a>

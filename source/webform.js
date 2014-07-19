@@ -383,3 +383,22 @@ module.exports.profileForm = function(dbconn, data, username) {
 		}
 	});
 };
+
+module.exports.resetForm = function(data) {
+	return new Promise(function(resolve, reject) {
+		var errors = {};
+
+		// Validate E-Mail address
+		if (!("email" in data) || validator.isNull(data.email)) {
+			errors.email = "E-Mail is required";
+		} else if (!validator.isEmail(data.email)) {
+			errors.email = "E-Mail must be valid";
+		}
+
+		if (_.isEmpty(errors)) {
+			resolve();
+		} else {
+			reject(new error.FormValidation("Form validation failed", errors));
+		}
+	});
+};

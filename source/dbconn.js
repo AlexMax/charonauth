@@ -24,6 +24,7 @@ var _ = require('lodash');
 
 var crypto = require('crypto');
 var Sequelize = require('sequelize');
+var uuid = require('node-uuid');
 
 var Config = require('./config');
 var countries = require('./countries');
@@ -302,5 +303,16 @@ DBConn.prototype.setEphemeral = function(session, ephemeral, secret, callback) {
 		});
 	});
 };
+
+// Either create a new reset token or reuse an existing one.
+DBConn.prototype.newReset = function(user) {
+	return this.Reset.findOrCreate({
+		UserId: user.id
+	}).then(function(reset) {
+		return reset.updateAttributes({
+			token: uuid.v4()
+		});
+	});
+}
 
 module.exports = DBConn;

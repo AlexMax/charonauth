@@ -10,7 +10,7 @@
 	<fieldset>
 		<input type="hidden" name="_csrf" value="{{ data._csrf }}">
 		<div class="form-group {% if errors.login %}has-error{% endif %}">
-			<label class="control-label" for="login">Username/Email</label>
+			<label class="control-label" for="login">Username/E-Mail</label>
 			<input class="form-control" name="login" id="login" value="{{ data.login }}">
 			<span class="help-block">{{ errors.login }}</span>
 		</div>

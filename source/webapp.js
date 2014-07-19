@@ -39,6 +39,8 @@ var mock = require('./mock');
 var Recaptcha = require('./recaptcha');
 var webform = require('./webform');
 
+var WebReset = require('./webreset');
+
 // Handles user creation and administration through a web interface.
 function WebApp(config, logger) {
 	var self = this;
@@ -76,7 +78,7 @@ function WebApp(config, logger) {
 		}
 
 		// If mail config exists, initialize it
-		if (!self.config.get('mail')) {
+		if (self.config.get('mail')) {
 			self.mailer = new Mailer(self.config.get('mail'), logger);
 		} else {
 			self.mailer = undefined;
@@ -130,9 +132,7 @@ function WebApp(config, logger) {
 		self.app.get('/logout', self.logout.bind(self));
 
 		// Password reset
-		self.app.get('/reset', self.getReset.bind(self));
-		self.app.post('/reset', self.postReset.bind(self));
-		self.app.get('/reset/:token', self.resetVerify.bind(self));
+		self.app.use('/reset', new WebReset(self.dbconn, self.mailer));
 
 		// User registration
 		self.app.get('/register', self.getRegister.bind(self));
@@ -311,15 +311,6 @@ WebApp.prototype.registerVerify = function(req, res) {
 			throw error.NotFound();
 		}
 	});
-};
-WebApp.prototype.getReset = function(req, res) {
-
-};
-WebApp.prototype.postReset = function(req, res) {
-
-};
-WebApp.prototype.resetVerify = function(req, res) {
-
 };
 
 module.exports = WebApp;

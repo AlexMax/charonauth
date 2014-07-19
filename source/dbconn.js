@@ -23,6 +23,7 @@ var Promise = require('bluebird');
 var _ = require('lodash');
 
 var crypto = require('crypto');
+require('date-utils');
 var Sequelize = require('sequelize');
 var uuid = require('node-uuid');
 
@@ -307,12 +308,31 @@ DBConn.prototype.setEphemeral = function(session, ephemeral, secret, callback) {
 // Either create a new reset token or reuse an existing one.
 DBConn.prototype.newReset = function(user) {
 	return this.Reset.findOrCreate({
-		UserId: user.id
+		where: {UserId: user.id}
 	}).then(function(reset) {
 		return reset.updateAttributes({
 			token: uuid.v4()
 		});
 	});
 }
+
+// Find a valid reset token.
+DBConn.prototype.findReset = function(token) {
+	return this.Reset.find({
+		where: {token: token}
+	}).then(function(reset) {
+		if (reset === null) {
+			throw new error.ResetNotFound("Reset not found");
+		}
+
+		// Reset tokens expire after 24 hours
+		var diff = reset.updatedAt.getDaysBetween(new Date());
+		if (diff !== 0) {
+			throw new error.ResetNotFound("Reset has expired");
+		}
+
+		return reset;
+	});
+};
 
 module.exports = DBConn;

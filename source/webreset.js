@@ -36,11 +36,13 @@ function WebReset(dbconn, mailer) {
 
 	routes.get('/', this.getReset.bind(this));
 	routes.post('/', this.postReset.bind(this));
+	routes.get('/:token', this.getResetToken.bind(this));
+	routes.post('/:token', this.postResetToken.bind(this));
 
 	return routes;
 };
 
-// Password reset form
+// Password reset request form
 WebReset.prototype.getReset = function(req, res) {
 	req.body._csrf = req.csrfToken();
 	res.render('reset.swig', {
@@ -89,6 +91,20 @@ WebReset.prototype.postReset = function(req, res, next) {
 			data: req.body, errors: e.invalidFields
 		});
 	}).catch(next);
+};
+
+// Password reset form
+WebReset.prototype.getResetToken = function(req, res, next) {
+	this.dbconn.findReset(req.params.token).then(function(reset) {
+		req.body._csrf = req.csrfToken();
+		res.render('resetToken.swig', {
+			data: req.body
+		});
+	}).catch(error.ResetNotFound, function(e) {
+		throw new error.NotFound('Reset token does not exist');
+	}).catch(next);
+};
+WebReset.prototype.postResetToken = function(req, res, next) {
 };
 
 module.exports = WebReset

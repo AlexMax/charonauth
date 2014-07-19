@@ -22,7 +22,6 @@
 var Promise = require('bluebird');
 var _ = require('lodash');
 
-require('date-utils');
 var dgram = Promise.promisifyAll(require('dgram'));
 
 var Config = require('./config');

@@ -15,7 +15,7 @@
 			<input class="form-control" name="email" id="email" value="{{ data.email }}">
 			<span class="help-block">{{ errors.email }}</span>
 		</div>
-		<button class="btn btn-primary" type="submit">Reset</button>
+		<button class="btn btn-primary" type="submit">Send</button>
 	</fieldset>
 </form>
 {% endblock %}

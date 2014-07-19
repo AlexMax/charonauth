@@ -105,6 +105,41 @@ WebReset.prototype.getResetToken = function(req, res, next) {
 	}).catch(next);
 };
 WebReset.prototype.postResetToken = function(req, res, next) {
+	var self = this;
+
+	this.dbconn.findReset(req.params.token).then(function(reset) {
+		return Promise.all([reset, webform.resetTokenForm(req.body)]);
+	}).spread(function(reset, _) {
+		// Get the user associated with our reset.
+		return Promise.all([reset, reset.getUser()]);
+	}).spread(function(reset, user) {
+		// Persist our new password
+		user.setPassword(req.body.password);
+		return Promise.all([reset, user.save()]);
+	}).spread(function(reset, user) {
+		// Grab profile data and consume the reset token
+		return Promise.all([user, user.getProfile(), reset.destroy()]);
+	}).spread(function(user, profile, _) {
+		// Now that we've reset our password, consider ourselves logged in
+		req.session.user = {
+			id: user.id,
+			username: user.username,
+			profile_username: profile.username,
+			gravatar: user.getGravatar(),
+			access: user.access
+		};
+
+		// Redirect to homepage
+		res.redirect('/');
+	}).catch(error.FormValidation, function(e) {
+		// Render the page with errors
+		req.body._csrf = req.csrfToken();
+		res.render('resetToken.swig', {
+			data: req.body, errors: e.invalidFields
+		});
+	}).catch(error.ResetNotFound, function(e) {
+		throw new error.NotFound('Reset token does not exist');
+	}).catch(next);
 };
 
 module.exports = WebReset

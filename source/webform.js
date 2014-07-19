@@ -402,3 +402,33 @@ module.exports.resetForm = function(data) {
 		}
 	});
 };
+
+module.exports.resetTokenForm = function(data) {
+	return new Promise(function(resolve, reject) {
+		var errors = {};
+
+		// Validate Password
+		if (!("password" in data) || validator.isNull(data.password)) {
+			errors.password = "Password is required";
+		} else if (!validator.isLength(data.password, 8, 1000)) {
+			errors.password = "Password must be between 8 and 1,000 characters";
+		} else if (!validator.isAscii(data.password)) {
+			errors.password = "Password must be plain ASCII characters";
+		} else if (validator.matches(data.password, /^([A-Za-z ]+|[0-9 ]+)$/) && !validator.isLength(data.password, 20)) {
+			errors.password = "Password must contain more than just letters or just numbers, unless your password is more than 20 characters";
+		}
+
+		// Validate password confirmation
+		if (!("confirm" in data) || validator.isNull(data.confirm)) {
+			errors.confirm = "Password Confirmation is required";
+		} else if (data.password !== data.confirm) {
+			errors.confirm = "Password Confirmation does not match";
+		}
+
+		if (_.isEmpty(errors)) {
+			resolve();
+		} else {
+			reject(new error.FormValidation("Form validation failed", errors));
+		}
+	});
+};

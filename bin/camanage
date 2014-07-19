@@ -25,10 +25,12 @@ var Promise = require('bluebird');
 var program = require('commander');
 var fs = Promise.promisifyAll(require('fs'));
 var ini = require('ini');
+var validator = require('validator');
 
 var access = require('../source/access');
 var Config = require('../source/config');
 var DBConn = require('../source/dbconn');
+var Mailer = require('../source/mailer');
 
 // The package file supplies information like the version.
 var pack = JSON.parse(fs.readFileSync(__dirname + '/../package.json', {
@@ -40,6 +42,10 @@ program
 	.version(pack.version)
 	.option('-c, --config <path>', 'path to config file (default charonauth.ini)', 'charonauth.ini');
 
+program
+	.command('mailtest <email>')
+	.description('Send a test email')
+	.action(mailtest);
 program
 	.command('userlevel <user> <level>')
 	.description('Modify an existing user\'s access level')
@@ -77,6 +83,32 @@ function userlevel(user, level) {
 	}).then(function(user) {
 		process.stdout.write('success: ' + user.username + ' is now ' + user.access  + '\n');
 	}).catch(function(e) {
+		fatalError(e.message);
+	});
+}
+
+// Mail test subcommand
+function mailtest(recipient) {
+	return new Promise(function(resolve, reject) {
+		if (!validator.isEmail(recipient)) {
+			reject(new Error("\"" + recipient + "\" is not a valid email address"));
+		} else {
+			resolve(fs.readFileAsync(program.config, {'encoding': 'utf8'}));
+		}
+	}).then(function(file) {
+		return new Config(ini.parse(file));
+	}).then(function(config) {
+		var mailer = new Mailer(config.get('mail'));
+
+		return mailer.sendRendered({
+			to: recipient,
+			subject: "charonauth Test Message",
+			template: 'test.swig'
+		});
+	}).then(function(info) {
+		process.stdout.write('success: Message-Id is ' + info.messageId  + '\n');
+	}).catch(function(e) {
+		fatalError(e.stack);
 		fatalError(e.message);
 	});
 }

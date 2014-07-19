@@ -34,6 +34,7 @@ var swig = require('swig');
 var Config = require('./config');
 var DBConn = require('./dbconn');
 var error = require('./error');
+var Mailer = require('./mailer');
 var mock = require('./mock');
 var Recaptcha = require('./recaptcha');
 var webform = require('./webform');
@@ -72,6 +73,13 @@ function WebApp(config, logger) {
 			self.recaptcha = new Recaptcha(self.config.get('web.recaptcha'));
 		} else {
 			self.recaptcha = undefined;
+		}
+
+		// If mail config exists, initialize it
+		if (!self.config.get('mail')) {
+			self.mailer = new Mailer(self.config.get('mail'), logger);
+		} else {
+			self.mailer = undefined;
 		}
 
 		// Create database connection

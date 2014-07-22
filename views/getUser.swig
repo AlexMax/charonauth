@@ -18,6 +18,8 @@
 	<div class="col-md-2">
 		<img style="width:100%;max-width:150px" src="{{ macros.gravatar(user.getGravatar(), user.profile.gravatar, 'monsterid') }}" alt="{{ user.profile.username }}">
 		<dl>
+			<dt>Username</dt>
+			<dd>{{ user.username }}</dd>
 			<dt>Access</dt>
 			<dd>{{ access[user.access] }}</dd>
 			{% if user.profile.clan %}

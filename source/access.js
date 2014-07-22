@@ -28,7 +28,7 @@ module.exports.levels = levels;
 // Determine if a level is valid or not
 module.exports.validLevel = function(level) {
 	return _.contains(levels, level.toUpperCase());
-}
+};
 
 // Determine what levels a user can set a target to
 module.exports.validLevelSet = function(userAccess, targetAccess) {
@@ -52,7 +52,7 @@ module.exports.validLevelSet = function(userAccess, targetAccess) {
 	}
 
 	return levels;
-}
+};
 
 // A set of defaults for access control
 function defaultAccess(userAccess, targetAccess) {

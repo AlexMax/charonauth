@@ -39,8 +39,6 @@ var mock = require('./mock');
 var Recaptcha = require('./recaptcha');
 var webform = require('./webform');
 
-var WebReset = require('./webreset');
-
 // Handles user creation and administration through a web interface.
 function WebApp(config, logger) {
 	var self = this;
@@ -131,16 +129,16 @@ function WebApp(config, logger) {
 		self.app.post('/login', self.postLogin.bind(self));
 		self.app.get('/logout', self.logout.bind(self));
 
-		// Password reset
-		self.app.use('/reset', new WebReset(self.dbconn, self.mailer));
-
 		// User registration
 		self.app.get('/register', self.getRegister.bind(self));
 		self.app.post('/register', self.postRegister.bind(self));
 		self.app.get('/register/:token', self.registerVerify.bind(self));
 
-		// Users
-		self.app.use('/users', require('./webusers')(self.dbconn));
+		// Password reset
+		self.app.use('/reset', new (require('./webreset'))(self.dbconn, self.mailer));
+
+		// User and user profile viewing and modification
+		self.app.use('/users', new (require('./webusers'))(self.dbconn));
 
 		// Handle 404's
 		self.app.use(function(req, res, next) {

@@ -314,7 +314,7 @@ DBConn.prototype.newReset = function(user) {
 			token: uuid.v4()
 		});
 	});
-}
+};
 
 // Find a valid reset token.
 DBConn.prototype.findReset = function(token) {

@@ -40,7 +40,7 @@ module.exports.isCountryCode = function(str) {
 	} else {
 		return false;
 	}
-}
+};
 
 // Gets country data by cca2
 module.exports.getData = function(str) {
@@ -50,6 +50,6 @@ module.exports.getData = function(str) {
 	} else {
 		return null;
 	}
-}
+};
 
 module.exports.countries = countries;

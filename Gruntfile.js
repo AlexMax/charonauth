@@ -21,6 +21,11 @@
 
 module.exports = function(grunt) {
 	grunt.initConfig({
+		jshint: {
+			files: {
+				src: ['source/*.js']
+			}
+		},
 		copy: {
 			files: {
 				expand: true,
@@ -40,6 +45,7 @@ module.exports = function(grunt) {
 		}
 	});
 
+	grunt.loadNpmTasks('grunt-contrib-jshint');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-less');
 };

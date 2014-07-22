@@ -40,7 +40,7 @@ function WebReset(dbconn, mailer) {
 	routes.post('/:token', this.postResetToken.bind(this));
 
 	return routes;
-};
+}
 
 // Password reset request form
 WebReset.prototype.getReset = function(req, res) {
@@ -142,4 +142,4 @@ WebReset.prototype.postResetToken = function(req, res, next) {
 	}).catch(next);
 };
 
-module.exports = WebReset
+module.exports = WebReset;

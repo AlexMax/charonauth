@@ -24,6 +24,7 @@ var _ = require('lodash');
 
 var domain = require('domain');
 var express = require('express');
+var Sequelize = require('sequelize');
 
 var access = require('./access');
 var countries = require('./countries');
@@ -54,14 +55,42 @@ function WebUsers(dbconn) {
 
 // Get a list of all users.
 WebUsers.prototype.getUsers = function(req, res, next) {
-	this.dbconn.User.findAll({
+	// Default search parameters
+	var params = {
 		where: {active: true},
 		include: [
 			{model: this.dbconn.Profile, where: {visible: true}}
 		]
-	}).then(function(users) {
+	};
+
+	// Administrators have the ability to look at inactive and invalid
+	// accounts.  However, the users we are allowed to see depends on our
+	// access level.
+	var filter = 'active';
+	if ("user" in req.session && "f" in req.query) {
+		switch (req.query.f) {
+			case 'unverified':
+			filter = req.query.f;
+			params.where = Sequelize.and(
+				{active: false},
+				{access: 'UNVERIFIED'}
+			);
+			break;
+			case 'inactive':
+			filter = req.query.f;
+			params.where = Sequelize.and(
+				{active: false},
+				['access != \'UNVERIFIED\'']
+			);
+			break;
+		}
+	}
+
+	this.dbconn.User.findAll(params)
+	.then(function(users) {
 		res.render('getUsers.swig', {
-			users: users
+			users: users,
+			f: filter
 		});
 	}).catch(next);
 };

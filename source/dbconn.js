@@ -185,6 +185,8 @@ var DBConn = function(config) {
 };
 
 DBConn.prototype.addUser = function(username, password, email, access) {
+	var self = this;
+
 	var usernameBuffer = new Buffer(username.toLowerCase(), 'ascii');
 	var passwordBuffer = new Buffer(password, 'ascii');
 
@@ -208,7 +210,10 @@ DBConn.prototype.addUser = function(username, password, email, access) {
 	]).spread(function(user, profile) {
 		return user.setProfile(profile);
 	}).then(function(profile) {
-		return profile.getUser();
+		return self.User.find({
+			where: {id: profile.UserId},
+			include: [self.Profile]
+		});
 	});
 };
 DBConn.prototype.findUser = function(username) {
@@ -305,11 +310,39 @@ DBConn.prototype.setEphemeral = function(session, ephemeral, secret, callback) {
 	});
 };
 
+// Either create a new verify token or reuse an existing one.
+DBConn.prototype.newVerify = function(user) {
+	return this.Verify.findOrCreate({UserId: user.id})
+	.then(function(verify) {
+		return verify.updateAttributes({
+			token: uuid.v4()
+		});
+	});
+};
+
+// Find a valid verify token.
+DBConn.prototype.findVerify = function(token) {
+	return this.Verify.find({
+		where: {token: token}
+	}).then(function(reset) {
+		if (reset === null) {
+			throw new error.VerifyNotFound("Verify not found");
+		}
+
+		// Reset tokens expire after 24 hours
+		var diff = reset.updatedAt.getDaysBetween(new Date());
+		if (diff !== 0) {
+			throw new error.VerifyNotFound("Verify has expired");
+		}
+
+		return reset;
+	});
+};
+
 // Either create a new reset token or reuse an existing one.
 DBConn.prototype.newReset = function(user) {
-	return this.Reset.findOrCreate({
-		where: {UserId: user.id}
-	}).then(function(reset) {
+	return this.Reset.findOrCreate({UserId: user.id})
+	.then(function(reset) {
 		return reset.updateAttributes({
 			token: uuid.v4()
 		});

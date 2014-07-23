@@ -68,18 +68,18 @@ function WebApp(config, logger) {
 			return;
 		}
 
-		// If recaptcha config exists, initialize it
-		if (self.config.get('web.recaptcha')) {
-			self.recaptcha = new Recaptcha(self.config.get('web.recaptcha'));
-		} else {
-			self.recaptcha = undefined;
-		}
-
 		// If mail config exists, initialize it
 		if (self.config.get('mail')) {
 			self.mailer = new Mailer(self.config.get('mail'), logger);
 		} else {
 			self.mailer = undefined;
+		}
+
+		// If recaptcha config exists, initialize it
+		if (self.config.get('web.recaptcha')) {
+			self.recaptcha = new Recaptcha(self.config.get('web.recaptcha'));
+		} else {
+			self.recaptcha = undefined;
 		}
 
 		// Create database connection
@@ -130,9 +130,7 @@ function WebApp(config, logger) {
 		self.app.get('/logout', self.logout.bind(self));
 
 		// User registration
-		self.app.get('/register', self.getRegister.bind(self));
-		self.app.post('/register', self.postRegister.bind(self));
-		self.app.get('/register/:token', self.registerVerify.bind(self));
+		self.app.use('/register', new (require('./webregister'))(self.dbconn, self.mailer, self.recaptcha));
 
 		// Password reset
 		self.app.use('/reset', new (require('./webreset'))(self.dbconn, self.mailer));
@@ -169,11 +167,16 @@ function WebApp(config, logger) {
 				res.render('error.swig', {
 					status: res.statusCode,
 					message: err.message,
-					stack: err.stack
+					stack: err.stack,
+					sql: err.sql
 				});
 
 				// Log an error.
-				self.log.error(err.stack);
+				if (err.sql) {
+					self.log.error(err.stack + "\n" + err.sql);
+				} else {
+					self.log.error(err.stack);
+				}
 
 				// Killing the webserver will kill the worker process.  Unexpected
 				// exceptions leave the server in an inconsistent state, so we must
@@ -237,78 +240,6 @@ WebApp.prototype.logout = function(req, res) {
 	delete req.session.user;
 
 	res.render('logout.swig');
-};
-
-// Render a registration form
-WebApp.prototype.getRegister = function(req, res) {
-	req.body._csrf = req.csrfToken();
-	res.render('register.swig', {
-		data: req.body, errors: {},
-		recaptcha_public_key: this.recaptcha ? this.recaptcha.publickey : null
-	});
-};
-
-// Process a registration form
-WebApp.prototype.postRegister = function(req, res, next) {
-	var self = this;
-
-	webform.registerForm(
-		this.dbconn, this.recaptcha, req.body, req.ip
-	).then(function() {
-		if (false) {
-			// Do E-mail verification of new accounts
-			return Promise.all([
-				self.dbconn.addUser(req.body.username, req.body.password, req.body.email),
-				self.dbconn.Verify.create({
-					token: uuid.v4()
-				})
-			]).spread(function(user, verify) {
-				return Promise.all([user, user.setVerify(verify)]);
-			}).spread(function(user, _) {
-				res.render('registerNotify.swig', {
-					user: user
-				});
-			});
-		} else {
-			// Don't do E-mail verification of new accounts
-			return self.dbconn.addUser(req.body.username, req.body.password, req.body.email, 'USER')
-			.then(function(user) {
-				return Promise.all([user, user.getProfile()]);
-			}).spread(function(user, profile) {
-				req.session.user = {
-					id: user.id,
-					username: user.username,
-					profile_username: profile.username,
-					gravatar: user.getGravatar(),
-					access: user.access
-				};
-
-				res.render('registerSuccess.swig');
-			});
-		}
-	}).catch(error.FormValidation, function(e) {
-		req.body._csrf = req.csrfToken();
-		res.render('register.swig', {
-			data: req.body, errors: e.invalidFields,
-			recaptcha_public_key: self.recaptcha ? self.recaptcha.publickey : null
-		});
-	}).catch(next);
-};
-
-WebApp.prototype.registerVerify = function(req, res) {
-	var self = this;
-
-	this.dbconn.Verify.find({
-		where: {
-			token: req.params.token
-		}
-	}).success(function(data) {
-		if (data) {
-			res.render('registerVerify.swig');
-		} else {
-			throw error.NotFound();
-		}
-	});
 };
 
 module.exports = WebApp;

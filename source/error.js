@@ -64,14 +64,25 @@ function UserNotFoundError(message, username) {
 UserNotFoundError.prototype = Object.create(Error.prototype);
 UserNotFoundError.prototype.constructor = UserNotFoundError;
 
+// VerifyNotFoundError
+//
+// Thrown when a verify can't be found in the database
+
+function VerifyNotFoundError(message) {
+	this.name = "VerifyNotFoundError";
+	this.message = message;
+	Error.captureStackTrace(this, VerifyNotFoundError);
+}
+VerifyNotFoundError.prototype = Object.create(Error.prototype);
+VerifyNotFoundError.prototype.constructor = VerifyNotFoundError;
+
 // ResetNotFoundError
 //
 // Thrown when a reset can't be found in the database
 
-function ResetNotFoundError(message, username) {
+function ResetNotFoundError(message) {
 	this.name = "ResetNotFoundError";
 	this.message = message;
-	this.username = username;
 	Error.captureStackTrace(this, ResetNotFoundError);
 }
 ResetNotFoundError.prototype = Object.create(Error.prototype);
@@ -120,6 +131,7 @@ module.exports.Forbidden = ForbiddenError;
 module.exports.IgnorableProtocol = IgnorableProtocolError;
 module.exports.FormValidation = FormValidationError;
 module.exports.UserNotFound = UserNotFoundError;
+module.exports.VerifyNotFound = VerifyNotFoundError;
 module.exports.ResetNotFound = ResetNotFoundError;
 module.exports.SessionNotFound = SessionNotFoundError;
 module.exports.SessionAuthFailed = SessionAuthFailedError;

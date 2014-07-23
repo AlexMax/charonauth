@@ -9,7 +9,12 @@
 <body>
 	<h1>{{status}}: {{ message }}</h1>
 	{% if stack %}
+	<h2>Stack Trace</h2>
 	<pre>{{ stack }}</pre>
+	{% endif %}
+	{% if sql %}
+	<h2>SQL</h2>
+	<pre>{{ sql }}</pre>
 	{% endif %}
 </body>
 </html>

@@ -2,6 +2,21 @@
 {% extends 'layout.swig' %}
 
 {% block body %}
+{% set operator = {'OWNER': true, 'MASTER': true, 'OP': true} %}
+{% if session.user.access in operator %}
+<ul class="nav nav-tabs" role="tablist">
+	<li class="{% if f == 'active' %}active{% endif %}">
+		<a href="/users?f=active">Active</a>
+	</li>
+	<li class="{% if f == 'unverified' %}active{% endif %}">
+		<a href="/users?f=unverified">Unverified</a>
+	</li>
+	<li class="{% if f == 'inactive' %}active{% endif %}">
+		<a href="/users?f=inactive">Inactive</a>
+	</li>
+</ul>
+{% endif %}
+
 <h2>User Directory</h2>
 {% if users %}
 <table class="table">

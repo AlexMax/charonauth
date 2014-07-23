@@ -22,6 +22,7 @@
 var Promise = require('bluebird');
 
 var bodyParser = require('body-parser');
+var cluster = require('cluster');
 var cookieParser = require('cookie-parser');
 var csurf = require('csurf');
 var domain = require('domain');
@@ -191,7 +192,7 @@ function WebApp(config, logger) {
 
 		// If the webserver dies, restart the worker process.
 		self.http.on('close', function() {
-			process.exit(1);
+			cluster.worker.disconnect();
 		});
 
 		return self;

@@ -27,7 +27,7 @@ var Logger = require('./logger');
 function master(msg) {
 	if (!("config" in msg)) {
 		process.stderr.write("No configuration supplied for subprocess " + process.pid + ", aborting...\n");
-		process.exit(2);
+		process.exit(1);
 	}
 
 	var config = new Config(msg.config);
@@ -38,16 +38,8 @@ function master(msg) {
 		process.title = 'charonauth: web master';
 
 		cluster.on('exit', function(worker, code, signal) {
-			if (code === 2) {
-				// Code 2 is returned when the worker fails to construct, usually
-				// due to a configuration error, which won't be fixed by simply
-				// restarting it.
-				log.error('Web worker ' + worker.process.pid + ' is shutting the entire server down.');
-				process.exit(2);
-			} else {
-				log.warn('Web worker ' + worker.process.pid + ' died, respawning...');
-				cluster.fork().send({config: config.get()});
-			}
+			log.warn('Web worker ' + worker.process.pid + ' died, respawning...');
+			cluster.fork().send({config: config.get()});
 		});
 
 		var workers = 1;
@@ -65,12 +57,18 @@ function master(msg) {
 		process.title = 'charonauth: web worker';
 		log.info('Web worker ' + process.pid + ' starting...');
 
-		var WebApp = require('./webapp');
-		new WebApp(config.get(), log).then(function() {
-			log.info('Web worker ' + process.pid + ' started.');
-		}).catch(function(err) {
+		// Run the worker in the context of a domain
+		var domain = require('domain').create();
+		domain.on('error', function(err) {
 			log.error(err.stack);
-			process.exit(2);
+			cluster.worker.disconnect();
+		});
+		domain.run(function() {
+			// Start the worker
+			var WebApp = require('./webapp');
+			new WebApp(config.get(), log).then(function() {
+				log.info('Web worker ' + process.pid + ' started.');
+			}).done();
 		});
 	}
 }

@@ -35,28 +35,14 @@ module.exports = function(config) {
 	this.webmaster = child_process.fork(__dirname + '/webmaster');
 
 	this.authmaster.on('exit', function(code, signal) {
-		if (code === 2) {
-			// Code 2 is returned when one of the workers that the master governs
-			// fails to construct, usually due to a configuration error.
-			self.webmaster.kill();
-			process.exit(2);
-		} else {
-			this.log.warn('Authentication master died, respawning...');
-			self.authmaster = child_process.fork(__dirname + '/authmaster');
-			self.authmaster.send({config: config.get()});
-		}
+		self.log.warn('Authentication master died, respawning...');
+		self.authmaster = child_process.fork(__dirname + '/authmaster');
+		self.authmaster.send({config: config.get()});
 	});
 	this.webmaster.on('exit', function(code, signal) {
-		if (code === 2) {
-			// Code 2 is returned when one of the workers that the master governs
-			// fails to construct, usually due to a configuration error.
-			self.authmaster.kill();
-			process.exit(2);
-		} else {
-			this.log.warn('Web master died, respawning...');
-			self.webmaster = child_process.fork(__dirname + '/webmaster');
-			self.webmaster.send({config: config.get()});
-		}
+		self.log.warn('Web master died, respawning...');
+		self.webmaster = child_process.fork(__dirname + '/webmaster');
+		self.webmaster.send({config: config.get()});
 	});
 
 	this.authmaster.send({config: config.get()});

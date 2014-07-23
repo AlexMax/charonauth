@@ -44,9 +44,7 @@
     "grunt": "^0.4.5",
     "grunt-contrib-less": "^0.11.3",
     "grunt-contrib-copy": "~0.5.0",
-    "grunt-contrib-jshint": "~0.10.0"
-  },
-  "scripts": {
-    "test": "mocha test -R spec"
+    "grunt-contrib-jshint": "~0.10.0",
+    "grunt-mocha-test": "~0.11.0"
   }
 }

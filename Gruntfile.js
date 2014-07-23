@@ -26,6 +26,12 @@ module.exports = function(grunt) {
 				src: ['source/*.js']
 			}
 		},
+		mochaTest: {
+			test: {
+				options: {reporter: 'spec'},
+				src: ['test/*.js']
+			}
+		},
 		copy: {
 			files: {
 				expand: true,
@@ -46,6 +52,7 @@ module.exports = function(grunt) {
 	});
 
 	grunt.loadNpmTasks('grunt-contrib-jshint');
+	grunt.loadNpmTasks('grunt-mocha-test');
 	grunt.loadNpmTasks('grunt-contrib-copy');
 	grunt.loadNpmTasks('grunt-contrib-less');
 };

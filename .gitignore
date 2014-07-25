@@ -1,5 +1,6 @@
 /charonauth.ini
 /charonauth.log
+/coverage
 /node_modules
 /sessions
 /*.db

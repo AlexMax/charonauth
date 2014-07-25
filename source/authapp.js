@@ -23,6 +23,7 @@ var Promise = require('bluebird');
 var _ = require('lodash');
 
 var dgram = Promise.promisifyAll(require('dgram'));
+var ip = require('ip');
 
 var Config = require('./config');
 var DBConn = require('./dbconn');
@@ -161,19 +162,20 @@ AuthApp.prototype.router = function(msg, rinfo) {
 // This is the initial route that creates an authentication session.
 AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 	var self = this;
+	var packet, username;
 
-	this.log.verbose("serverNegotiate route", rinfo);
+	return new Promise(function(resolve, reject) {
+		// Unmarshall the server negotiation packet
+		packet = proto.serverNegotiate.unmarshall(msg);
+		username = packet.username;
 
-	// Unmarshall the server negotiation packet
-	var packet = proto.serverNegotiate.unmarshall(msg);
-	var username = packet.username;
-	this.log.verbose("serverNegotiate", {
-		username: username
-	});
+		self.log.verbose("serverNegotiate", {
+			username: username
+		});
 
-	// Create a new session for given user.
-	return this.dbconn.newSession(username)
-	.then(function(session) {
+		// Create a new session for given user.
+		resolve(self.dbconn.newSession(username));
+	}).then(function(session) {
 		return Promise.all([session, session.getUser()]);
 	}).spread(function(session, user) {
 		// Write the response packet
@@ -198,24 +200,22 @@ AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 // back to the client.
 AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 	var self = this;
+	var packet;
 
-	this.log.verbose("serverEphemeral route", rinfo);
+	return new Promise(function(resolve, reject) {
+		packet = proto.serverEphemeral.unmarshall(msg);
 
-	// Unmarshall the server negotiation packet
-	var packet = proto.serverEphemeral.unmarshall(msg);
-	this.log.verbose("serverEphemeral", {
-		session: packet.session,
-		ephemeral: packet.ephemeral.toString('hex')
-	});
+		self.log.verbose("serverEphemeral", {
+			session: packet.session,
+			ephemeral: packet.ephemeral.toString('hex')
+		});
 
-	// Is the session we were passed an active and valid session?
-	return this.dbconn.findSession(packet.session, this.sessionTimeout)
-	.then(function(session) {
-		// Find the user associated with this session
-		return Promise.all([session, session.getUser()]);
-	}).spread(function(session, user) {
-		// Generate a session key
-		return Promise.all([session, user, srp.genKeyAsync(32)]);
+		// Is the session we were passed an active and valid session?
+		resolve(self.dbconn.findSession(packet.session, self.sessionTimeout));
+	}).then(function(session) {
+		// Find the user associated with this session and generate a session
+		// key to be used later.
+		return Promise.all([session, session.getUser(), srp.genKeyAsync(32)]);
 	}).spread(function(session, user, secret) {
 		// Try to generate the server's ephemeral value.
 		var srpServer = new srp.Server(
@@ -225,13 +225,15 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 			user.verifier,
 			secret
 		);
+
 		srpServer.setA(packet.ephemeral);
 		var serverEphemeral = srpServer.computeB();
+
 		return Promise.all([
-			self.dbconn.setEphemeral(packet.session, packet.ephemeral, secret),
-			srpServer.computeB()
+			srpServer.computeB(),
+			self.dbconn.setEphemeral(packet.session, packet.ephemeral, secret)
 		]);
-	}).spread(function(session, serverEphemeral) {
+	}).spread(function(serverEphemeral, session) {
 		// Write the response packet
 		var res = {
 			session: packet.session,
@@ -253,19 +255,19 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 // server is who he says he is.
 AuthApp.prototype.serverProof = function(msg, rinfo) {
 	var self = this;
+	var packet;
 
-	this.log.verbose("serverProof route", rinfo);
+	return new Promise(function(resolve, reject) {
+		packet = proto.serverProof.unmarshall(msg);
 
-	// Unmarshall the server negotiation packet
-	var packet = proto.serverProof.unmarshall(msg);
-	this.log.verbose("serverProof", {
-		session: packet.session,
-		proof: packet.proof.toString('hex')
-	});
+		self.log.verbose("serverProof", {
+			session: packet.session,
+			proof: packet.proof.toString('hex')
+		});
 
-	// Is the session we were passed an active and valid session?
-	return this.dbconn.findSession(packet.session, this.sessionTimeout)
-	.then(function(session) {
+		// Is the session we were passed an active and valid session?
+		resolve(self.dbconn.findSession(packet.session, self.sessionTimeout));
+	}).then(function(session) {
 		return Promise.all([session, session.getUser()]);
 	}).spread(function(session, user) {
 		// Recreate the necessary SRP state to check the client's proof.
@@ -289,6 +291,14 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 			throw new error.SessionAuthFailed("Authentication failed", packet.session);
 		}
 
+		// Log an authenticate action
+		return Promise.all([proof, self.dbconn.Action.create({
+			UserId: user.id,
+			WhomId: user.id,
+			type: 'auth',
+			ip: ip.toBuffer(rinfo.address)
+		})]);
+	}).spread(function(proof) {
 		// Write the response packet
 		var res = {
 			session: packet.session,

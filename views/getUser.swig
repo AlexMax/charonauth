@@ -15,7 +15,7 @@
 	{{ user.profile.clantag }}{{ user.profile.username }}
 </h1>
 <div class="row">
-	<div class="col-md-2">
+	<div class="col-sm-3">
 		<img style="width:100%;max-width:150px" src="{{ macros.gravatar(user.getGravatar(), user.profile.gravatar, 'monsterid') }}" alt="{{ user.profile.username }}">
 		<dl>
 			<dt>Username</dt>
@@ -34,9 +34,13 @@
 			<dt>Location</dt>
 			<dd>{{ user.profile.location }}</dd>
 			{% endif %}
+			{% if lastplayed %}
+			<dt>Last Played</dt>
+			<dd>{{ lastplayed|date('F j, Y') }}</dd>
+			{% endif %}
 		</dl>
 	</div>
-	<div class="col-md-10">
+	<div class="col-sm-9">
 		{% if user.profile.message or user.profile.contactinfo %}
 		{% if user.profile.message %}
 		<h4>Message</h4>

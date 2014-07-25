@@ -190,6 +190,8 @@ describe('AuthApp', function() {
 			}
 		};
 		it("should be capable of logging a user in.", function() {
+			var app;
+
 			// What the client knows.
 			var username = 'username';
 			var password = 'password123';
@@ -211,18 +213,26 @@ describe('AuthApp', function() {
 				proof: proof
 			});
 
-			return new AuthApp(config).then(function(app) {
-				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
-			}).spread(function(app, _) {
-				return Promise.all([app, require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session)]);
-			}).spread(function(app, _) {
-				return app.serverProof(packet);
+			return new AuthApp(config).then(function(authApp) {
+				app = authApp;
+				return require('./fixture/single_user')(app.dbconn.User);
+			}).then(function() {
+				return require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session);
+			}).then(function() {
+				return app.serverProof(packet, {address: '127.0.0.1'});
 			}).then(function(msg) {
 				var response = proto.authProof.unmarshall(msg);
 
 				assert.equal(response.session, session, "Session is incorrect");
 
 				srpClient.checkM2(response.proof);
+
+				// Ensure that we recorded an action for an authentication
+				return app.dbconn.Action.find(1);
+			}).then(function(action) {
+				assert.equal(action.type, 'auth');
+				assert.equal(action.UserId, 1);
+				assert.equal(action.WhomId, 1);
 			});
 		});
 		it("should error if the proof doesn't work.", function() {

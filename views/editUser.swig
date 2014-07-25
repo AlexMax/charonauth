@@ -25,7 +25,7 @@
 		</div>
 		<div class="checkbox">
 			<label>
-				<input name="profile[visible_lastseen]" type="checkbox" {% if data.profile.visible_lastseen %}checked{% endif %}>"Last Seen" is visible to public
+				<input name="profile[visible_lastseen]" type="checkbox" {% if data.profile.visible_lastseen %}checked{% endif %}>"Last Played" is visible to public
 			</label>
 		</div>
 		<div class="form-group {% if errors.profile.gravatar %}has-error{% endif %}">

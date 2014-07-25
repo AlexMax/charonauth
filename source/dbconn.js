@@ -132,8 +132,6 @@ var DBConn = function(config) {
 			ip: Sequelize.BLOB,
 			before: Sequelize.STRING,
 			after: Sequelize.STRING
-		}, {
-			updatedAt: false
 		});
 
 		self.User.hasMany(self.Action);

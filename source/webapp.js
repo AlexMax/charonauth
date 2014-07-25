@@ -29,6 +29,7 @@ var domain = require('domain');
 var express = require('express');
 var session = require('express-session');
 var fsSession = require('fs-session')({ session: session });
+var ip = require('ip');
 var uuid = require('node-uuid');
 var swig = require('swig');
 
@@ -117,7 +118,13 @@ function WebApp(config, logger) {
 			next();
 		});
 
+		// Trust a proxy
+		self.app.set('trust proxy', true);
+
 		// Template engine
+		swig.setFilter('ip', function(addr) {
+			return ip.toString(addr);
+		});
 		self.app.engine('swig', swig.renderFile);
 		self.app.set('views', __dirname + '/../views');
 		self.app.set('view cache', false);
@@ -199,7 +206,7 @@ function WebApp(config, logger) {
 	});
 }
 
-// Top level controllers
+// Homepage
 WebApp.prototype.home = function(req, res) {
 	res.render('home.swig');
 };
@@ -218,8 +225,17 @@ WebApp.prototype.postLogin = function(req, res, next) {
 
 	webform.loginForm(this.dbconn, req.body)
 	.then(function(user) {
+		// Record a user login action.
+		return Promise.all([user, self.dbconn.Action.create({
+			UserId: user.id,
+			WhomId: user.id,
+			type: 'login',
+			ip: ip.toBuffer(req.ip)
+		})]);
+	}).spread(function(user) {
 		return Promise.all([user, user.getProfile()]);
 	}).spread(function(user, profile) {
+		// Log the user in.
 		req.session.user = {
 			id: user.id,
 			username: user.username,

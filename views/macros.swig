@@ -28,11 +28,9 @@
 	<li class="{% if tab == 'settings' %}active{% endif %}">
 		<a href="/users/{{ username }}/settings">Settings</a>
 	</li>
-	{% if session.user.is_operator %}
 	<li class="{% if tab == 'actions' %}active{% endif %}">
 		<a href="/users/{{ username }}/actions">Actions</a>
 	</li>
-	{% endif %}
 </ul>
 {% endif %}
 {% endmacro %}

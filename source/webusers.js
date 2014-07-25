@@ -50,6 +50,8 @@ function WebUsers(dbconn) {
 	routes.get('/:id/settings', this.editSettings.bind(this));
 	routes.post('/:id/settings', this.editSettingsPost.bind(this));
 
+	routes.get('/:id/actions', this.getActions.bind(this));
+
 	return routes;
 }
 
@@ -97,6 +99,8 @@ WebUsers.prototype.getUsers = function(req, res, next) {
 
 // Get information on a specific user.
 WebUsers.prototype.getUser = function(req, res, next) {
+	var self = this;
+
 	this.dbconn.User.find({
 		where: {username: req.params.id.toLowerCase()},
 		include: [this.dbconn.Profile]
@@ -118,6 +122,18 @@ WebUsers.prototype.getUser = function(req, res, next) {
 			}
 		}
 
+		// Find the latest authentication
+		return Promise.all([user, self.dbconn.Action.find({
+			where: {UserId: user.id, type: 'auth'},
+			order: 'createdAt DESC'
+		})]);
+	}).spread(function(user, action) {
+		// We may not be able to see the latest authentication.
+		var lastplayed;
+		if (action && user.profile.visible_lastseen) {
+			lastplayed = action.createdAt;
+		}
+
 		// Designate if we can see the full admin toolbar
 		var can_administer = false;
 		if ("user" in req.session &&
@@ -127,7 +143,7 @@ WebUsers.prototype.getUser = function(req, res, next) {
 
 		res.render('getUser.swig', {
 			can_administer: can_administer,
-			user: user
+			user: user, lastplayed: lastplayed
 		});
 	}).catch(next);
 };
@@ -249,7 +265,7 @@ WebUsers.prototype.editSettings = function(req, res, next) {
 	}).catch(next);
 };
 
-	// Process a user settings submission
+// Process a user settings submission
 WebUsers.prototype.editSettingsPost = function(req, res, next) {
 	var self = this;
 
@@ -349,6 +365,24 @@ WebUsers.prototype.editSettingsPost = function(req, res, next) {
 				});
 			});
 		}
+	}).catch(next);
+};
+
+// Get a complete list of actions associated with a user.
+WebUsers.prototype.getActions = function(req, res, next) {
+	var username = req.params.id.toLowerCase();
+
+	this.dbconn.Action.findAll({
+		include: [{
+			model: this.dbconn.User,
+			where: {username: username}
+		}],
+		order: 'createdAt DESC'
+	}).then(function(actions) {
+		res.render('getUserActions.swig', {
+			actions: actions,
+			username: username
+		});
 	}).catch(next);
 };
 

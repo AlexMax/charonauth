@@ -34,7 +34,8 @@
     "swig": "^1.4.1",
     "world-countries": "~1.4.1",
     "nodemailer-smtp-transport": "~0.1.12",
-    "nodemailer-sendmail-transport": "~0.1.2"
+    "nodemailer-sendmail-transport": "~0.1.2",
+    "ip": "~0.3.0"
   },
   "devDependencies": {
     "mocha": ">1.18.0",

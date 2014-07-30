@@ -76,6 +76,7 @@ describe('AuthApp', function() {
 
 		it("should be capable of creating new authentication sessions.", function() {
 			var packet = proto.serverNegotiate.marshall({
+				clientSession: 654321,
 				username: 'username'
 			});
 
@@ -87,12 +88,33 @@ describe('AuthApp', function() {
 				// Will throw and reject the promise if it fails
 				var response = proto.authNegotiate.unmarshall(msg);
 
+				assert.equal(response.clientSession, 654321, "Client Session is incorrect");
+				assert.equal(response.username, "username", "Username is incorrect");
+				assert.equal(response.salt.toString('hex'), '615a9e29', "Salt is incorrect");
+			});
+		});
+		it("should return the correct username for mixed-case attempts.", function() {
+			var packet = proto.serverNegotiate.marshall({
+				clientSession: 654321,
+				username: 'Username'
+			});
+
+			return new AuthApp(config).then(function(app) {
+				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
+			}).spread(function(app, _) {
+				return app.serverNegotiate(packet);
+			}).then(function(msg) {
+				// Will throw and reject the promise if it fails
+				var response = proto.authNegotiate.unmarshall(msg);
+
+				assert.equal(response.clientSession, 654321, "Client Session is incorrect");
 				assert.equal(response.username, "username", "Username is incorrect");
 				assert.equal(response.salt.toString('hex'), '615a9e29', "Salt is incorrect");
 			});
 		});
 		it("should error if the user does not exist.", function() {
 			var packet = proto.serverNegotiate.marshall({
+				clientSession: 654321,
 				username: 'alice'
 			});
 

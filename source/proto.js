@@ -65,13 +65,19 @@ function writeString(buf, str, offset, encoding) {
 }
 
 // Server Negotiation
+//
+// Header, UInt32
+// Maximum Protocol Version, UInt8
+// Client Session ID, UInt32
+// Username, String
 var serverNegotiate = {
 	marshall: function(data) {
-		var buf = new Buffer(5 + Buffer.byteLength(data.username, 'ascii') + 1);
+		var buf = new Buffer(9 + Buffer.byteLength(data.username, 'ascii') + 1);
 
 		buf.writeUInt32LE(SERVER_NEGOTIATE, 0);
 		buf.writeUInt8(1, 4);
-		writeString(buf, data.username, 5, 'ascii');
+		buf.writeUInt32LE(data.clientSession, 5);
+		writeString(buf, data.username, 9, 'ascii');
 
 		return buf;
 	},
@@ -85,7 +91,8 @@ var serverNegotiate = {
 
 		// Username
 		var data = {
-			username: readString(buf, 5, 'ascii')
+			clientSession: buf.readUInt32LE(5),
+			username: readString(buf, 9, 'ascii')
 		};
 
 		return data;
@@ -93,17 +100,25 @@ var serverNegotiate = {
 };
 
 // Auth server negotiation
-// UInt32, UInt8, UInt32, UInt8, Buffer, String
+//
+// Header, UInt32
+// Protocol Version, UInt8
+// Client Session ID, UInt32
+// Session ID, UInt32
+// Salt Length, UInt8
+// Salt, Bytes
+// Username, String
 var authNegotiate = {
 	marshall: function(data) {
-		var buf = new Buffer(10 + data.salt.length + Buffer.byteLength(data.username, 'ascii') + 1);
+		var buf = new Buffer(14 + data.salt.length + Buffer.byteLength(data.username, 'ascii') + 1);
 
 		buf.writeUInt32LE(AUTH_NEGOTIATE, 0);
 		buf.writeUInt8(1, 4);
-		buf.writeUInt32LE(data.session, 5);
-		buf.writeUInt8(data.salt.length, 9);
-		data.salt.copy(buf, 10);
-		writeString(buf, data.username, 10 + data.salt.length, 'ascii');
+		buf.writeUInt32LE(data.clientSession, 5);
+		buf.writeUInt32LE(data.session, 9);
+		buf.writeUInt8(data.salt.length, 13);
+		data.salt.copy(buf, 14);
+		writeString(buf, data.username, 14 + data.salt.length, 'ascii');
 
 		return buf;
 	},
@@ -116,14 +131,15 @@ var authNegotiate = {
 		}
 
 		// Salt
-		var salt_len = buf.readUInt8(9);
+		var salt_len = buf.readUInt8(13);
 		var salt = new Buffer(salt_len);
-		buf.copy(salt, 0, 10, 10 + salt_len);
+		buf.copy(salt, 0, 14, 14 + salt_len);
 
 		var data = {
-			session: buf.readUInt32LE(5),
+			clientSession: buf.readUInt32LE(5),
+			session: buf.readUInt32LE(9),
 			salt: salt,
-			username: readString(buf, 10 + salt_len, 'ascii')
+			username: readString(buf, 14 + salt_len, 'ascii')
 		};
 
 		return data;

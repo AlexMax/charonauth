@@ -38,19 +38,20 @@
     "ip": "~0.3.0"
   },
   "devDependencies": {
-    "mocha": ">1.18.0",
-    "sqlite3": "~2.2.4",
     "grunt-cli": "^0.1.13",
-    "less": "^1.7.3",
     "istanbul": "~0.3.0",
-    "jshint": "~2.5.2"
+    "jshint": "~2.5.2",
+    "less": "^1.7.3",
+    "mariasql": "^0.1.21",
+    "mocha": ">1.18.0",
+    "sqlite3": "~2.2.4"
   },
   "scripts": {
-		"test": "npm run test-jshint && npm run test-mocha",
-		"test-jshint": "jshint source/*.js",
-		"test-mocha": "istanbul cover _mocha --report html",
-		"prepublish": "npm run prepublish-lessc && npm run prepublish-flags",
-		"prepublish-lessc": "lessc assets/css/site.less public/assets/css/site.css",
-		"prepublish-flags": "cp -f node_modules/world-countries/data/*.svg public/assets/svg/"
-	}
+    "test": "npm run test-jshint && npm run test-mocha",
+    "test-jshint": "jshint source/*.js",
+    "test-mocha": "istanbul cover _mocha --report html",
+    "prepublish": "npm run prepublish-lessc && npm run prepublish-flags",
+    "prepublish-lessc": "lessc assets/css/site.less public/assets/css/site.css",
+    "prepublish-flags": "cp -f node_modules/world-countries/data/*.svg public/assets/svg/"
+  }
 }

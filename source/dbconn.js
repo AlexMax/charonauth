@@ -144,7 +144,7 @@ var DBConn = function(config) {
 			clantag: Sequelize.STRING,
 			contactinfo: Sequelize.STRING,
 			country: Sequelize.STRING,
-			gravatar: Sequelize.ENUM(null, 'identicon', 'monsterid', 'wavatar', 'retro'),
+			gravatar: {type: Sequelize.ENUM('identicon', 'monsterid', 'wavatar', 'retro'), allowNull: true},
 			location: Sequelize.STRING,
 			message: Sequelize.STRING,
 			username: Sequelize.STRING,

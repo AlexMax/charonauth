@@ -162,14 +162,16 @@ AuthApp.prototype.router = function(msg, rinfo) {
 // This is the initial route that creates an authentication session.
 AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 	var self = this;
-	var packet, username;
+	var packet, username, clientSession;
 
 	return new Promise(function(resolve, reject) {
 		// Unmarshall the server negotiation packet
 		packet = proto.serverNegotiate.unmarshall(msg);
 		username = packet.username;
+		clientSession = packet.clientSession;
 
 		self.log.verbose("serverNegotiate", {
+			clientSession: clientSession,
 			username: username
 		});
 
@@ -180,12 +182,14 @@ AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 	}).spread(function(session, user) {
 		// Write the response packet
 		var res = {
+			clientSession: clientSession,
 			session: session.session,
 			salt: user.salt,
 			username: user.username
 		};
 
 		self.log.verbose("authNegotiate", {
+			clientSession: res.clientSession,
 			session: res.session,
 			salt: res.salt.toString('hex'),
 			username: res.username

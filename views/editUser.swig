@@ -62,9 +62,9 @@
 				<option value="">No Country Selected</option>
 				{% for country in countries %}
 				{% if data.profile.country === country.cca2 %}
-				<option value="{{ country.cca2 }}" selected>{{ country.name }}</option>
+				<option value="{{ country.cca2 }}" selected>{{ country.name.common }}</option>
 				{% else %}
-				<option value="{{ country.cca2 }}">{{ country.name }}</option>
+				<option value="{{ country.cca2 }}">{{ country.name.common }}</option>
 				{% endif %}
 				{% endfor %}
 			</select>

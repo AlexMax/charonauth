@@ -159,7 +159,7 @@ var DBConn = function(config) {
 					if (_.isNull(this.country) || _.isEmpty(this.country)) {
 						return null;
 					} else {
-						return countries.getData(this.country).name;
+						return countries.getData(this.country, 'name.common', null);
 					}
 				},
 				getFlag: function() {

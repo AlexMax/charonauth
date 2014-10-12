@@ -43,13 +43,33 @@ module.exports.isCountryCode = function(str) {
 };
 
 // Gets country data by cca2
-module.exports.getData = function(str) {
+module.exports.getData = function(str, path) {
 	var code = str.toUpperCase();
 	if (code in cca2hash) {
-		return cca2hash[code];
+		if (!_.isUndefined(path)) {
+			return extract(cca2hash[code], path, null);
+		} else {
+			return cca2hash[code];
+		}
 	} else {
 		return null;
 	}
 };
+
+// http://stackoverflow.com/a/16190716
+function extract(obj, path, def) {
+	for (var i = 0, path = path.split('.'), len = path.length;i < len;i++) {
+		if (!obj || typeof obj !== 'object') {
+			return def;
+		}
+		obj = obj[path[i]];
+	}
+
+	if (obj === undefined) {
+		return def;
+	}
+
+	return obj;
+}
 
 module.exports.countries = countries;

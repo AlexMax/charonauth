@@ -43,6 +43,7 @@ function WebUsers(dbconn) {
 	routes.get('/:id', this.getUser.bind(this));
 
 	routes.use('/:id/:verb(edit|settings|actions)', this.editUserAccess.bind(this));
+	routes.use('/:id/actions/:aid', this.editUserAccess.bind(this));
 
 	routes.get('/:id/edit', this.editUser.bind(this));
 	routes.post('/:id/edit', this.editUserPost.bind(this));
@@ -51,6 +52,7 @@ function WebUsers(dbconn) {
 	routes.post('/:id/settings', this.editSettingsPost.bind(this));
 
 	routes.get('/:id/actions', this.getActions.bind(this));
+	routes.get('/:id/actions/:aid', this.getAction.bind(this));
 
 	return routes;
 }
@@ -381,6 +383,27 @@ WebUsers.prototype.getActions = function(req, res, next) {
 	}).then(function(actions) {
 		res.render('getUserActions.swig', {
 			actions: actions,
+			username: username
+		});
+	}).catch(next);
+};
+
+WebUsers.prototype.getAction = function(req, res, next) {
+	var username = req.params.id.toLowerCase();
+	var actionID = req.params.aid;
+
+	this.dbconn.Action.find({
+		where: {id: actionID},
+		include: [{
+			model: this.dbconn.User,
+			as: "User"
+		}, {
+			model: this.dbconn.User,
+			as: "Whom"
+		}]
+	}).then(function(action) {
+		res.render('getUserAction.swig', {
+			action: action,
 			username: username
 		});
 	}).catch(next);

@@ -2,12 +2,6 @@
 {% extends 'layout.swig' %}
 
 {% block body %}
-
-{% set actionTypes = {
-	"login": "Logged into Website",
-	"auth": "Server Authentication"
-} %}
-
 {{ macros.usernav(username, 'actions', true) }}
 {% if actions %}
 <table class="table">
@@ -20,8 +14,8 @@
 	<tbody>
 		{% for action in actions %}
 		<tr>
-			<td>{{ action.createdAt|date('Y-m-d H:i:s') }}</td>
-			<td>{{ actionTypes[action.type] }}</td>
+			<td><a href="/users/{{ username }}/actions/{{ action.id }}">{{ action.createdAt|date('Y-m-d H:i:s') }}</a></td>
+			<td>{{ action.getPrettyType() }}</td>
 			<td>{{ action.ip|ip }}</td>
 		</tr>
 		{% endfor %}

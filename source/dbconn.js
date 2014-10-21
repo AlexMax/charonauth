@@ -32,6 +32,16 @@ var countries = require('./countries');
 var error = require('./error');
 var srp = require('../srp');
 
+// Lookup table for action types
+var prettyTypes = {
+	auth: "Authenticated on game server",
+	login: "Logged into website",
+	logout: "Logged out of website",
+	editUser: "Edited user data",
+	editProfile: "Edited user profile data",
+	create: "User created"
+};
+
 // DBConn
 //
 // Handles communication with the database.
@@ -132,11 +142,22 @@ var DBConn = function(config) {
 			ip: Sequelize.BLOB,
 			before: Sequelize.STRING,
 			after: Sequelize.STRING
+		}, {
+			instanceMethods: {
+				getPrettyType: function() {
+					if (this.type in prettyTypes) {
+						return prettyTypes[this.type];
+					} else {
+						return "Unknown action";
+					}
+				}
+			}
 		});
 
 		self.User.hasMany(self.Action);
 		self.User.hasMany(self.Action, {as: 'Whom', foreignKey: 'WhomId'});
 		self.Action.belongsTo(self.User);
+		self.Action.belongsTo(self.User, {as: 'Whom', foreignKey: 'WhomId'});
 
 		// Profile is used for incidental user information.
 		self.Profile = self.db.define('Profile', {

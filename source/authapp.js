@@ -158,6 +158,7 @@ AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 			salt: res.salt.toString('hex'),
 			username: res.username
 		});
+
 		return proto.authNegotiate.marshall(res);
 	}).catch(error.UserNotFound, function() {
 		// Depending on if we're dealing with v1 or v2 of the protocol, send
@@ -236,6 +237,7 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 			session: res.session,
 			ephemeral: res.ephemeral.toString('hex')
 		});
+
 		return proto.authEphemeral.marshall(res);
 	}).catch(error.SessionNotFound, function() {
 		return proto.sessionError.marshall({
@@ -308,6 +310,7 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 			session: res.session,
 			proof: res.proof.toString('hex')
 		});
+
 		return proto.authProof.marshall(res);
 	}).catch(error.SessionNotFound, function() {
 		return proto.sessionError.marshall({

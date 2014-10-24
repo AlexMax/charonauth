@@ -80,51 +80,12 @@ AuthApp.prototype.message = function(msg, rinfo) {
 	this.router(msg, rinfo).then(function(response) {
 		// If our handler has a valid response, send it back
 		self.socket.send(response, 0, response.length, rinfo.port, rinfo.address);
-	}).catch(error.UserNotFound, function(err) {
-		// User was not found
-		self.log.info(err.message, {
-			username: err.username,
-			rinfo: rinfo
-		});
-
-		var error = proto.userError.marshall({
-			username: err.username,
-			error: proto.USER_NO_EXIST
-		});
-
-		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
-	}).catch(error.SessionNotFound, function(err) {
-		// Session was not found
-		self.log.info(err.message, {
-			session: err.session,
-			rinfo: rinfo
-		});
-
-		var error = proto.sessionError.marshall({
-			session: err.session,
-			error: proto.SESSION_NO_EXIST
-		});
-
-		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
-	}).catch(error.SessionAuthFailed, function(err) {
-		// Session authentication failed
-		self.log.info(err.message, {
-			session: err.session,
-			rinfo: rinfo
-		});
-
-		var error = proto.sessionError.marshall({
-			session: err.session,
-			error: proto.SESSION_AUTH_FAILED
-		});
-
-		self.socket.send(error, 0, error.length, rinfo.port, rinfo.address);
 	}).catch(error.IgnorableProtocol, function(err) {
 		// Protocol error that can be ignored unless we're debugging
 		self.log.verbose(err.message, {
 			rinfo: rinfo
 		});
-	});
+	}).done();
 };
 
 // Router.
@@ -162,17 +123,20 @@ AuthApp.prototype.router = function(msg, rinfo) {
 // This is the initial route that creates an authentication session.
 AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 	var self = this;
-	var packet, username, clientSession;
+	var packet, username, clientSession, version;
 
 	return new Promise(function(resolve, reject) {
 		// Unmarshall the server negotiation packet
 		packet = proto.serverNegotiate.unmarshall(msg);
-		username = packet.username;
+
 		clientSession = packet.clientSession;
+		username = packet.username;
+		version = packet.version;
 
 		self.log.verbose("serverNegotiate", {
 			clientSession: clientSession,
-			username: username
+			username: username,
+			version: version
 		});
 
 		// Create a new session for given user.
@@ -195,6 +159,28 @@ AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 			username: res.username
 		});
 		return proto.authNegotiate.marshall(res);
+	}).catch(error.UserNotFound, function() {
+		// Depending on if we're dealing with v1 or v2 of the protocol, send
+		// back an error message with a username or client session ID in it.
+		var res = null;
+		switch (version) {
+		case 2:
+			// Error message with client session ID.
+			return proto.clientSessionError.marshall({
+				error: proto.USER_NO_EXIST,
+				clientSession: clientSession
+			});
+		case 1:
+			// Error message with username.
+			// [AM] Remove support for this when Zandronum 1.3.1/1.4/2.0 comes out.
+			return proto.userError.marshall({
+				error: proto.USER_NO_EXIST,
+				username: username
+			});
+		default:
+			// Do not respond at all.
+			throw new error.IgnorableProtocol('Attempting to error with unknown protoocl version');
+		}
 	});
 };
 
@@ -204,13 +190,15 @@ AuthApp.prototype.serverNegotiate = function(msg, rinfo) {
 // back to the client.
 AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 	var self = this;
-	var packet;
+	var packet, session;
 
 	return new Promise(function(resolve, reject) {
 		packet = proto.serverEphemeral.unmarshall(msg);
 
+		session = packet.session;
+
 		self.log.verbose("serverEphemeral", {
-			session: packet.session,
+			session: session,
 			ephemeral: packet.ephemeral.toString('hex')
 		});
 
@@ -249,6 +237,11 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 			ephemeral: res.ephemeral.toString('hex')
 		});
 		return proto.authEphemeral.marshall(res);
+	}).catch(error.SessionNotFound, function() {
+		return proto.sessionError.marshall({
+			error: proto.SESSION_NO_EXIST,
+			session: session
+		});
 	});
 };
 
@@ -259,13 +252,15 @@ AuthApp.prototype.serverEphemeral = function(msg, rinfo) {
 // server is who he says he is.
 AuthApp.prototype.serverProof = function(msg, rinfo) {
 	var self = this;
-	var packet;
+	var packet, session;
 
 	return new Promise(function(resolve, reject) {
 		packet = proto.serverProof.unmarshall(msg);
 
+		session = packet.session;
+
 		self.log.verbose("serverProof", {
-			session: packet.session,
+			session: session,
 			proof: packet.proof.toString('hex')
 		});
 
@@ -314,6 +309,16 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 			proof: res.proof.toString('hex')
 		});
 		return proto.authProof.marshall(res);
+	}).catch(error.SessionNotFound, function() {
+		return proto.sessionError.marshall({
+			error: proto.SESSION_NO_EXIST,
+			session: session
+		});
+	}).catch(error.SessionAuthFailed, function() {
+		return proto.sessionError.marshall({
+			error: proto.SESSION_AUTH_FAILED,
+			session: session
+		});
 	});
 };
 

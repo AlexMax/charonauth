@@ -30,7 +30,8 @@ var SERVER_EPHEMERAL = 0xD003CA02;
 var AUTH_EPHEMERAL = 0xD003CA20;
 var SERVER_PROOF = 0xD003CA03;
 var AUTH_PROOF = 0xD003CA30;
-var ERROR_USER = 0xD003CAFF;
+var ERROR_USER = 0xD003CAFF; // Protocol v1
+var ERROR_CLIENTSESSION = 0xD003CAFF; // Protocol v2
 var ERROR_SESSION = 0xD003CAEE;
 
 function readString(buf, offset, encoding) {
@@ -75,7 +76,7 @@ var serverNegotiate = {
 		var buf = new Buffer(9 + Buffer.byteLength(data.username, 'ascii') + 1);
 
 		buf.writeUInt32LE(SERVER_NEGOTIATE, 0);
-		buf.writeUInt8(1, 4);
+		buf.writeUInt8(data.version, 4);
 		buf.writeUInt32LE(data.clientSession, 5);
 		writeString(buf, data.username, 9, 'ascii');
 
@@ -85,14 +86,16 @@ var serverNegotiate = {
 		if (buf.readUInt32LE(0) !== SERVER_NEGOTIATE) {
 			throw new TypeError("Buffer is not a SERVER_NEGOTIATE packet");
 		}
-		if (buf.readUInt8(4) !== 1) {
-			throw new TypeError("Buffer is incorrect version of protocol");
+
+		var version = buf.readUInt8(4);
+		if (version !== 1 && version !== 2) {
+			throw new TypeError("Buffer is unknown version of protocol");
 		}
 
-		// Username
 		var data = {
 			clientSession: buf.readUInt32LE(5),
-			username: readString(buf, 9, 'ascii')
+			username: readString(buf, 9, 'ascii'),
+			version: version
 		};
 
 		return data;
@@ -285,6 +288,28 @@ var userError = {
 	}
 };
 
+var clientSessionError = {
+	marshall: function(data) {
+		var buf = new Buffer(9);
+
+		buf.writeUInt32LE(ERROR_CLIENTSESSION, 0);
+		buf.writeUInt8(data.error, 4);
+		buf.writeUInt32LE(data.clientSession, 5);
+
+		return buf;
+	},
+	unmarshall: function(buf) {
+		if (buf.readUInt32LE(0) !== ERROR_CLIENTSESSION) {
+			throw new TypeError("Buffer is not an ERROR_SESSION packet");
+		}
+
+		return {
+			clientSession: buf.readUInt32LE(5),
+			error: buf.readUInt8(4)
+		};
+	}
+};
+
 var sessionError = {
 	marshall: function(data) {
 		var buf = new Buffer(9);
@@ -315,6 +340,7 @@ exports.serverProof = serverProof;
 exports.authProof = authProof;
 
 exports.userError = userError;
+exports.clientSessionError = clientSessionError;
 exports.sessionError = sessionError;
 
 exports.SERVER_NEGOTIATE = SERVER_NEGOTIATE;
@@ -325,7 +351,8 @@ exports.SERVER_PROOF = SERVER_PROOF;
 exports.AUTH_PROOF = AUTH_PROOF;
 
 exports.ERROR_USER = ERROR_USER;
-exports.ERROR_SESSION = 0xD003CAEE;
+exports.ERROR_CLIENTSESSION = ERROR_CLIENTSESSION;
+exports.ERROR_SESSION = ERROR_SESSION;
 
 exports.USER_TRY_LATER = 0;
 exports.USER_NO_EXIST = 1;

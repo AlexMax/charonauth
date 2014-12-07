@@ -288,11 +288,23 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 			// Check the client's proof.  This will throw if it fails.
 			proof = srpServer.checkM1(packet.proof);
 		} catch(e) {
+			// Log failed authentications to the logfile.
+			self.log.info("Failed Authentication", {
+				ip: rinfo.address,
+				username: user.username
+			});
+
 			// Authentication failed.
 			throw new error.SessionAuthFailed("Authentication failed", packet.session);
 		}
 
-		// Log an authenticate action
+		// Log successful authentications to the logfile.
+		self.log.info("Successful Authentication", {
+			ip: rinfo.address,
+			username: user.username
+		});
+
+		// Log an authenticate action as an action.
 		return Promise.all([proof, self.dbconn.Action.create({
 			UserId: user.id,
 			WhomId: user.id,

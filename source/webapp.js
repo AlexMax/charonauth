@@ -94,10 +94,17 @@ function WebApp(config, logger) {
 
 		// Middleware
 		self.app.use(function(req, res, next) {
-			// Write pageviews with the logger instance
-			self.log.info(req.method + " " + req.originalUrl, {
-				ip: req.ip,
-			});
+			// Override the page renderer to log before rendering.  We want
+			// to do logging at that point instead of at the beginning,
+			// because we want to log HTTP status codes too.
+			var expressRender = res.render;
+			res.render = function(view, locals, callback) {
+				self.log.info(req.method + " " + req.originalUrl, {
+					ip: req.ip,
+					status: res.statusCode
+				});
+				expressRender.call(res, view, locals, callback);
+			};
 			next();
 		});
 		self.app.use(express.static(__dirname + '/../public'));

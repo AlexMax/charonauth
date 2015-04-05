@@ -244,6 +244,7 @@ describe('AuthApp', function() {
 				port: 16666
 			}
 		};
+		var rinfo = {address: '127.0.0.1'};
 		it("should be capable of logging a user in.", function() {
 			var app;
 
@@ -274,7 +275,7 @@ describe('AuthApp', function() {
 			}).then(function() {
 				return require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session);
 			}).then(function() {
-				return app.serverProof(packet, {address: '127.0.0.1'});
+				return app.serverProof(packet, rinfo);
 			}).then(function(msg) {
 				var response = proto.authProof.unmarshall(msg);
 
@@ -306,7 +307,7 @@ describe('AuthApp', function() {
 			}).spread(function(app, _) {
 				return Promise.all([app, require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session)]);
 			}).spread(function(app, _) {
-				return app.serverProof(packet);
+				return app.serverProof(packet, rinfo);
 			}).then(function(msg) {
 				var error = proto.sessionError.unmarshall(msg);
 
@@ -330,7 +331,7 @@ describe('AuthApp', function() {
 			}).spread(function(app, _) {
 				return Promise.all([app, require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session)]);
 			}).spread(function(app, _) {
-				return app.serverProof(packet);
+				return app.serverProof(packet, rinfo);
 			}).then(function(msg) {
 				var error = proto.sessionError.unmarshall(msg);
 

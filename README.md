@@ -1,17 +1,18 @@
 Charonauth
 ==========
 
+A game authentication server with a built-in web interface.
 
-
-HOW TO USE THE AUTHENTICATION SERVER FOR AUTHENTICATION TESTING FOR GREAT GOOD
-------------------------------------------------------------------------------
+Installation
+------------
 
 This application is:
 
-1. Not finished.  There's stuff that's still kinda broken, and I cannot even guarantee that the database schema won't change between now and the 1.0 release of charonauth.
+1. Not finished.  The software has seen use in the wild for many months now and I have heard nothing but good things about its stability, however I cannot give you any guarantees of stability, in terms of the software or the database schema.
 2. Not really designed to be easy for end users to run on their own.  It's aimed at server administrators who can do the legwork of deploying it.
+3. Already hosted in several places.  You do not need to run your own authentication server to make use of auth server features in Zandronum, simply set the `authhostname` variable of to `best-ever.org` (hosted by Jenova), `grandvoid.sickedwick.net` (hosted by Konar6), or `auth.funcrusher.net` (hosted by myself).
 
-That said, if you're serious about toying around with it locally, maybe so you can work on a modification that relies on accounts, here's how you do it.  Note that installing this on Windows is a gigantic headache and should not be used for production systems - I only support it because I like working on my desktop PC with Windows installed.
+That said, if you're serious about toying around with it locally, here's how you do it.  Note that installing this on Windows is a gigantic headache and should not be used for production systems - I only support it because I like working on my desktop PC with Windows installed.
 
 You need to install:
 
@@ -47,3 +48,10 @@ The warning only appears on Windows and it simply says that the authentication s
 Open a web browser and go to <http://localhost:your_web_port> and you should see a web interface.  Some of the links don't work, but __Register__ and __Login__ should, so you can add a test account.
 
 All you have to do now is configure the Zandronum server to point at your login server.  The cvar should be `authhostname` and should take an _ip:port_ representation.
+
+License
+-------
+
+This software has been released under the [GNU Affero General Public License](https://www.gnu.org/licenses/agpl-3.0.html).  It seemed prudent to start with a license that ensures code freedom, because once you switch to a license that prioritizes developer freedom it's very hard to put the genie back in the bottle.  If you have a particular use case in mind where the AGPL would be problematic, however, I am open to alternative licensing arrangements.
+
+I have also vendored Mozilla's [node-srp](https://github.com/mozilla/node-srp) library and have added a few fixes for the final client verification message, and I feel like the only fair thing to do is to continue to offer this modified library under its original [MIT license](http://opensource.org/licenses/MIT).

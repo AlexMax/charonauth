@@ -31,7 +31,7 @@
     "nodemailer-sendmail-transport": "~1.0.0",
     "nodemailer-smtp-transport": "~0.1.12",
     "request": "~2.44.0",
-    "sequelize": "~1.7.9",
+    "sequelize": "^2.0.5",
     "swig": "~1.4.1",
     "validator": "~3.19.0",
     "winston": "~0.8.0",

@@ -21,30 +21,40 @@
 
 var child_process = require('child_process');
 
+var Config = require('./config');
 var Logger = require('./logger');
 
 module.exports = function(config) {
 	var self = this;
 
+	// Set defaults
+	this.config = new Config(config.get(), {
+		charonauth: {
+			disable: false
+		}
+	});
+
 	// Set up the top-level logger.
 	this.log = new Logger(config.get('log'));
-
 	this.log.info("Starting up...");
 
-	this.authmaster = child_process.fork(__dirname + '/authmaster');
-	this.webmaster = child_process.fork(__dirname + '/webmaster');
+	if (this.config.get('charonauth.disable') !== 'auth') {
+		this.authmaster = child_process.fork(__dirname + '/authmaster');
+		this.authmaster.on('exit', function(code, signal) {
+			self.log.warn('Authentication master died, respawning...');
+			self.authmaster = child_process.fork(__dirname + '/authmaster');
+			self.authmaster.send({config: config.get()});
+		});
+		this.authmaster.send({config: config.get()});
+	}
 
-	this.authmaster.on('exit', function(code, signal) {
-		self.log.warn('Authentication master died, respawning...');
-		self.authmaster = child_process.fork(__dirname + '/authmaster');
-		self.authmaster.send({config: config.get()});
-	});
-	this.webmaster.on('exit', function(code, signal) {
-		self.log.warn('Web master died, respawning...');
-		self.webmaster = child_process.fork(__dirname + '/webmaster');
-		self.webmaster.send({config: config.get()});
-	});
-
-	this.authmaster.send({config: config.get()});
-	this.webmaster.send({config: config.get()});
+	if (this.config.get('charonauth.disable') !== 'web') {
+		this.webmaster = child_process.fork(__dirname + '/webmaster');
+		this.webmaster.on('exit', function(code, signal) {
+			self.log.warn('Web master died, respawning...');
+			self.webmaster = child_process.fork(__dirname + '/webmaster');
+			self.webmaster.send({config: config.get()});
+		});
+		this.webmaster.send({config: config.get()});
+	}
 };

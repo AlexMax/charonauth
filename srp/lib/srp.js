@@ -57,13 +57,6 @@ function assertIsBuffer(arg, argname) {
   assert_(Buffer.isBuffer(arg), "Type error: "+argname+" must be a buffer");
 }
 
-function assertIsNBuffer(arg, params, argname) {
-  argname = argname || "arg";
-  assert_(Buffer.isBuffer(arg), "Type error: "+argname+" must be a buffer");
-  if (arg.length != params.N_length_bits/8)
-    assert_(false, argname+" was "+arg.length+", expected "+(params.N_length_bits/8));
-}
-
 function assertIsBignum(arg) {
   assert.equal(arg.constructor.name, "BigNum");
 }
@@ -222,8 +215,8 @@ function getA(params, a_num) {
  * returns: u (bignum)      shared scrambling parameter
  */
 function getu(params, A, B) {
-  assertIsNBuffer(A, params, "A");
-  assertIsNBuffer(B, params, "B");
+  assertIsBuffer(A, "A");
+  assertIsBuffer(B, "B");
   var u_buf = crypto.createHash(params.hash)
     .update(A).update(B)
     .digest();
@@ -292,7 +285,7 @@ function server_getS(params, v_num, A_num, b_num, u_num) {
  * returns: buffer
  */
 function getK(params, S_buf) {
-  assertIsNBuffer(S_buf, params, "S");
+  assertIsBuffer(S_buf, "S");
   return crypto.createHash(params.hash)
       .update(S_buf)
       .digest();
@@ -301,8 +294,8 @@ function getK(params, S_buf) {
 function getM1(params, I_buf, s_buf, A_buf, B_buf, K_buf) {
   assertIsBuffer(I_buf, "I");
   assertIsBuffer(s_buf, "s");
-  assertIsNBuffer(A_buf, params, "A");
-  assertIsNBuffer(B_buf, params, "B");
+  assertIsBuffer(A_buf, "A");
+  assertIsBuffer(B_buf, "B");
   assertIsBuffer(K_buf, "K");
 
   var hashN = crypto.createHash(params.hash).update(params.N.toBuffer()).digest();
@@ -319,7 +312,7 @@ function getM1(params, I_buf, s_buf, A_buf, B_buf, K_buf) {
 }
 
 function getM2(params, A_buf, M_buf, K_buf) {
-  assertIsNBuffer(A_buf, params, "A");
+  assertIsBuffer(A_buf, "A");
   assertIsBuffer(M_buf, "M");
   assertIsBuffer(K_buf, "K");
   return crypto.createHash(params.hash)

@@ -14,7 +14,7 @@ var srp = Promise.promisifyAll(require('../srp'));
 describe('AuthApp', function() {
 	describe('new AuthApp()', function() {
 		it("should construct correctly.", function() {
-			return new AuthApp({
+			return Promise.using(new AuthApp({
 				database: {
 					uri: "sqlite://charonauth/",
 					storage: ":memory:"
@@ -22,10 +22,12 @@ describe('AuthApp', function() {
 				auth: {
 					port: 16666
 				}
+			}), function(app) {
+				assert(app instanceof AuthApp);
 			});
 		});
-		it("should error on missing port.", function() {
-			return new AuthApp({}).then(function() {
+		it("should error on missing configuration.", function() {
+			return Promise.using(new AuthApp({}), function(app) {
 				throw new Error("Did not error");
 			}).catch(function(err) {
 				// Success
@@ -44,22 +46,22 @@ describe('AuthApp', function() {
 		};
 		it('should error if the packet is too short.', function() {
 			var packet = new Buffer('00', 'hex');
-			return new AuthApp(config).then(function(app) {
-				return app.router(packet);
-			}).then(function() {
-				throw new Error("Did not error");
-			}).catch(error.IgnorableProtocol, function() {
-				// Success
+			return Promise.using(new AuthApp(config), function(app) {
+				return app.router(packet).then(function() {
+					throw new Error("Did not error");
+				}).catch(error.IgnorableProtocol, function() {
+					// Success
+				});
 			});
 		});
 		it('should error if the packet doesn\'t route anywhere.', function() {
 			var packet = new Buffer('00010203', 'hex');
-			return new AuthApp(config).then(function(app) {
-				return app.router(packet);
-			}).then(function() {
-				throw new Error("Did not error");
-			}).catch(error.IgnorableProtocol, function() {
-				// Success
+			return Promise.using(new AuthApp(config), function(app) {
+				return app.router(packet).then(function() {
+					throw new Error("Did not error");
+				}).catch(error.IgnorableProtocol, function() {
+					// Success
+				});
 			});
 		});
 	});
@@ -84,17 +86,18 @@ describe('AuthApp', function() {
 				version: 2
 			});
 
-			return new AuthApp(config).then(function(app) {
-				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
-			}).spread(function(app, _) {
-				return app.serverNegotiate(packet);
-			}).then(function(msg) {
-				// Will throw and reject the promise if it fails
-				var response = proto.authNegotiate.unmarshall(msg);
+			return Promise.using(new AuthApp(config), function(app) {
+				return require('./fixture/single_user')(app.dbconn.User)
+				.then(function() {
+					return app.serverNegotiate(packet);
+				}).then(function(msg) {
+					// Will throw and reject the promise if it fails
+					var response = proto.authNegotiate.unmarshall(msg);
 
-				assert.equal(response.clientSession, 654321, "Client Session is incorrect");
-				assert.equal(response.username, username, "Username is incorrect");
-				assert.equal(response.salt.toString('hex'), '615a9e29', "Salt is incorrect");
+					assert.equal(response.clientSession, 654321, "Client Session is incorrect");
+					assert.equal(response.username, username, "Username is incorrect");
+					assert.equal(response.salt.toString('hex'), '615a9e29', "Salt is incorrect");
+				});
 			});
 		});
 		it("should return the correct username for mixed-case attempts.", function() {
@@ -106,17 +109,18 @@ describe('AuthApp', function() {
 				version: 2
 			});
 
-			return new AuthApp(config).then(function(app) {
-				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
-			}).spread(function(app, _) {
-				return app.serverNegotiate(packet);
-			}).then(function(msg) {
-				// Will throw and reject the promise if it fails
-				var response = proto.authNegotiate.unmarshall(msg);
+			return Promise.using(new AuthApp(config), function(app) {
+				return require('./fixture/single_user')(app.dbconn.User)
+				.then(function() {
+					return app.serverNegotiate(packet);
+				}).then(function(msg) {
+					// Will throw and reject the promise if it fails
+					var response = proto.authNegotiate.unmarshall(msg);
 
-				assert.equal(response.clientSession, clientSession, "Client Session is incorrect");
-				assert.equal(response.username, "username", "Username is incorrect");
-				assert.equal(response.salt.toString('hex'), '615a9e29', "Salt is incorrect");
+					assert.equal(response.clientSession, clientSession, "Client Session is incorrect");
+					assert.equal(response.username, "username", "Username is incorrect");
+					assert.equal(response.salt.toString('hex'), '615a9e29', "Salt is incorrect");
+				});
 			});
 		});
 		it("should error if the user does not exist (v2).", function() {
@@ -128,15 +132,16 @@ describe('AuthApp', function() {
 				version: 2
 			});
 
-			return new AuthApp(config).then(function(app) {
-				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
-			}).spread(function(app, _) {
-				return app.serverNegotiate(packet);
-			}).then(function(msg) {
-				var error = proto.clientSessionError.unmarshall(msg);
+			return Promise.using(new AuthApp(config), function(app) {
+				return require('./fixture/single_user')(app.dbconn.User)
+				.then(function() {
+					return app.serverNegotiate(packet);
+				}).then(function(msg) {
+					var error = proto.clientSessionError.unmarshall(msg);
 
-				assert.equal(error.clientSession, clientSession, "Client Session is incorrect");
-				assert.equal(error.error, proto.USER_NO_EXIST, "Error is incorrect");
+					assert.equal(error.clientSession, clientSession, "Client Session is incorrect");
+					assert.equal(error.error, proto.USER_NO_EXIST, "Error is incorrect");
+				});
 			});
 		});
 		it("should error if the user does not exist (v1).", function() {
@@ -149,15 +154,16 @@ describe('AuthApp', function() {
 				version: 1
 			});
 
-			return new AuthApp(config).then(function(app) {
-				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
-			}).spread(function(app, _) {
-				return app.serverNegotiate(packet);
-			}).then(function(msg) {
-				var error = proto.userError.unmarshall(msg);
+			return Promise.using(new AuthApp(config), function(app) {
+				return require('./fixture/single_user')(app.dbconn.User)
+				.then(function() {
+					return app.serverNegotiate(packet);
+				}).then(function(msg) {
+					var error = proto.userError.unmarshall(msg);
 
-				assert.equal(error.username, username, "Username is incorrect");
-				assert.equal(error.error, proto.USER_NO_EXIST, "Error is incorrect");
+					assert.equal(error.username, username, "Username is incorrect");
+					assert.equal(error.error, proto.USER_NO_EXIST, "Error is incorrect");
+				});
 			});
 		});
 	});
@@ -180,28 +186,29 @@ describe('AuthApp', function() {
 			var salt = new Buffer('615A9E29', 'hex');
 			var session = 123456;
 
-			return new AuthApp(config).then(function(app) {
-				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
-			}).spread(function(app, _) {
-				return Promise.all([app, require('./fixture/single_user_session')(app.dbconn.User, app.dbconn.Session)]);
-			}).spread(function(app, _) {
-				return Promise.all([app, srp.genKeyAsync(32)]);
-			}).spread(function(app, secret) {
-				var srpClient = new srp.Client(srp.params['2048'], salt, new Buffer(username, 'ascii'), new Buffer(password, 'ascii'), secret);
-				var ephemeral = srpClient.computeA();
-				var packet = proto.serverEphemeral.marshall({
-					session: session,
-					ephemeral: ephemeral
+			return Promise.using(new AuthApp(config), function(app) {
+				return require('./fixture/single_user')(app.dbconn.User)
+				.then(function() {
+					return require('./fixture/single_user_session')(app.dbconn.User, app.dbconn.Session);
+				}).then(function() {
+					return srp.genKeyAsync(32);
+				}).then(function(secret) {
+					var srpClient = new srp.Client(srp.params['2048'], salt, new Buffer(username, 'ascii'), new Buffer(password, 'ascii'), secret);
+					var ephemeral = srpClient.computeA();
+					var packet = proto.serverEphemeral.marshall({
+						session: session,
+						ephemeral: ephemeral
+					});
+
+					return Promise.all([srpClient, ephemeral, app.serverEphemeral(packet)]);
+				}).spread(function(srpClient, ephemeral, msg) {
+					var response = proto.authEphemeral.unmarshall(msg);
+
+					assert.equal(response.session, session, "Session is incorrect");
+					assert.notEqual(response.ephemeral.toString('hex'), ephemeral.toString('hex'), "Server passed back A instead of B");
+
+					srpClient.setB(response.ephemeral);
 				});
-
-				return Promise.all([srpClient, ephemeral, app.serverEphemeral(packet)]);
-			}).spread(function(srpClient, ephemeral, msg) {
-				var response = proto.authEphemeral.unmarshall(msg);
-
-				assert.equal(response.session, session, "Session is incorrect");
-				assert.notEqual(response.ephemeral.toString('hex'), ephemeral.toString('hex'), "Server passed back A instead of B");
-
-				srpClient.setB(response.ephemeral);
 			});
 		});
 		it("should error if session does not exist.", function() {
@@ -213,24 +220,25 @@ describe('AuthApp', function() {
 			var salt = new Buffer('615A9E29', 'hex');
 			var session = 123456;
 
-			return new AuthApp(config).then(function(app) {
-				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
-			}).spread(function(app, _) {
-				return Promise.all([app, srp.genKeyAsync(32)]);
-			}).spread(function(app, secret) {
-				var srpClient = new srp.Client(srp.params['2048'], salt, new Buffer(username, 'ascii'), new Buffer(password, 'ascii'), secret);
-				var ephemeral = srpClient.computeA();
-				var packet = proto.serverEphemeral.marshall({
-					session: session,
-					ephemeral: ephemeral
+			return Promise.using(new AuthApp(config), function(app) {
+				return require('./fixture/single_user')(app.dbconn.User)
+				.then(function() {
+					return srp.genKeyAsync(32);
+				}).then(function(secret) {
+					var srpClient = new srp.Client(srp.params['2048'], salt, new Buffer(username, 'ascii'), new Buffer(password, 'ascii'), secret);
+					var ephemeral = srpClient.computeA();
+					var packet = proto.serverEphemeral.marshall({
+						session: session,
+						ephemeral: ephemeral
+					});
+
+					return Promise.all([srpClient, app.serverEphemeral(packet)]);
+				}).spread(function(_, msg) {
+					var error = proto.sessionError.unmarshall(msg);
+
+					assert.equal(error.error, proto.SESSION_NO_EXIST, "Error is incorrect");
+					assert.equal(error.session, session, "Session is incorrect");
 				});
-
-				return Promise.all([srpClient, app.serverEphemeral(packet)]);
-			}).spread(function(_, msg) {
-				var error = proto.sessionError.unmarshall(msg);
-
-				assert.equal(error.error, proto.SESSION_NO_EXIST, "Error is incorrect");
-				assert.equal(error.session, session, "Session is incorrect");
 			});
 		});
 	});
@@ -246,8 +254,6 @@ describe('AuthApp', function() {
 		};
 		var rinfo = {address: '127.0.0.1'};
 		it("should be capable of logging a user in.", function() {
-			var app;
-
 			// What the client knows.
 			var username = 'username';
 			var password = 'password123';
@@ -269,26 +275,26 @@ describe('AuthApp', function() {
 				proof: proof
 			});
 
-			return new AuthApp(config).then(function(authApp) {
-				app = authApp;
-				return require('./fixture/single_user')(app.dbconn.User);
-			}).then(function() {
-				return require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session);
-			}).then(function() {
-				return app.serverProof(packet, rinfo);
-			}).then(function(msg) {
-				var response = proto.authProof.unmarshall(msg);
+			return Promise.using(new AuthApp(config), function(app) {
+				return require('./fixture/single_user')(app.dbconn.User)
+				.then(function() {
+					return require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session);
+				}).then(function() {
+					return app.serverProof(packet, rinfo);
+				}).then(function(msg) {
+					var response = proto.authProof.unmarshall(msg);
 
-				assert.equal(response.session, session, "Session is incorrect");
+					assert.equal(response.session, session, "Session is incorrect");
 
-				srpClient.checkM2(response.proof);
+					srpClient.checkM2(response.proof);
 
-				// Ensure that we recorded an action for an authentication
-				return app.dbconn.Action.find(1);
-			}).then(function(action) {
-				assert.equal(action.type, 'auth');
-				assert.equal(action.UserId, 1);
-				assert.equal(action.WhomId, 1);
+					// Ensure that we recorded an action for an authentication
+					return app.dbconn.Action.find(1);
+				}).then(function(action) {
+					assert.equal(action.type, 'auth');
+					assert.equal(action.UserId, 1);
+					assert.equal(action.WhomId, 1);
+				});
 			});
 		});
 		it("should error if the proof doesn't work.", function() {
@@ -302,17 +308,18 @@ describe('AuthApp', function() {
 				proof: proof
 			});
 
-			return new AuthApp(config).then(function(app) {
-				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
-			}).spread(function(app, _) {
-				return Promise.all([app, require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session)]);
-			}).spread(function(app, _) {
-				return app.serverProof(packet, rinfo);
-			}).then(function(msg) {
-				var error = proto.sessionError.unmarshall(msg);
+			return Promise.using(new AuthApp(config), function(app) {
+				return require('./fixture/single_user')(app.dbconn.User)
+				.then(function() {
+					return require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session);
+				}).then(function() {
+					return app.serverProof(packet, rinfo);
+				}).then(function(msg) {
+					var error = proto.sessionError.unmarshall(msg);
 
-				assert.equal(error.error, proto.SESSION_AUTH_FAILED, "Error is incorrect");
-				assert.equal(error.session, session, "Session is incorrect");
+					assert.equal(error.error, proto.SESSION_AUTH_FAILED, "Error is incorrect");
+					assert.equal(error.session, session, "Session is incorrect");
+				});
 			});
 		});
 		it("should error if the session doesn't exist.", function() {
@@ -326,17 +333,18 @@ describe('AuthApp', function() {
 				proof: proof
 			});
 
-			return new AuthApp(config).then(function(app) {
-				return Promise.all([app, require('./fixture/single_user')(app.dbconn.User)]);
-			}).spread(function(app, _) {
-				return Promise.all([app, require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session)]);
-			}).spread(function(app, _) {
-				return app.serverProof(packet, rinfo);
-			}).then(function(msg) {
-				var error = proto.sessionError.unmarshall(msg);
+			return Promise.using(new AuthApp(config), function(app) {
+				return require('./fixture/single_user')(app.dbconn.User)
+				.then(function() {
+					return require('./fixture/single_user_ephemeral')(app.dbconn.User, app.dbconn.Session);
+				}).then(function() {
+					return app.serverProof(packet, rinfo);
+				}).then(function(msg) {
+					var error = proto.sessionError.unmarshall(msg);
 
-				assert.equal(error.error, proto.SESSION_NO_EXIST, "Error is incorrect");
-				assert.equal(error.session, session, "Session is incorrect");
+					assert.equal(error.error, proto.SESSION_NO_EXIST, "Error is incorrect");
+					assert.equal(error.session, session, "Session is incorrect");
+				});
 			});
 		});
 	});

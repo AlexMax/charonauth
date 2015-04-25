@@ -66,6 +66,8 @@ function AuthApp(config, logger) {
 		return self.socket.bindAsync(self.config.get('auth.port'));
 	}).then(function() {
 		return self;
+	}).disposer(function() {
+		self.socket.close();
 	});
 }
 

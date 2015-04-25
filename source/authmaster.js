@@ -78,6 +78,9 @@ function master(msg) {
 
 				// Listen forever
 				return new Promise(function(resolve, reject) {});
+			}).catch(function(e) {
+				log.error(e.stack);
+				process.kill(process.pid, 'SIGTERM');
 			});
 		});
 	}

@@ -70,10 +70,15 @@ function master(msg) {
 		});
 		domain.run(function() {
 			// Start the worker
+			var Promise = require('bluebird');
 			var AuthApp = require('./authapp');
-			new AuthApp(config.get(), log).then(function() {
+
+			Promise.using(new AuthApp(config.get(), log), function() {
 				log.info('Authentication worker ' + process.pid + ' started.');
-			}).done();
+
+				// Listen forever
+				return new Promise(function(resolve, reject) {});
+			});
 		});
 	}
 }

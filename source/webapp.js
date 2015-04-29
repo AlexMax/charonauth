@@ -201,15 +201,23 @@ function WebApp(config, logger) {
 			}
 		});
 
-		// Start listening for connections.
-		self.http = self.app.listen(config.web.port);
+		return new Promise(function(resolve, reject) {
+			// Start listening for connections.
+			self.http = self.app.listen(config.web.port, resolve);
 
-		// If the webserver dies, restart the worker process.
-		self.http.on('close', function() {
-			cluster.worker.disconnect();
+			// If the webserver dies, restart the worker process.
+			self.http.on('close', function() {
+				if (cluster.worker) {
+					cluster.worker.disconnect();
+				}
+			});
 		});
-
+	}).then(function() {
 		return self;
+	}).disposer(function() {
+		return new Promise(function(resolve, reject) {
+			self.http.close(resolve);
+		});
 	});
 }
 

@@ -65,10 +65,18 @@ function master(msg) {
 		});
 		domain.run(function() {
 			// Start the worker
+			var Promise = require('bluebird');
 			var WebApp = require('./webapp');
-			new WebApp(config.get(), log).then(function() {
+
+			Promise.using(new WebApp(config.get(), log), function() {
 				log.info('Web worker ' + process.pid + ' started.');
-			}).done();
+
+				// Listen forever
+				return new Promise(function(resolve, reject) {});
+			}).catch(function(e) {
+				log.error(e.stack);
+				process.kill(process.pid, 'SIGTERM');
+			});
 		});
 	}
 }

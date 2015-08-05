@@ -29,7 +29,8 @@ var domain = require('domain');
 var express = require('express');
 var session = require('express-session');
 var fsSession = require('fs-session')({ session: session });
-var ip = require('ip');
+var ip = require('ip'); // Remove me eventually
+var ipaddr = require('ipaddr.js');
 var uuid = require('node-uuid');
 var swig = require('swig');
 
@@ -245,7 +246,7 @@ WebApp.prototype.postLogin = function(req, res, next) {
 			UserId: user.id,
 			WhomId: user.id,
 			type: 'login',
-			ip: ip.toBuffer(req.ip)
+			ip: new Buffer(ipaddr.parse(req.ip).toByteArray())
 		})]);
 	}).spread(function(user) {
 		return Promise.all([user, user.getProfile()]);

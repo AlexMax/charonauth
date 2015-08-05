@@ -22,6 +22,7 @@
 
 var Promise = require('bluebird');
 
+var crypto = Promise.promisifyAll(require('crypto'));
 var program = require('commander');
 var fs = Promise.promisifyAll(require('fs'));
 var ini = require('ini');
@@ -50,6 +51,10 @@ program
 	.command('userlevel <user> <level>')
 	.description('Modify an existing user\'s access level')
 	.action(userlevel);
+program
+	.command('userpass <user>')
+	.description('Give a user a new random password')
+	.action(userpass);
 
 program.parse(process.argv);
 if (program.args.length === 0) {
@@ -59,6 +64,29 @@ if (program.args.length === 0) {
 function fatalError(message) {
 	console.error("\n error: " + message + "\n");
 	process.exit(1);
+}
+
+// User password subcommand
+function userpass(user) {
+	fs.readFileAsync(program.config, {'encoding': 'utf8'}).then(function(file) {
+		return new Config(ini.parse(file));
+	}).then(function(config) {
+		return new DBConn(config.get('database'));
+	}).then(function(dbconn) {
+		return dbconn.User.find({
+			where: {username: user.toLowerCase()}
+		});
+	}).then(function(user) {
+		return [user, crypto.randomBytes(9)];
+	}).spread(function(user, random) {
+		var password = random.toString('base64');
+		user.setPassword(password);
+		return [user.save(), password];
+	}).spread(function(user, password) {
+		process.stdout.write('success: ' + user.username + ' has a new password ' + password  + '\n');
+	}).catch(function(e) {
+		fatalError(e.message);
+	});
 }
 
 // User level subcommand

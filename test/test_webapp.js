@@ -71,7 +71,7 @@ describe('WebApp', function() {
 				csrf: false,
 			}
 		};
-		it("should show a user's account in list", function() {
+		it("should register an account", function() {
 			return Promise.using(new WebApp(config), function(web) {
 				return request(web.http)
 						.post('/register')
@@ -83,7 +83,10 @@ describe('WebApp', function() {
 							'email': 'example@example.com',
 						})
 						.expect(200)
-						.expect(/created successfully/);
+						.expect(/created successfully/)
+						.then(function() {
+							return web.dbconn.findUser('username');
+						});
 			});
 		});
 	});

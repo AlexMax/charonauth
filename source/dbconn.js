@@ -236,7 +236,7 @@ DBConn.prototype.addUser = function(username, password, email, access) {
 	});
 };
 DBConn.prototype.findUser = function(username) {
-	return this.User.find({ where: { username: username.toLowerCase() }})
+	return this.User.findOne({ where: { username: username.toLowerCase() }})
 	.then(function(data) {
 		if (data === null) {
 			throw new error.UserNotFound("User not found", username);

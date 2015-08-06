@@ -119,7 +119,17 @@ function WebApp(config, logger) {
 			secret: self.config.get('web.secret'),
 			store: new fsSession()
 		}));
-		self.app.use(csurf());
+
+		if (self.config.getBool('web.csrf') !== false) {
+			self.app.use(csurf());
+		} else {
+			// CSRF shim for unit testing.
+			self.app.use(function(req, res, next) {
+				req.csrfToken = function() { return ""; };
+				next();
+			});
+		}
+
 		self.app.use(function(req, res, next) {
 			// Allways supply session data to the template
 			self.app.locals.session = req.session;

@@ -66,14 +66,12 @@ module.exports.registerForm = function(dbconn, recaptcha, data, ip) {
 		} else if (!validator.isAlphanumeric(data.username)) {
 			errors.username = "Username must be Alphanumeric (A-Z, 0-9)";
 		} else {
-			promises.push(new Promise(function (resolve, reject) {
-				dbconn.User.find({ where: { username: data.username.toLowerCase() }})
-				.success(function (data) {
-					if (data) {
-						errors.username = "Username is taken";
-					}
-					resolve();
-				});
+			promises.push(dbconn.User.findOne({
+				where: { username: data.username.toLowerCase() }
+			}).then(function (data) {
+				if (data) {
+					errors.username = "Username is taken";
+				}
 			}));
 		}
 
@@ -101,14 +99,12 @@ module.exports.registerForm = function(dbconn, recaptcha, data, ip) {
 		} else if (!validator.isEmail(data.email)) {
 			errors.email = "E-Mail must be valid";
 		} else {
-			promises.push(new Promise(function (resolve, reject) {
-				dbconn.User.find({ where: { email: data.email.toLowerCase() }})
-				.success(function (data) {
-					if (data) {
-						errors.email = "E-Mail is already associated with a user";
-					}
-					resolve();
-				});
+			promises.push(dbconn.User.findOne({
+				where: { email: data.email.toLowerCase() }
+			}).then(function (data) {
+				if (data) {
+					errors.email = "E-Mail is already associated with a user";
+				}
 			}));
 		}
 

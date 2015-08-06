@@ -49,13 +49,41 @@ describe('WebApp', function() {
 				secret: 'udontop'
 			}
 		};
-		it("should show a user's account", function() {
+		it("should show a user's account in list", function() {
 			return Promise.using(new WebApp(config), function(web) {
 				return require('./fixture/single_user_with_profile')(web.dbconn.User, web.dbconn.Profile)
 					.then(request(web.http)
 							.get('/users')
 							.expect(200)
 							.expect(/Username/));
+			});
+		});
+	});
+	describe('GET /register', function() {
+		var config = {
+			database: {
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
+			},
+			web: {
+				port: 9876,
+				secret: 'udontop',
+				csrf: false,
+			}
+		};
+		it("should show a user's account in list", function() {
+			return Promise.using(new WebApp(config), function(web) {
+				return request(web.http)
+						.post('/register')
+						.type('form')
+						.send({
+							'username': 'username',
+							'password': 'password123',
+							'confirm': 'password123',
+							'email': 'example@example.com',
+						})
+						.expect(200)
+						.expect(/created successfully/);
 			});
 		});
 	});

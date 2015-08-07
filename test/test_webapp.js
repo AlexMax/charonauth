@@ -59,7 +59,7 @@ describe('WebApp', function() {
 			});
 		});
 	});
-	describe('GET /register', function() {
+	describe('POST /register', function() {
 		var config = {
 			database: {
 				uri: "sqlite://charonauth/",
@@ -74,19 +74,54 @@ describe('WebApp', function() {
 		it("should register an account", function() {
 			return Promise.using(new WebApp(config), function(web) {
 				return request(web.http)
-						.post('/register')
-						.type('form')
-						.send({
-							'username': 'username',
-							'password': 'password123',
-							'confirm': 'password123',
-							'email': 'example@example.com',
-						})
-						.expect(200)
-						.expect(/created successfully/)
-						.then(function() {
-							return web.dbconn.findUser('username');
-						});
+					.post('/register')
+					.type('form')
+					.send({
+						'username': 'username',
+						'password': 'password123',
+						'confirm': 'password123',
+						'email': 'example@example.com',
+					})
+					.expect(200)
+					.expect(/created successfully/)
+					.then(function() {
+						return web.dbconn.findUser('username');
+					});
+			});
+		});
+	});
+	describe('POST /login', function() {
+		var config = {
+			database: {
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
+			},
+			web: {
+				port: 9876,
+				secret: 'udontop',
+				csrf: false,
+			}
+		};
+		it("should correctly login", function() {
+			return Promise.using(new WebApp(config), function(web) {
+				return require('./fixture/single_user_with_profile')(web.dbconn.User, web.dbconn.Profile)
+					.then(function() {
+						var agent = request.agent(web.http);
+						return agent
+							.post('/login')
+							.type('form')
+							.send({
+								'login': 'username',
+								'password': 'password123',
+							})
+							.expect(302)
+							.then(function() {
+								return agent
+									.get('/')
+									.expect(200)
+									.expect(/Username/);
+							});
+					});
 			});
 		});
 	});

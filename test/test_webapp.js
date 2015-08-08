@@ -3,6 +3,8 @@
 "use strict";
 
 var Promise = require('bluebird');
+var _ = require('lodash');
+
 var request = require('supertest-as-promised');
 
 var WebApp = require('../source/webapp');
@@ -95,14 +97,33 @@ describe('WebApp', function() {
 				secret: 'udontop',
 				csrf: false,
 			},
-			mail: {
-				from: 'example@example.com',
-				baseurl: 'http://example.com',
-				transport: 'stub'
-			}
 		};
-		it("should register an account", function() {
+		var configMail = _.clone(config, true);
+		configMail.mail = {
+			from: 'example@example.com',
+			baseurl: 'http://example.com',
+			transport: 'stub'
+		};
+		it("should register an account with no verification mail", function() {
 			return Promise.using(new WebApp(config), function(web) {
+				return request(web.http)
+					.post('/register')
+					.type('form')
+					.send({
+						'username': 'username',
+						'password': 'password123',
+						'confirm': 'password123',
+						'email': 'example@mailinator.com',
+					})
+					.expect(200)
+					.expect(/created successfully/)
+					.then(function() {
+						return web.dbconn.findUser('username');
+					});
+			});
+		});
+		it("should register an account with a verification mail", function() {
+			return Promise.using(new WebApp(configMail), function(web) {
 				return request(web.http)
 					.post('/register')
 					.type('form')

@@ -52,10 +52,35 @@ describe('WebApp', function() {
 		it("should show a user's account in list", function() {
 			return Promise.using(new WebApp(config), function(web) {
 				return require('./fixture/single_user_with_profile')(web.dbconn.User, web.dbconn.Profile)
-					.then(request(web.http)
+					.then(function() {
+						return request(web.http)
 							.get('/users')
 							.expect(200)
-							.expect(/Username/));
+							.expect(/Username/);
+					});
+			});
+		});
+	});
+	describe('GET /users/username', function() {
+		var config = {
+			database: {
+				uri: "sqlite://charonauth/",
+				storage: ":memory:"
+			},
+			web: {
+				port: 9876,
+				secret: 'udontop'
+			}
+		};
+		it("should show a user's account details", function() {
+			return Promise.using(new WebApp(config), function(web) {
+				return require('./fixture/single_user_with_profile')(web.dbconn.User, web.dbconn.Profile)
+					.then(function() {
+						return request(web.http)
+							.get('/users/username')
+							.expect(200)
+							.expect(/username/);
+					});
 			});
 		});
 	});

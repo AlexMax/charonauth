@@ -155,9 +155,9 @@ describe('WebApp', function() {
 		};
 		it("should correctly login", function() {
 			return Promise.using(new WebApp(config), function(web) {
+				var agent = request.agent(web.http);
 				return require('./fixture/single_user_with_profile')(web.dbconn.User, web.dbconn.Profile)
 					.then(function() {
-						var agent = request.agent(web.http);
 						return agent
 							.post('/login')
 							.type('form')
@@ -165,13 +165,12 @@ describe('WebApp', function() {
 								'login': 'username',
 								'password': 'password123',
 							})
-							.expect(302)
-							.then(function() {
-								return agent
-									.get('/')
-									.expect(200)
-									.expect(/Username/);
-							});
+							.expect(302);
+					}).then(function() {
+						return agent
+							.get('/')
+							.expect(200)
+							.expect(/Username/);
 					});
 			});
 		});

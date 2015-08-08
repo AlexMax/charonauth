@@ -79,7 +79,7 @@ describe('WebApp', function() {
 						return request(web.http)
 							.get('/users/username')
 							.expect(200)
-							.expect(/username/);
+							.expect(/Username/);
 					});
 			});
 		});
@@ -94,6 +94,11 @@ describe('WebApp', function() {
 				port: 9876,
 				secret: 'udontop',
 				csrf: false,
+			},
+			mail: {
+				from: 'example@example.com',
+				baseurl: 'http://example.com',
+				transport: 'direct'
 			}
 		};
 		it("should register an account", function() {
@@ -105,10 +110,10 @@ describe('WebApp', function() {
 						'username': 'username',
 						'password': 'password123',
 						'confirm': 'password123',
-						'email': 'example@example.com',
+						'email': 'example@mailinator.com',
 					})
 					.expect(200)
-					.expect(/created successfully/)
+					.expect(/verification e-mail/)
 					.then(function() {
 						return web.dbconn.findUser('username');
 					});

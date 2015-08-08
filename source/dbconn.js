@@ -331,8 +331,11 @@ DBConn.prototype.setEphemeral = function(session, ephemeral, secret, callback) {
 
 // Either create a new verify token or reuse an existing one.
 DBConn.prototype.newVerify = function(user) {
-	return this.Verify.findOrCreate({UserId: user.id})
-	.then(function(verify) {
+	return this.Verify.findOrCreate({
+		where: {
+			UserId: user.id
+		}
+	}).spread(function(verify, created) {
 		return verify.updateAttributes({
 			token: uuid.v4()
 		});

@@ -72,7 +72,7 @@ WebRegister.prototype.registerPost = function(req, res, next) {
 					subject: "New User Verification",
 					template: 'verify.swig'
 				}, {
-					username: user.profile.username,
+					username: user.Profile.username,
 					token: verify.token
 				})]);
 			}).spread(function(user, _) {

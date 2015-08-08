@@ -103,7 +103,7 @@ WebUsers.prototype.getUsers = function(req, res, next) {
 WebUsers.prototype.getUser = function(req, res, next) {
 	var self = this;
 
-	this.dbconn.User.find({
+	this.dbconn.User.findOne({
 		where: {username: req.params.id.toLowerCase()},
 		include: [this.dbconn.Profile]
 	}).then(function(user) {
@@ -112,13 +112,13 @@ WebUsers.prototype.getUser = function(req, res, next) {
 		}
 
 		// Check for profile visibility
-		if (user.active === false || user.profile.visible === false) {
+		if (user.active === false || user.Profile.visible === false) {
 			if (!("user" in req.session)) {
 				throw new error.Forbidden('Can not view profile as anonymous user');
 			} else if (user.active === false &&
 								 !access.canViewUserInactive(req.session.user.access, user.access)) {
 				throw new error.Forbidden('Can not view inactive profile with given access');
-			} else if (user.profile.visible === false && req.session.user.id !== user.id &&
+			} else if (user.Profile.visible === false && req.session.user.id !== user.id &&
 								 !access.canViewUserInvisible(req.session.user.access, user.access)) {
 				throw new error.Forbidden('Can not view invisible profile with given access');
 			}
@@ -132,7 +132,7 @@ WebUsers.prototype.getUser = function(req, res, next) {
 	}).spread(function(user, action) {
 		// We may not be able to see the latest authentication.
 		var lastplayed;
-		if (action && user.profile.visible_lastseen) {
+		if (action && user.Profile.visible_lastseen) {
 			lastplayed = action.createdAt;
 		}
 

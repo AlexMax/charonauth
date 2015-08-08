@@ -25,6 +25,7 @@ var _ = require('lodash');
 var nodemailer = require('nodemailer');
 var sendmailTransport = require('nodemailer-sendmail-transport');
 var smtpTransport = require('nodemailer-smtp-transport');
+var stubTransport = require('nodemailer-stub-transport');
 
 var Config = require('./config');
 var mock = require('./mock');
@@ -59,7 +60,10 @@ function Mailer(config, logger) {
 
 		// Set up transport
 		var transport = this.config.get('transport');
-		if (transport === 'direct') {
+		if (transport === 'stub') {
+			// Direct transport
+			this.transport = nodemailer.createTransport(stubTransport());
+		} else if (transport === 'direct') {
 			// Direct transport
 			this.transport = nodemailer.createTransport();
 		} else if (transport === 'sendmail') {

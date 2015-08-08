@@ -98,7 +98,7 @@ describe('WebApp', function() {
 			mail: {
 				from: 'example@example.com',
 				baseurl: 'http://example.com',
-				transport: 'direct'
+				transport: 'stub'
 			}
 		};
 		it("should register an account", function() {

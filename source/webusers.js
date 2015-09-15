@@ -176,12 +176,12 @@ WebUsers.prototype.editUserAccess = function(req, res, next) {
 
 // Edit a user's profile
 WebUsers.prototype.editUser = function(req, res, next) {
-	this.dbconn.User.find({
+	this.dbconn.User.findOne({
 		where: {username: req.params.id.toLowerCase()},
 		include: [this.dbconn.Profile]
 	}).then(function(user) {
 		req.body._csrf = req.csrfToken();
-		req.body.profile = user.profile;
+		req.body.profile = user.Profile;
 
 		res.render('editUser.swig', {
 			data: req.body, user: user, errors: {},
@@ -202,7 +202,7 @@ WebUsers.prototype.editUserPost = function(req, res, next) {
 		return webform.profileForm(self.dbconn, req.body.profile, user.username)
 		.then(function() {
 			// Persist all profile data
-			user.profile.updateAttributes({
+			user.Profile.updateAttributes({
 				visible: "visible" in req.body.profile ? true : false,
 				visible_lastseen: "visible_lastseen" in req.body.profile ? true : false,
 				gravatar: _.isEmpty(req.body.profile.gravatar) ? null : req.body.profile.gravatar,
@@ -214,11 +214,11 @@ WebUsers.prototype.editUserPost = function(req, res, next) {
 				contactinfo: req.body.profile.contactinfo,
 				message: req.body.profile.message
 			});
-			return user.profile.save();
+			return user.Profile.save();
 		}).then(function(profile) {
 			// If we're modifying our own data, update the session
 			if (user.id === req.session.user.id) {
-				req.session.user.profile_username = user.profile.username;
+				req.session.user.profile_username = user.Profile.username;
 			}
 
 			// Render the page
@@ -249,7 +249,7 @@ WebUsers.prototype.editSettings = function(req, res, next) {
 			req.body._csrf = req.csrfToken();
 			req.body.user = {
 				active: user.active,
-				username: user.profile.username,
+				username: user.Profile.username,
 				email: user.email,
 				access: user.access
 			};
@@ -353,14 +353,14 @@ WebUsers.prototype.editSettingsPost = function(req, res, next) {
 
 				// Render the page
 				req.body._csrf = req.csrfToken();
-				req.body.profile = user.profile;
+				req.body.profile = user.Profile;
 				res.render('editSettings.swig', {
 					data: req.body, user: user, success: true, errors: {}
 				});
 			}).catch(error.FormValidation, function(e) {
 				// Render the page with errors
 				req.body._csrf = req.csrfToken();
-				req.body.profile = user.profile;
+				req.body.profile = user.Profile;
 				res.render('editSettings.swig', {
 					data: req.body, user: user,
 					errors: {user: e.invalidFields}

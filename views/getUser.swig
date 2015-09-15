@@ -12,27 +12,27 @@
 
 {{ macros.usernav(user.username, 'view', can_administer) }}
 <h1>
-	{{ user.profile.clantag }}{{ user.profile.username }}
+	{{ user.Profile.clantag }}{{ user.Profile.username }}
 </h1>
 <div class="row">
 	<div class="col-sm-3">
-		<img style="width:100%;max-width:150px" src="{{ macros.gravatar(user.getGravatar(), user.profile.gravatar, 'monsterid') }}" alt="{{ user.profile.username }}">
+		<img style="width:100%;max-width:150px" src="{{ macros.gravatar(user.getGravatar(), user.Profile.gravatar, 'monsterid') }}" alt="{{ user.Profile.username }}">
 		<dl>
 			<dt>Username</dt>
 			<dd>{{ user.username }}</dd>
 			<dt>Access</dt>
 			<dd>{{ access[user.access] }}</dd>
-			{% if user.profile.clan %}
+			{% if user.Profile.clan %}
 			<dt>Clan</dt>
-			<dd>{{ user.profile.clan }}</dd>
+			<dd>{{ user.Profile.clan }}</dd>
 			{% endif %}
-			{% if user.profile.country %}
+			{% if user.Profile.country %}
 			<dt>Country</dt>
-			<dd>{{ user.profile.getCountry() }}</dd>
+			<dd>{{ user.Profile.getCountry() }}</dd>
 			{% endif %}
-			{% if user.profile.location %}
+			{% if user.Profile.location %}
 			<dt>Location</dt>
-			<dd>{{ user.profile.location }}</dd>
+			<dd>{{ user.Profile.location }}</dd>
 			{% endif %}
 			{% if lastplayed %}
 			<dt>Last Played</dt>
@@ -41,14 +41,14 @@
 		</dl>
 	</div>
 	<div class="col-sm-9">
-		{% if user.profile.message or user.profile.contactinfo %}
-		{% if user.profile.message %}
+		{% if user.Profile.message or user.Profile.contactinfo %}
+		{% if user.Profile.message %}
 		<h4>Message</h4>
-		<p>{{ user.profile.message }}</p>
+		<p>{{ user.Profile.message }}</p>
 		{% endif %}
-		{% if user.profile.contactinfo %}
+		{% if user.Profile.contactinfo %}
 		<h4>Contact Info</h4>
-		<p>{{ user.profile.contactinfo }}</p>
+		<p>{{ user.Profile.contactinfo }}</p>
 		{% endif %}
 		{% else %}
 		<p>User has no Message or Contact Info</p>

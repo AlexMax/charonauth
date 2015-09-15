@@ -31,10 +31,10 @@
 	<tbody>
 		{% for user in users %}
 		<tr>
-			<td><img height="80" src="/assets/svg/{{ user.profile.getFlag() }}.svg" alt="{{ user.profile.getCountry() }}"></td>
-			<td><img src="{{ macros.gravatar(user.getGravatar(), user.profile.gravatar, 'monsterid') }}" alt="{{ user.profile.username }}"></td>
-			<td><a href="/users/{{ user.username }}">{{ user.profile.clantag }}{{ user.profile.username }}</a></td>
-			<td>{{ user.profile.clan }}</td>
+			<td><img height="80" src="/assets/svg/{{ user.Profile.getFlag() }}.svg" alt="{{ user.Profile.getCountry() }}"></td>
+			<td><img src="{{ macros.gravatar(user.getGravatar(), user.Profile.gravatar, 'monsterid') }}" alt="{{ user.Profile.username }}"></td>
+			<td><a href="/users/{{ user.username }}">{{ user.Profile.clantag }}{{ user.Profile.username }}</a></td>
+			<td>{{ user.Profile.clan }}</td>
 			<td>{{ user.seen }}</td>
 		</tr>
 		{% endfor %}

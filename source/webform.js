@@ -210,8 +210,8 @@ module.exports.userForm = function(dbconn, data, username) {
 				errors.email = "E-Mail must be valid";
 			} else {
 				promises.push(new Promise(function (resolve, reject) {
-					dbconn.User.find({ where: { email: data.email.toLowerCase() }})
-					.success(function(data) {
+					dbconn.User.findOne({ where: { email: data.email.toLowerCase() }})
+					.then(function(data) {
 						if (data) {
 							errors.email = "E-Mail is already associated with a user";
 						}
@@ -250,8 +250,8 @@ module.exports.userAdminForm = function(dbconn, data, username, email, userAcces
 			errors.username = "Username must be Alphanumeric (A-Z, 0-9)";
 		} else if (data.username.toLowerCase() !== username) {
 			promises.push(new Promise(function (resolve, reject) {
-				dbconn.User.find({ where: { username: data.username.toLowerCase() }})
-				.success(function (data) {
+				dbconn.User.findOne({ where: { username: data.username.toLowerCase() }})
+				.then(function (data) {
 					if (data) {
 						errors.username = "Username is taken";
 					}
@@ -280,8 +280,8 @@ module.exports.userAdminForm = function(dbconn, data, username, email, userAcces
 			errors.email = "E-Mail must be valid";
 		} else if (data.email.toLowerCase() !== email) {
 			promises.push(new Promise(function (resolve, reject) {
-				dbconn.User.find({ where: { email: data.email.toLowerCase() }})
-				.success(function (data) {
+				dbconn.User.findOne({ where: { email: data.email.toLowerCase() }})
+				.then(function (data) {
 					if (data) {
 						errors.email = "E-Mail is already associated with a user";
 					}

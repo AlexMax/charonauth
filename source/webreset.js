@@ -67,7 +67,7 @@ WebReset.prototype.postReset = function(req, res, next) {
 					subject: "Password Reset",
 					template: 'reset.swig'
 				}, {
-					username: user.profile.username,
+					username: user.Profile.username,
 					token: reset.token
 				});
 			}).then(function() {

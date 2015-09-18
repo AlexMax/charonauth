@@ -363,8 +363,11 @@ DBConn.prototype.findVerify = function(token) {
 
 // Either create a new reset token or reuse an existing one.
 DBConn.prototype.newReset = function(user) {
-	return this.Reset.findOrCreate({UserId: user.id})
-	.then(function(reset) {
+	return this.Reset.findOrCreate({
+		where: {
+			UserId: user.id
+		}
+	}).spread(function(reset, _) {
 		return reset.updateAttributes({
 			token: uuid.v4()
 		});

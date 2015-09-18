@@ -289,7 +289,7 @@ describe('AuthApp', function() {
 					srpClient.checkM2(response.proof);
 
 					// Ensure that we recorded an action for an authentication
-					return app.dbconn.Action.find(1);
+					return app.dbconn.Action.findById(1);
 				}).then(function(action) {
 					assert.equal(action.type, 'auth');
 					assert.equal(action.UserId, 1);

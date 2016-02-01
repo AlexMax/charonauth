@@ -59,6 +59,13 @@ function WebUsers(dbconn) {
 
 // Get a list of all users.
 WebUsers.prototype.getUsers = function(req, res, next) {
+	var self = this;
+
+	// Pagination
+	var limit = ("l" in req.query && isFinite(req.query.l)) ? req.query.l : 10;
+	var page = ("p" in req.query && isFinite(req.query.p)) ? req.query.p : 1;
+	var offset = (page - 1) * limit;
+
 	// Default search parameters
 	var params = {
 		where: {active: true},
@@ -90,11 +97,19 @@ WebUsers.prototype.getUsers = function(req, res, next) {
 		}
 	}
 
-	this.dbconn.User.findAll(params)
-	.then(function(users) {
+	var total = 0;
+	this.dbconn.User.count(params).then(function(count) {
+		total = count;
+		params.offset = offset;
+		params.limit = limit;
+		return self.dbconn.User.findAll(params)
+	}).then(function(users) {
 		res.render('getUsers.swig', {
 			users: users,
-			f: filter
+			total: total,
+			page: page,
+			limit: limit,
+			filter: filter
 		});
 	}).catch(next);
 };

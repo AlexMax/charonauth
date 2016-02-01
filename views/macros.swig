@@ -34,3 +34,21 @@
 </ul>
 {% endif %}
 {% endmacro %}
+
+{#
+ # Display a paginator
+ #}
+{% macro paginator(page, limit, total) %}
+{% set totalPages = 2 %}
+<ul class="pagination">
+	{% if page > 1 %}
+	<li><a href="#">&laquo;</a></li>
+	{% endif %}
+	<li><a href="#">{{ page }}</a></li>
+	<li><a href="#">{{ total }}</a></li>
+	<li><a href="#">{{ limit }}</a></li>
+	{% if page < totalPages %}
+	<li><a href="#">&raquo;</a></li>
+	{% endif %}
+</ul>
+{% endmacro %}

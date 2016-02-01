@@ -40,6 +40,7 @@
 		{% endfor %}
 	</tbody>
 </table>
+{{ macros.paginator(page, limit, total) }}
 {% else %}
 <p>No users found.</p>
 {% endif %}

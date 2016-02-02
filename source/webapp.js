@@ -32,7 +32,7 @@ var fsSession = require('fs-session')({ session: session });
 var ip = require('ip'); // Remove me eventually
 var ipaddr = require('ipaddr.js');
 var uuid = require('node-uuid');
-var swig = require('swig');
+var nunjucks = require('nunjucks');
 
 var Config = require('./config');
 var DBConn = require('./dbconn');
@@ -140,12 +140,17 @@ function WebApp(config, logger) {
 		self.app.set('trust proxy', true);
 
 		// Template engine
-		swig.setFilter('ip', function(addr) {
+		nunjucks.configure('views', {
+			autoescape: true,
+			express: self.app
+		});
+
+		/* swig.setFilter('ip', function(addr) {
 			return ip.toString(addr);
 		});
 		self.app.engine('swig', swig.renderFile);
 		self.app.set('views', __dirname + '/../views');
-		self.app.set('view cache', false);
+		self.app.set('view cache', false);*/
 
 		// Home
 		self.app.get('/', self.home.bind(self));

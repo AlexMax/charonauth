@@ -3,15 +3,15 @@
 
 {% block body %}
 {% set operator = {'OWNER': true, 'MASTER': true, 'OP': true} %}
-{% if session.user.access in operator %}
+{% if operator.hasOwnProperty(session.user.access) %}
 <ul class="nav nav-tabs" role="tablist">
-	<li class="{% if f == 'active' %}active{% endif %}">
+	<li class="{% if filter == 'active' %}active{% endif %}">
 		<a href="/users?f=active">Active</a>
 	</li>
-	<li class="{% if f == 'unverified' %}active{% endif %}">
+	<li class="{% if filter == 'unverified' %}active{% endif %}">
 		<a href="/users?f=unverified">Unverified</a>
 	</li>
-	<li class="{% if f == 'inactive' %}active{% endif %}">
+	<li class="{% if filter == 'inactive' %}active{% endif %}">
 		<a href="/users?f=inactive">Inactive</a>
 	</li>
 </ul>

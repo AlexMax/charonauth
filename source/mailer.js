@@ -29,7 +29,7 @@ var stubTransport = require('nodemailer-stub-transport');
 
 var Config = require('./config');
 var mock = require('./mock');
-var swig = require('swig');
+var nunjucks = require('nunjucks');
 
 function Mailer(config, logger) {
 		// Attach a logger if we have one.
@@ -101,16 +101,11 @@ Mailer.prototype.sendRendered = function(options, context) {
 			signature: self.signature
 		}, context);
 
-		swig.renderFile(
-			__dirname + '/../views/email/' + options.template, context,
-			function(err, output) {
-				if (err) {
-					reject(err);
-				} else {
-					resolve(output);
-				}
-			}
-		);
+		try {
+			resolve(nunjucks.render(__dirname + '/../views/email/' + options.template, context));
+		} catch(e) {
+			reject(e);
+		}
 	}).then(function(text) {
 		return new Promise(function(resolve, reject) {
 			// Send the mail

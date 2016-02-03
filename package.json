@@ -35,7 +35,6 @@
     "nunjucks-date": "^1.2.0",
     "request": "~2.44.0",
     "sequelize": "^3.9.0",
-    "swig": "~1.4.1",
     "validator": "~3.19.0",
     "winston": "~0.8.0",
     "world-countries": "~1.6.0"

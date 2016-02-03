@@ -10,7 +10,7 @@
 	'OWNER': "Owner"
 } %}
 
-{{ macros.usernav(user.username, 'view', can_administer) }}
+{{ macros.usernav(user.username, 'view', tabs) }}
 <h1>
 	{{ user.Profile.clantag }}{{ user.Profile.username }}
 </h1>

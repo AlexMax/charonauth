@@ -42,8 +42,9 @@ function WebUsers(dbconn) {
 	routes.get('/', this.getUsers.bind(this));
 	routes.get('/:id', this.getUser.bind(this));
 
-	routes.use('/:id/:verb(edit|settings|actions)', this.editUserAccess.bind(this));
-	routes.use('/:id/actions/:aid', this.editUserAccess.bind(this));
+	routes.use('/:id/:verb(edit|settings)', this.editUserAccess.bind(this));
+	routes.use('/:id/actions', this.userActionsAccess.bind(this));
+	routes.use('/:id/actions/:aid', this.userActionsAccess.bind(this));
 
 	routes.get('/:id/edit', this.editUser.bind(this));
 	routes.post('/:id/edit', this.editUserPost.bind(this));
@@ -131,10 +132,10 @@ WebUsers.prototype.getUser = function(req, res, next) {
 			if (!("user" in req.session)) {
 				throw new error.Forbidden('Can not view profile as anonymous user');
 			} else if (user.active === false &&
-								 !access.canViewUserInactive(req.session.user.access, user.access)) {
+								 !access.canViewUserInactive(req.session.user, user)) {
 				throw new error.Forbidden('Can not view inactive profile with given access');
 			} else if (user.Profile.visible === false && req.session.user.id !== user.id &&
-								 !access.canViewUserInvisible(req.session.user.access, user.access)) {
+								 !access.canViewUserInvisible(req.session.user, user)) {
 				throw new error.Forbidden('Can not view invisible profile with given access');
 			}
 		}
@@ -151,21 +152,16 @@ WebUsers.prototype.getUser = function(req, res, next) {
 			lastplayed = action.createdAt;
 		}
 
-		// Designate if we can see the full admin toolbar
-		var can_administer = false;
-		if ("user" in req.session &&
-				access.canAdministerUser(req.session.user.access, user.access)) {
-			can_administer = true;
-		}
+		// Tab permissions
+		var tabs = access.userTabPerms(req.session.user, user);
 
 		res.render('getUser.swig', {
-			can_administer: can_administer,
-			user: user, lastplayed: lastplayed
+			tabs: tabs, user: user, lastplayed: lastplayed
 		});
 	}).catch(next);
 };
 
-// Govern access to the user modification and action log pages.
+// Govern access to the user modification pages.
 WebUsers.prototype.editUserAccess = function(req, res, next) {
 	this.dbconn.User.find({
 		where: {username: req.params.id.toLowerCase()}
@@ -176,10 +172,30 @@ WebUsers.prototype.editUserAccess = function(req, res, next) {
 
 		if (!("user" in req.session)) {
 			throw new error.Forbidden('Can not edit profile as anonymous user');
-		} else if (access.canAdministerUser(req.session.user.access, user.access)) {
-			// Operators might be able to administer a user.
-		} else if (user.id === req.session.user.id) {
-			// Users can always administer themselves.
+		} else if (access.canEditUser(req.session.user, user)) {
+			// Operators can edit user, and users can edit themselves.
+		} else {
+			throw new error.Forbidden('Can not edit profile as current user');
+		}
+
+		// User is allowed to edit the profile, so continue.
+		next();
+	}).catch(next);
+};
+
+// Govern access to the user action pages.
+WebUsers.prototype.userActionsAccess = function(req, res, next) {
+	this.dbconn.User.find({
+		where: {username: req.params.id.toLowerCase()}
+	}).then(function(user) {
+		if (_.isNull(user)) {
+			throw new error.NotFound('User not found');
+		}
+
+		if (!("user" in req.session)) {
+			throw new error.Forbidden('Can not edit profile as anonymous user');
+		} else if (access.canSeeUserActions(req.session.user, user)) {
+			// Operators can edit user, and users can edit themselves.
 		} else {
 			throw new error.Forbidden('Can not edit profile as current user');
 		}
@@ -198,9 +214,12 @@ WebUsers.prototype.editUser = function(req, res, next) {
 		req.body._csrf = req.csrfToken();
 		req.body.profile = user.Profile;
 
+		// Tab permissions
+		var tabs = access.userTabPerms(req.session.user, user);
+
 		res.render('editUser.swig', {
 			data: req.body, user: user, errors: {},
-			countries: countries.countries
+			countries: countries.countries, tabs: tabs
 		});
 	}).catch(next);
 };
@@ -260,7 +279,7 @@ WebUsers.prototype.editSettings = function(req, res, next) {
 		where: {username: req.params.id.toLowerCase()},
 		include: [this.dbconn.Profile]
 	}).then(function(user) {
-		if (access.canAdministerUser(req.session.user.access, user.access)) {
+		if (access.canAdminEditUser(req.session.user, user)) {
 			req.body._csrf = req.csrfToken();
 			req.body.user = {
 				active: user.active,
@@ -269,14 +288,20 @@ WebUsers.prototype.editSettings = function(req, res, next) {
 				access: user.access
 			};
 
+			// Tab permissions
+			var tabs = access.userTabPerms(req.session.user, user);
+
 			res.render('editSettingsAdmin.swig', {
-				data: req.body, user: user, errors: {},
+				data: req.body, user: user, errors: {}, tabs: tabs,
 				accesses: access.validLevelSet(req.session.user.access, user.access)
 			});
 		} else {
+			// Tab permissions
+			var tabs = access.userTabPerms(req.session.user, user);
+
 			req.body._csrf = req.csrfToken();
 			res.render('editSettings.swig', {
-				data: req.body, user: user, errors: {}
+				data: req.body, user: user, errors: {}, tabs: tabs
 			});
 		}
 	}).catch(next);
@@ -290,7 +315,7 @@ WebUsers.prototype.editSettingsPost = function(req, res, next) {
 		where: {username: req.params.id.toLowerCase()},
 		include: [this.dbconn.Profile]
 	}).then(function(user) {
-		if (access.canAdministerUser(req.session.user.access, user.access)) {
+		if (access.canAdminEditUser(req.session.user.access, user.access)) {
 			// User submitted admin "user" form
 			return webform.userAdminForm(self.dbconn, req.body.user, user.username, user.email, req.session.user.access, user.access)
 			.then(function() {
@@ -394,10 +419,14 @@ WebUsers.prototype.getActions = function(req, res, next) {
 			model: this.dbconn.User,
 			where: {username: username}
 		}],
-		order: 'createdAt DESC'
+		order: 'Action.createdAt DESC'
 	}).then(function(actions) {
+		// Tab permissions
+		var tabs = access.userTabPerms(req.session.user, user);
+
 		res.render('getUserActions.swig', {
 			actions: actions,
+			tabs: tabs,
 			username: username
 		});
 	}).catch(next);

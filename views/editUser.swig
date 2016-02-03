@@ -32,7 +32,7 @@
 			<label class="control-label" for="gravatar">Gravatar Style</label>
 			<select class="form-control" name="profile[gravatar]" id="gravatar">
 				{% for gravatar in gravatars %}
-				{% if data.profile.gravatar === gravatar.value %}
+				{% if data.profile.gravatar == gravatar.value %}
 				<option value="{{ gravatar.value }}" selected>{{ gravatar.name }}</option>
 				{% else %}
 				<option value="{{ gravatar.value }}">{{ gravatar.name }}</option>
@@ -61,7 +61,7 @@
 			<select class="form-control" name="profile[country]" id="country">
 				<option value="">No Country Selected</option>
 				{% for country in countries %}
-				{% if data.profile.country === country.cca2 %}
+				{% if data.profile.country == country.cca2 %}
 				<option value="{{ country.cca2 }}" selected>{{ country.name.common }}</option>
 				{% else %}
 				<option value="{{ country.cca2 }}">{{ country.name.common }}</option>

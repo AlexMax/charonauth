@@ -42,7 +42,7 @@
 			<label class="control-label" for="access">Access</label>
 			<select class="form-control" name="user[access]" id="access">
 				{% for access in accesses %}
-				{% if data.user.access === access %}
+				{% if data.user.access == access %}
 				<option value="{{ access }}" selected>{{ access_names[access] }}</option>
 				{% else %}
 				<option value="{{ access }}">{{ access_names[access] }}</option>

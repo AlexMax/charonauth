@@ -55,25 +55,65 @@ module.exports.validLevelSet = function(userAccess, targetAccess) {
 };
 
 // A set of defaults for access control
-function defaultAccess(userAccess, targetAccess) {
-	switch (userAccess) {
+function defaultAccess(user, target) {
+	if (!(_.isObject(user) && "access" in user)) {
+		return false;
+	}
+
+	switch (user.access) {
 		case 'OWNER':
 		// Owners can do everthing.
 		return true;
 		case 'MASTER':
 		// Masters can do anything to operators, but not other masters or owners.
-		return !_.contains(['OWNER', 'MASTER'], targetAccess);
+		return !_.contains(['OWNER', 'MASTER'], target.access);
 		case 'OP':
 		// Operators can do anything to any non-operator user.
-		return !_.contains(['OWNER', 'MASTER', 'OP'], targetAccess);
+		return !_.contains(['OWNER', 'MASTER', 'OP'], target.access);
 		default:
 		// Everybody else can do nothing.
 		return false;
 	}
 }
 
-// Govern who is allowed to edit other users profile and settings
-module.exports.canAdministerUser = defaultAccess;
+function editAccess(user, target) {
+	var sameUser = false;
+	if (_.isObject(user) && "id" in user && user.id === target.id) {
+		sameUser = true;
+	}
+	return defaultAccess(user, target) || sameUser;
+}
+
+function userTabPerms(user, target) {
+		// Designate if we can see the edit tabs
+		var edit = false;
+		if (editAccess(user, target)) {
+			edit = true;
+		}
+
+		// Designate if we can see the actions tab
+		var actions = false;
+		if (defaultAccess(user, target)) {
+			actions = true;
+		}
+
+		return {
+			'edit': edit,
+			'actions': actions,
+		};
+}
+
+// Populate tab permissions
+module.exports.userTabPerms = userTabPerms;
+
+// Govern who is allowed to edit a user
+module.exports.canEditUser = editAccess;
+
+// Govern who is allowed to see the admin settings page
+module.exports.canAdminEditUser = defaultAccess;
+
+// Govern who is allowed to see the "Actions" of a user
+module.exports.canSeeUserActions = defaultAccess;
 
 // Goven who is allowed to view invisible profiles
 module.exports.canViewUserInvisible = defaultAccess;

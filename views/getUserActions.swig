@@ -2,7 +2,7 @@
 {% extends 'layout.swig' %}
 
 {% block body %}
-{{ macros.usernav(username, 'actions', true) }}
+{{ macros.usernav(username, 'actions', tabs) }}
 {% if actions %}
 <table class="table">
 	<thead>

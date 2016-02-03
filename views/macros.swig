@@ -16,21 +16,25 @@
 {#
  # Display a tab navigation for the user page
  #}
-{% macro usernav(username, tab, force) %}
-{% if username == session.user.username or force %}
+{% macro usernav(username, tab, tab_perms) %}
+{% if tab_perms.edit or tab_perms.actions %}
 <ul class="nav nav-tabs" role="tablist">
 	<li class="{% if tab == 'view' %}active{% endif %}">
 		<a href="/users/{{ username }}">View Profile</a>
 	</li>
+	{% if tab_perms.edit %}
 	<li class="{% if tab == 'edit' %}active{% endif %}">
 		<a href="/users/{{ username }}/edit">Edit Profile</a>
 	</li>
 	<li class="{% if tab == 'settings' %}active{% endif %}">
 		<a href="/users/{{ username }}/settings">Settings</a>
 	</li>
+	{% endif %}
+	{% if tab_perms.actions %}
 	<li class="{% if tab == 'actions' %}active{% endif %}">
 		<a href="/users/{{ username }}/actions">Actions</a>
 	</li>
+	{% endif %}
 </ul>
 {% endif %}
 {% endmacro %}

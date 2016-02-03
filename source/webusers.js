@@ -315,7 +315,7 @@ WebUsers.prototype.editSettingsPost = function(req, res, next) {
 		where: {username: req.params.id.toLowerCase()},
 		include: [this.dbconn.Profile]
 	}).then(function(user) {
-		if (access.canAdminEditUser(req.session.user.access, user.access)) {
+		if (access.canAdminEditUser(req.session.user, user)) {
 			// User submitted admin "user" form
 			return webform.userAdminForm(self.dbconn, req.body.user, user.username, user.email, req.session.user.access, user.access)
 			.then(function() {

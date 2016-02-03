@@ -54,7 +54,7 @@ module.exports.validLevelSet = function(userAccess, targetAccess) {
 	return levels;
 };
 
-// A set of defaults for access control
+// A default access control that applies to many situations
 function defaultAccess(user, target) {
 	if (!(_.isObject(user) && "access" in user)) {
 		return false;
@@ -76,6 +76,7 @@ function defaultAccess(user, target) {
 	}
 }
 
+// Access control for user and profile tabs
 function editAccess(user, target) {
 	var sameUser = false;
 	if (_.isObject(user) && "id" in user && user.id === target.id) {
@@ -84,6 +85,8 @@ function editAccess(user, target) {
 	return defaultAccess(user, target) || sameUser;
 }
 
+// Wrapped-up access control for all user tabs, suitable for passing to
+// the usernav macro's third parameter
 function userTabPerms(user, target) {
 		// Designate if we can see the edit tabs
 		var edit = false;

@@ -29,7 +29,6 @@ var domain = require('domain');
 var express = require('express');
 var session = require('express-session');
 var fsSession = require('fs-session')({ session: session });
-var ip = require('ip'); // Remove me eventually
 var ipaddr = require('ipaddr.js');
 var uuid = require('node-uuid');
 var nunjucks = require('nunjucks');
@@ -146,7 +145,12 @@ function WebApp(config, logger) {
 			express: self.app
 		});
 		env.addFilter('ip', function(addr) {
-			return ip.toString(addr);
+			var ip = ipaddr.fromByteArray(addr);
+			if (ip.kind() === 'ipv6' && ip.isIPv4MappedAddress()) {
+				return ip.toIPv4Address().toString();
+			} else {
+				return ip.toString();
+			}
 		});
 		nunjucksDate.setDefaultFormat('dddd, MMMM Do YYYY, h:mm:ss a');
 		nunjucksDate.install(env);

@@ -23,7 +23,7 @@ var Promise = require('bluebird');
 var _ = require('lodash');
 
 var dgram = Promise.promisifyAll(require('dgram'));
-var ip = require('ip');
+var ipaddr = require('ipaddr.js');
 
 var Config = require('./config');
 var DBConn = require('./dbconn');
@@ -311,7 +311,7 @@ AuthApp.prototype.serverProof = function(msg, rinfo) {
 			UserId: user.id,
 			WhomId: user.id,
 			type: 'auth',
-			ip: ip.toBuffer(rinfo.address)
+			ip: new Buffer(ipaddr.parse(rinfo.address).toByteArray())
 		})]);
 	}).spread(function(proof) {
 		// Write the response packet

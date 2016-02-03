@@ -33,6 +33,7 @@ var ip = require('ip'); // Remove me eventually
 var ipaddr = require('ipaddr.js');
 var uuid = require('node-uuid');
 var nunjucks = require('nunjucks');
+var nunjucksDate = require('nunjucks-date');
 
 var Config = require('./config');
 var DBConn = require('./dbconn');
@@ -140,17 +141,15 @@ function WebApp(config, logger) {
 		self.app.set('trust proxy', true);
 
 		// Template engine
-		nunjucks.configure('views', {
+		var env = nunjucks.configure('views', {
 			autoescape: true,
 			express: self.app
 		});
-
-		/* swig.setFilter('ip', function(addr) {
+		env.addFilter('ip', function(addr) {
 			return ip.toString(addr);
 		});
-		self.app.engine('swig', swig.renderFile);
-		self.app.set('views', __dirname + '/../views');
-		self.app.set('view cache', false);*/
+		nunjucksDate.setDefaultFormat('dddd, MMMM Do YYYY, h:mm:ss a');
+		nunjucksDate.install(env);
 
 		// Home
 		self.app.get('/', self.home.bind(self));

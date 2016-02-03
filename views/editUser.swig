@@ -14,7 +14,7 @@
 {% if success %}
 {{ macros.alert('success', 'Profile updated successfully!') }}
 {% endif %}
-{{ macros.usernav(user.username, 'edit', true) }}
+{{ macros.usernav(user.username, 'edit', tabs) }}
 <form method="post" role="form">
 	<fieldset>
 		<input type="hidden" name="_csrf" value="{{ data._csrf }}">

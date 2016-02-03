@@ -8,7 +8,7 @@
 	<dt>User:</dt>
 	<dd>{{ action.user.username }}</dd>
 	<dt>Date:</dt>
-	<dd>{{ action.createdAt|date('Y-m-d H:i:s') }}</dd>
+	<dd>{{ action.createdAt|date }}</dd>
 	<dt>IP Address:</dt>
 	<dd>{{ action.ip|ip }}</dd>
 	<dt>Action:</dt>

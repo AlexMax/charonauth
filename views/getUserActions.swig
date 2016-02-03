@@ -14,7 +14,7 @@
 	<tbody>
 		{% for action in actions %}
 		<tr>
-			<td><a href="/users/{{ username }}/actions/{{ action.id }}">{{ action.createdAt|date('Y-m-d H:i:s') }}</a></td>
+			<td><a href="/users/{{ username }}/actions/{{ action.id }}">{{ action.createdAt|date }}</a></td>
 			<td>{{ action.getPrettyType() }}</td>
 			<td>{{ action.ip|ip }}</td>
 		</tr>

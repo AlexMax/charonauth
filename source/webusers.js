@@ -412,18 +412,24 @@ WebUsers.prototype.editSettingsPost = function(req, res, next) {
 
 // Get a complete list of actions associated with a user.
 WebUsers.prototype.getActions = function(req, res, next) {
+	var self = this;
 	var username = req.params.id.toLowerCase();
+	var tabs = null;
 
-	this.dbconn.Action.findAll({
-		include: [{
-			model: this.dbconn.User,
-			where: {username: username}
-		}],
-		order: 'Action.createdAt DESC'
-	}).then(function(actions) {
+	this.dbconn.User.find({
+		where: {username: username},
+	}).then(function(user) {
 		// Tab permissions
-		var tabs = access.userTabPerms(req.session.user, user);
+		tabs = access.userTabPerms(req.session.user, user);
 
+		return self.dbconn.Action.findAll({
+			include: [{
+				model: self.dbconn.User,
+				where: {username: username}
+			}],
+			order: 'Action.createdAt DESC'
+		});
+	}).then(function(actions) {
 		res.render('getUserActions.swig', {
 			actions: actions,
 			tabs: tabs,

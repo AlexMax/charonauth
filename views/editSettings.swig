@@ -5,7 +5,7 @@
 {% if success %}
 {{ macros.alert('success', 'Settings updated successfully!') }}
 {% endif %}
-{{ macros.usernav(user.username, 'settings', true) }}
+{{ macros.usernav(user.username, 'settings', tabs) }}
 <p>
 	Updating your password or e-mail address requires entering your current
 	password.

@@ -33,6 +33,7 @@
     "nodemailer-smtp-transport": "~0.1.12",
     "nodemailer-stub-transport": "^1.0.0",
     "nunjucks": "^2.3.0",
+    "nunjucks-date": "^1.2.0",
     "request": "~2.44.0",
     "sequelize": "^3.9.0",
     "swig": "~1.4.1",

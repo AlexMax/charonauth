@@ -29,6 +29,7 @@ var Sequelize = require('sequelize');
 var access = require('./access');
 var countries = require('./countries');
 var error = require('./error');
+var paginator = require('./paginator');
 var webform = require('./webform');
 
 function WebUsers(dbconn) {
@@ -63,9 +64,7 @@ WebUsers.prototype.getUsers = function(req, res, next) {
 	var self = this;
 
 	// Pagination
-	var limit = ("l" in req.query && isFinite(req.query.l)) ? req.query.l : 10;
-	var page = ("p" in req.query && isFinite(req.query.p)) ? req.query.p : 1;
-	var offset = (page - 1) * limit;
+	var qinfo = paginator.qinfo(req);
 
 	// Default search parameters
 	var params = {
@@ -101,16 +100,15 @@ WebUsers.prototype.getUsers = function(req, res, next) {
 	var total = 0;
 	this.dbconn.User.count(params).then(function(count) {
 		total = count;
-		params.offset = offset;
-		params.limit = limit;
+		params.offset = qinfo.offset;
+		params.limit = qinfo.limit;
 		return self.dbconn.User.findAll(params)
 	}).then(function(users) {
+		var pinfo = paginator.pinfo(qinfo.page, total, qinfo.limit, { f: filter });
 		res.render('getUsers.swig', {
 			users: users,
-			total: total,
-			page: page,
-			limit: limit,
-			filter: filter
+			filter: filter,
+			pinfo: pinfo
 		});
 	}).catch(next);
 };

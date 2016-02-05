@@ -42,17 +42,24 @@
 {#
  # Display a paginator
  #}
-{% macro paginator(page, limit, total) %}
-{% set totalPages = 2 %}
+{% macro paginator(pinfo) %}
 <ul class="pagination">
-	{% if page > 1 %}
-	<li><a href="#">&laquo;</a></li>
+	{% if pinfo.page > 1 %}
+	<li><a href="?{{ pinfo.baseQuery|qs({ p: 1 }) }}">&laquo;</a></li>
+	<li><a href="?{{ pinfo.baseQuery|qs({ p: pinfo.page - 1 }) }}">&lsaquo;</a></li>
+	{% else %}
+	<li><span>&laquo;</span></li>
+	<li><span>&lsaquo;</span></li>
 	{% endif %}
-	<li><a href="#">{{ page }}</a></li>
-	<li><a href="#">{{ total }}</a></li>
-	<li><a href="#">{{ limit }}</a></li>
-	{% if page < totalPages %}
-	<li><a href="#">&raquo;</a></li>
+	{% for index in range(pinfo.minPage, pinfo.maxPage + 1) %}
+	<li><a href="?{{ pinfo.baseQuery|qs({ p: index }) }}">{{ index }}</a></li>
+	{% endfor %}
+	{% if pinfo.page < pinfo.totalPages %}
+	<li><a href="?{{ pinfo.baseQuery|qs({ p: pinfo.page + 1 }) }}">&rsaquo;</a></li>
+	<li><a href="?{{ pinfo.baseQuery|qs({ p: pinfo.totalPages }) }}">&raquo;</a></li>
+	{% else %}
+	<li><span>&rsaquo;</span></li>
+	<li><span>&raquo;</span></li>
 	{% endif %}
 </ul>
 {% endmacro %}

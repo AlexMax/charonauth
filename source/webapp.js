@@ -20,6 +20,7 @@
 "use strict";
 
 var Promise = require('bluebird');
+var _ = require('lodash');
 
 var bodyParser = require('body-parser');
 var cluster = require('cluster');
@@ -33,6 +34,7 @@ var ipaddr = require('ipaddr.js');
 var uuid = require('node-uuid');
 var nunjucks = require('nunjucks');
 var nunjucksDate = require('nunjucks-date');
+var querystring = require('querystring');
 
 var Config = require('./config');
 var DBConn = require('./dbconn');
@@ -151,6 +153,12 @@ function WebApp(config, logger) {
 			} else {
 				return ip.toString();
 			}
+		});
+		env.addFilter('qs', function(q, merge) {
+			if (merge) {
+				_.assign(q, merge);
+			}
+			return querystring.stringify(q);
 		});
 		nunjucksDate.setDefaultFormat('dddd, MMMM Do YYYY, h:mm:ss a');
 		nunjucksDate.install(env);

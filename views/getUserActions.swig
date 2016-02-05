@@ -21,6 +21,7 @@
 		{% endfor %}
 	</tbody>
 </table>
+{{ macros.paginator(pinfo) }}
 <p>
 	Note that the Authentication IP Address is for the server the user
 	authenticated on, as the server cannot be trusted to report the user's IP

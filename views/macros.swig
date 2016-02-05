@@ -48,18 +48,18 @@
 	<li><a href="?{{ pinfo.baseQuery|qs({ p: 1 }) }}">&laquo;</a></li>
 	<li><a href="?{{ pinfo.baseQuery|qs({ p: pinfo.page - 1 }) }}">&lsaquo;</a></li>
 	{% else %}
-	<li><span>&laquo;</span></li>
-	<li><span>&lsaquo;</span></li>
+	<li class="disabled"><a href="#">&laquo;</a></li>
+	<li class="disabled"><a href="#">&lsaquo;</a></li>
 	{% endif %}
 	{% for index in range(pinfo.minPage, pinfo.maxPage + 1) %}
-	<li><a href="?{{ pinfo.baseQuery|qs({ p: index }) }}">{{ index }}</a></li>
+	<li class="{% if index == pinfo.page %}active{% endif %}"><a href="?{{ pinfo.baseQuery|qs({ p: index }) }}">{{ index }}</a></li>
 	{% endfor %}
 	{% if pinfo.page < pinfo.totalPages %}
 	<li><a href="?{{ pinfo.baseQuery|qs({ p: pinfo.page + 1 }) }}">&rsaquo;</a></li>
 	<li><a href="?{{ pinfo.baseQuery|qs({ p: pinfo.totalPages }) }}">&raquo;</a></li>
 	{% else %}
-	<li><span>&rsaquo;</span></li>
-	<li><span>&raquo;</span></li>
+	<li class="disabled"><a href="#">&rsaquo;</a></li>
+	<li class="disabled"><a href="#">&raquo;</a></li>
 	{% endif %}
 </ul>
 {% endmacro %}

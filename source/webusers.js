@@ -411,8 +411,13 @@ WebUsers.prototype.editSettingsPost = function(req, res, next) {
 // Get a complete list of actions associated with a user.
 WebUsers.prototype.getActions = function(req, res, next) {
 	var self = this;
-	var username = req.params.id.toLowerCase();
+
 	var tabs = null;
+	var params = {};
+	var total = 0;
+
+	var username = req.params.id.toLowerCase();
+	var qinfo = paginator.qinfo(req);
 
 	this.dbconn.User.find({
 		where: {username: username},
@@ -420,18 +425,27 @@ WebUsers.prototype.getActions = function(req, res, next) {
 		// Tab permissions
 		tabs = access.userTabPerms(req.session.user, user);
 
-		return self.dbconn.Action.findAll({
+		// Default action query parameters
+		params = {
 			include: [{
 				model: self.dbconn.User,
 				where: {username: username}
 			}],
 			order: 'Action.createdAt DESC'
-		});
+		};
+		return self.dbconn.Action.count(params);
+	}).then(function(count) {
+		total = count;
+		params.offset = qinfo.offset;
+		params.limit = qinfo.limit;
+		return self.dbconn.Action.findAll(params);
 	}).then(function(actions) {
+		var pinfo = paginator.pinfo(qinfo.page, total, qinfo.limit);
 		res.render('getUserActions.swig', {
 			actions: actions,
 			tabs: tabs,
-			username: username
+			username: username,
+			pinfo: pinfo
 		});
 	}).catch(next);
 };

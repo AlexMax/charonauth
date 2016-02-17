@@ -22,20 +22,18 @@
 <table class="table">
 	<thead>
 		<tr>
-			<th>Country</th>
 			<th>Gravatar</th>
 			<th>Username</th>
 			<th>Clan</th>
-			<th>Last Seen</th>
+			<th>Country</th>
 	</thead>
 	<tbody>
 		{% for user in users %}
 		<tr>
-			<td><img height="80" src="/assets/svg/{{ user.Profile.getFlag() }}.svg" alt="{{ user.Profile.getCountry() }}"></td>
 			<td><img src="{{ macros.gravatar(user.getGravatar(), user.Profile.gravatar, 'monsterid') }}" alt="{{ user.Profile.username }}"></td>
 			<td><a href="/users/{{ user.username }}">{{ user.Profile.clantag }}{{ user.Profile.username }}</a></td>
 			<td>{{ user.Profile.clan }}</td>
-			<td>{{ user.seen }}</td>
+			<td><img height="80" src="/assets/svg/{{ user.Profile.getFlag() }}.svg" alt="{{ user.Profile.getCountry() }}"></td>
 		</tr>
 		{% endfor %}
 	</tbody>

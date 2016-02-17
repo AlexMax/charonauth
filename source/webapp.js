@@ -257,7 +257,7 @@ WebApp.prototype.home = function(req, res) {
 WebApp.prototype.getLogin = function(req, res) {
 	req.body._csrf = req.csrfToken();
 	res.render('login.swig', {
-		data: req.body, errors: {},
+		data: req.body, errors: {}, mailer: this.mailer !== undefined,
 	});
 };
 

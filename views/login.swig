@@ -22,5 +22,9 @@
 		<button class="btn btn-primary" type="submit">Sign In</button>
 	</fieldset>
 </form>
-<a href="/reset">I forgot my password!</a>
+{% if mailer %}
+<p><a href="/reset">I forgot my password!</a></p>
+{% else %}
+<p>Forgot your password?  Contact an administrator and ask them to reset your password.</p>
+{% endif %}
 {% endblock %}

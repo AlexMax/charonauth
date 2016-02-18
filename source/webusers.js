@@ -294,6 +294,23 @@ function renderEditSettingsAdmin(req, res, options) {
 	}, options));
 }
 
+// Render the "Edit User Settings" form
+function renderEditSettings(req, res, options) {
+	options = _.assign({
+		errors: {},
+		success: false,
+		user: null,
+	}, options);
+
+	req.body._csrf = req.csrfToken();
+	var tabs = access.userTabPerms(req.session.user, options.user);
+
+	// Render the page
+	res.render('editSettings.swig', _.assign({
+		data: req.body, tabs: tabs,
+	}, options));
+}
+
 // Edit a user's settings
 WebUsers.prototype.editSettings = function(req, res, next) {
 	this.dbconn.User.find({
@@ -313,12 +330,8 @@ WebUsers.prototype.editSettings = function(req, res, next) {
 				user: user
 			});
 		} else {
-			// Tab permissions
-			var tabs = access.userTabPerms(req.session.user, user);
-
-			req.body._csrf = req.csrfToken();
-			res.render('editSettings.swig', {
-				data: req.body, user: user, errors: {}, tabs: tabs
+			renderEditSettings(req, res, {
+				user: user
 			});
 		}
 	}).catch(next);
@@ -402,19 +415,14 @@ WebUsers.prototype.editSettingsPost = function(req, res, next) {
 					req.session.user.gravatar = user.getGravatar();
 				}
 
-				// Render the page
-				req.body._csrf = req.csrfToken();
 				req.body.profile = user.Profile;
-				res.render('editSettings.swig', {
-					data: req.body, user: user, success: true, errors: {}
+				renderEditSettings(req, res, {
+					user: user, success: true
 				});
 			}).catch(error.FormValidation, function(e) {
-				// Render the page with errors
-				req.body._csrf = req.csrfToken();
 				req.body.profile = user.Profile;
-				res.render('editSettings.swig', {
-					data: req.body, user: user,
-					errors: {user: e.invalidFields}
+				renderEditSettings(req, res, {
+					user: user, errors: { user: e.invalidFields }
 				});
 			});
 		}

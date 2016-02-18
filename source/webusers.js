@@ -276,6 +276,24 @@ WebUsers.prototype.editUserPost = function(req, res, next) {
 	}).catch(next);
 };
 
+// Render the administrative "Edit User Settings" form
+function renderEditSettingsAdmin(req, res, options) {
+	options = _.assign({
+		errors: {},
+		success: false,
+		user: null,
+	}, options);
+
+	req.body._csrf = req.csrfToken();
+	var tabs = access.userTabPerms(req.session.user, options.user);
+	var accesses = access.validLevelSet(req.session.user.access, options.user.access);
+
+	// Render the page
+	res.render('editSettingsAdmin.swig', _.assign({
+		data: req.body, accesses: accesses, tabs: tabs,
+	}, options));
+}
+
 // Edit a user's settings
 WebUsers.prototype.editSettings = function(req, res, next) {
 	this.dbconn.User.find({
@@ -291,12 +309,8 @@ WebUsers.prototype.editSettings = function(req, res, next) {
 				access: user.access
 			};
 
-			// Tab permissions
-			var tabs = access.userTabPerms(req.session.user, user);
-
-			res.render('editSettingsAdmin.swig', {
-				data: req.body, user: user, errors: {}, tabs: tabs,
-				accesses: access.validLevelSet(req.session.user.access, user.access)
+			renderEditSettingsAdmin(req, res, {
+				user: user
 			});
 		} else {
 			// Tab permissions
@@ -355,19 +369,12 @@ WebUsers.prototype.editSettingsPost = function(req, res, next) {
 					req.session.user.access = user.access;
 				}
 
-				// Render the page
-				req.body._csrf = req.csrfToken();
-				res.render('editSettingsAdmin.swig', {
-					data: req.body, user: user, success: true, errors: {},
-					accesses: access.validLevelSet(req.session.user.access, user.access)
+				renderEditSettingsAdmin(req, res, {
+					user: user, success: true
 				});
 			}).catch(error.FormValidation, function(e) {
-				// Render the page with errors
-				req.body._csrf = req.csrfToken();
-				res.render('editSettingsAdmin.swig', {
-					data: req.body, user: user,
-					errors: {user: e.invalidFields},
-					accesses: access.validLevelSet(req.session.user.access, user.access)
+				renderEditSettingsAdmin(req, res, {
+					user: user, errors: { user: e.invalidFields }
 				});
 			});
 		} else {

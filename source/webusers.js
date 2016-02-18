@@ -203,21 +203,33 @@ WebUsers.prototype.userActionsAccess = function(req, res, next) {
 	}).catch(next);
 };
 
+// Render the "Edit User Profile" form
+function renderEditUser(req, res, options) {
+	options = _.assign({
+		errors: {},
+		success: false,
+		user: null,
+	}, options);
+
+	req.body._csrf = req.csrfToken();
+	var tabs = access.userTabPerms(req.session.user, options.user);
+
+	// Render the page
+	res.render('editUser.swig', _.assign({
+		data: req.body, countries: countries.countries, tabs: tabs
+	}, options));
+}
+
 // Edit a user's profile
 WebUsers.prototype.editUser = function(req, res, next) {
 	this.dbconn.User.findOne({
 		where: {username: req.params.id.toLowerCase()},
 		include: [this.dbconn.Profile]
 	}).then(function(user) {
-		req.body._csrf = req.csrfToken();
 		req.body.profile = user.Profile;
 
-		// Tab permissions
-		var tabs = access.userTabPerms(req.session.user, user);
-
-		res.render('editUser.swig', {
-			data: req.body, user: user, errors: {},
-			countries: countries.countries, tabs: tabs
+		renderEditUser(req, res, {
+			user: user,
 		});
 	}).catch(next);
 };
@@ -253,19 +265,12 @@ WebUsers.prototype.editUserPost = function(req, res, next) {
 				req.session.user.profile_username = user.Profile.username;
 			}
 
-			// Render the page
-			req.body._csrf = req.csrfToken();
-			res.render('editUser.swig', {
-				data: req.body, user: user, success: true, errors: {},
-				countries: countries.countries
+			renderEditUser(req, res, {
+				user: user, success: true
 			});
 		}).catch(error.FormValidation, function(e) {
-			// Render the page with errors
-			req.body._csrf = req.csrfToken();
-			res.render('editUser.swig', {
-				data: req.body, user: user,
-				errors: {profile: e.invalidFields},
-				countries: countries.countries
+			renderEditUser(req, res, {
+				user: user, errors: { profile: e.invalidFields },
 			});
 		});
 	}).catch(next);

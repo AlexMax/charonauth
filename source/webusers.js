@@ -336,18 +336,19 @@ WebUsers.prototype.editSettingsPost = function(req, res, next) {
 			// User submitted admin "user" form
 			return webform.userAdminForm(self.dbconn, req.body.user, user.username, user.email, req.session.user.access, user.access)
 			.then(function() {
-				// If we have a new password, persist it
-				if ('password' in req.body.user && !_.isEmpty(req.body.user.password)) {
-					user.setPassword(req.body.user.password);
-				}
-
-				// Persist all of our other settings
+				// Persist almost all of settings
 				user.updateAttributes({
 					active: "active" in req.body.user ? true : false,
 					username: req.body.user.username.toLowerCase(),
 					email: req.body.user.email,
 					access: req.body.user.access
 				});
+
+				// If we have a new password, persist it - must be done after
+				// username change or else the new password won't work
+				if ('password' in req.body.user && !_.isEmpty(req.body.user.password)) {
+					user.setPassword(req.body.user.password);
+				}
 
 				return user.save();
 			}).then(function() {

@@ -12,12 +12,12 @@ This application is:
 2. Not really designed to be easy for end users to run on their own.  It's aimed at server administrators who can do the legwork of deploying it.
 3. Already hosted in several places.  You do not need to run your own authentication server to make use of auth server features in Zandronum, simply set the `authhostname` variable of to `best-ever.org` (hosted by Jenova), `grandvoid.sickedwick.net` (hosted by Konar6), or `auth.funcrusher.net` (hosted by myself).
 
-That said, if you're serious about toying around with it locally, here's how you do it.  Note that installing this on Windows is a gigantic headache and should not be used for production systems - I only support it because I like working on my desktop PC with Windows installed.
+That said, if you're serious about toying around with it locally, here's how you do it.  Note that installing this on Windows is a gigantic headache and should not be used for production systems.  I have also not checked any release more recent than 0.8 to see if it worked in Windows.
 
 You need to install:
 
 * Git.  You must have this installed, even if you download this repository as a .ZIP file.
-* A recent version of Node.js. You want a version of node.js that's 0.10.something.  If you're on debian, backports has it. If you're on CentOS, EPEL has it.
+* A recent version of Node.js.  The officially supported release of node.js is the most recent v4.x.x "Argon" LTS release.  Linux binaries are available from the [Official Node.js Downloads Page](https://nodejs.org/en/download/), or you can install it using [Node Version Manager](https://github.com/creationix/nvm).
 * npm.  I think that most every modern version of Node.js comes with this already, but just so we're clear, you do need this.
 * Python 2.7.
 * A C++ compiler, either gcc on linux, clang on OSX or Visual C++ Express for Desktop on Windows.

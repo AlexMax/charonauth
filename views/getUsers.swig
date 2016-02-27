@@ -30,7 +30,7 @@
 	<tbody>
 		{% for user in users %}
 		<tr>
-			<td><img src="{{ macros.gravatar(user.getGravatar(), user.Profile.gravatar, 'monsterid', 50) }}" alt="{{ user.Profile.username }}"></td>
+			<td><img height="50" src="{{ macros.gravatar(user.getGravatar(), user.Profile.gravatar, 'monsterid', 50) }}" alt="{{ user.Profile.username }}"></td>
 			<td><a href="/users/{{ user.username }}">{{ user.Profile.clantag }}{{ user.Profile.username }}</a></td>
 			<td>{{ user.Profile.clan }}</td>
 			{% if user.Profile.getCountry() %}

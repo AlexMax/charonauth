@@ -37,7 +37,7 @@
     "sequelize": "^3.19.2",
     "validator": "^3.43.0",
     "winston": "~0.8.0",
-    "world-countries": "~1.6.0"
+    "world-countries": "^1.7.7"
   },
   "devDependencies": {
     "grunt": "~0.4.5",

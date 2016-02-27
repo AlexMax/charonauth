@@ -30,10 +30,14 @@
 	<tbody>
 		{% for user in users %}
 		<tr>
-			<td><img src="{{ macros.gravatar(user.getGravatar(), user.Profile.gravatar, 'monsterid') }}" alt="{{ user.Profile.username }}"></td>
+			<td><img src="{{ macros.gravatar(user.getGravatar(), user.Profile.gravatar, 'monsterid', 50) }}" alt="{{ user.Profile.username }}"></td>
 			<td><a href="/users/{{ user.username }}">{{ user.Profile.clantag }}{{ user.Profile.username }}</a></td>
 			<td>{{ user.Profile.clan }}</td>
-			<td><img height="80" src="/assets/svg/{{ user.Profile.getFlag() }}.svg" alt="{{ user.Profile.getCountry() }}"></td>
+			{% if user.Profile.getCountry() %}
+			<td><img height="50" src="/assets/svg/{{ user.Profile.getFlag() }}.svg" alt="{{ user.Profile.getCountry() }}"></td>
+			{% else %}
+			<td>No Country</td>
+			{% endif %}
 		</tr>
 		{% endfor %}
 	</tbody>

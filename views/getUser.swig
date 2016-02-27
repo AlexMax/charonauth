@@ -16,7 +16,7 @@
 </h1>
 <div class="row">
 	<div class="col-sm-3">
-		<img style="width:100%;max-width:150px" src="{{ macros.gravatar(user.getGravatar(), user.Profile.gravatar, 'monsterid') }}" alt="{{ user.Profile.username }}">
+		<img style="width:100%;max-width:150px" src="{{ macros.gravatar(user.getGravatar(), user.Profile.gravatar, 'monsterid', 150) }}" alt="{{ user.Profile.username }}">
 		<dl>
 			<dt>Username</dt>
 			<dd>{{ user.username }}</dd>
@@ -36,7 +36,7 @@
 			{% endif %}
 			{% if lastplayed %}
 			<dt>Last Played</dt>
-			<dd>{{ lastplayed|date('F j, Y') }}</dd>
+			<dd>{{ lastplayed|date('dddd, MMMM Do YYYY') }}</dd>
 			{% endif %}
 		</dl>
 	</div>

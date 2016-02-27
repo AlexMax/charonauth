@@ -185,7 +185,7 @@ var DBConn = function(config) {
 				},
 				getFlag: function() {
 					if (_.isNull(this.country) || _.isEmpty(this.country)) {
-						return 'no-country';
+						return null;
 					} else if (countries.getData(this.country)) {
 						return countries.getData(this.country).cca3.toLowerCase();
 					}
